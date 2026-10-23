@@ -10,6 +10,7 @@ Implemented:
 - Job-attributed publication and completion: exact submitted clips/parents, complete batches, immutable media/native-checkpoint hash verification, and evidence-checked reconciliation.
 - 37 canonical skill owners and shared helpers, provenance manifest, isolated runtime materialization, credential entry and doctor.
 - Native source-linked music placement, explicit dialogue/bed gain, fades, and music-gain revisions in FilmCraft and Resolve; music selection remains owned by the packaged skill.
+- Shared compiler binding canonical source-word selections, paired audio decisions and played-source routing to exact native ranges; production builds revalidate the binding.
 - Shared source-pixel fixed-crop plans, native FilmCraft Motion / Resolve Fusion framing, and fixed-crop revisions that preserve existing layers.
 - Native FilmCraft and Resolve adapters, current Premiere Agent Lab source/panel package and scoped adapter, optional Remotion asset renderer.
 
@@ -21,8 +22,9 @@ Verified in this checkout:
 - Real installed Codex app-server completed a no-tool response and exact-session resume using the toolkit transport. Installed Claude reached its result channel but returned an explicit low-credit error; its successful live round trip remains blocked on usable account credentials/credit. These checks do not prove editorial execution.
 - Agent/process regression fixtures cover missing results, malformed output, wrong turn/session, approval requests, disconnects, log failures, timeout termination and service shutdown. Shutdown waits for the owned agent and exports reconciliation state before releasing the service lock.
 - Packaged Premiere integration installs dependencies and compiles. Runtime dependency audit is clean after lockfile-only SDK/transitive updates. Installed live host responded to read-only snapshot; its production project was left untouched.
-- Native music fixtures in FilmCraft and Resolve measured −12 dB placement and −18 dB revision, unchanged dialogue during music revision, preserved source cut timing and complete 50-frame native exports. FilmCraft pictures were identical; Resolve duplication showed small pixel differences (49.16 dB average PSNR), documented in `NATIVE_AUDIO.md`. Eleven Python contract tests pass.
+- Native music fixtures in FilmCraft and Resolve measured −12 dB placement and −18 dB revision, unchanged dialogue during music revision, preserved source cut timing and complete 50-frame native exports. FilmCraft pictures were identical; Resolve duplication showed small pixel differences (49.16 dB average PSNR), documented in `NATIVE_AUDIO.md`. Sixteen Python contract tests pass.
 - Native vertical framing fixtures in FilmCraft and Resolve rendered 50 frames at 360×640. A one-shot crop revision moved its source label exactly 40 pixels while preserving the other shot and caption bounds. FilmCraft audio was identical; Resolve audio differed by 79.05 dB relative to signal. See `NATIVE_FRAMING.md` for scope and limitations.
+- FilmCraft paired-sample fixture preserved 11/17-sample offsets, independent audio durations, native links and source sync across save/reopen/render; decoded audio correlated 0.99999878 with the exact-sample reference. Resolve exposed rounded source trims and now refuses them before construction; its exact-sample execution remains open. See `NATIVE_ASSEMBLY.md`.
 - Canonical exported Python files parse. Distribution secret-pattern/hash scan passes.
 
 Remaining before pilot:

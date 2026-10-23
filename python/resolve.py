@@ -35,6 +35,8 @@ class Adapter:
   r,p=self.selected(project);state=self.snapshot(p);return {'state':state,'fingerprint':fingerprint(state),'version':r.GetVersionString()}
  def build(self,project,packet):
   self.project_root=Path(project['root']);spec=plan(project,packet);r=self.connect();pm=r.GetProjectManager();current=pm.GetCurrentProject();name='ACQ_'+project['id']
+  for cut in spec['cuts']:
+   for value in [cut['audioInSample'],cut['audioSamples']]:require(value*spec['fps']['numerator']%(spec['sampleRate']*spec['fps']['denominator'])==0,'Resolve AppendToTimeline rounds source audio trims to frames on this host. Exact sample-edge execution requires a qualified native precision route; preserve the paired plan without rounding.')
   require(not current or current.GetName()==name,'Another Resolve project is open. Close it before creating this isolated project.');p=current or pm.CreateProject(name);require(p,'Could not create native Resolve project')
   for bed in spec.get('audio',{}).get('music',[]):resolve_music_frames(spec,bed)
   require(spec['width']>=256 and spec['height']>=256,'Resolve clamps timeline dimensions below 256 pixels; choose a supported output size')
@@ -48,10 +50,11 @@ class Adapter:
   for cut in spec['cuts']:
    media=sources[cut['sourceId']];video=pool.AppendToTimeline([{'mediaPoolItem':media,'startFrame':cut['sourceInFrame'],'endFrame':cut['sourceInFrame']+cut['frames'],'recordFrame':cut['recordFrame'],'mediaType':1,'trackIndex':1}]);require(video and len(video)==1,'Picture placement failed')
    astart=cut['audioInSample']*fps/spec['sampleRate'];aduration=cut['audioSamples']*fps/spec['sampleRate']
-   audio=pool.AppendToTimeline([{'mediaPoolItem':media,'startFrame':astart,'endFrame':astart+aduration,'recordFrame':cut['recordFrame'],'mediaType':2,'trackIndex':1}]);require(audio and len(audio)==1,'Audio placement failed')
+   arecord=cut['audioRecordSample']*fps/spec['sampleRate'] if 'audioRecordSample' in cut else cut['recordFrame']
+   audio=pool.AppendToTimeline([{'mediaPoolItem':sources[cut.get('audioSourceId',cut['sourceId'])],'startFrame':astart,'endFrame':astart+aduration,'recordFrame':arecord,'mediaType':2,'trackIndex':1}]);require(audio and len(audio)==1,'Audio placement failed')
    vi,ai=video[0],audio[0]
-   for item,start,duration in [(vi,cut['sourceInFrame'],cut['frames']),(ai,astart,aduration)]:
-    require(abs(item.GetStart(True)-cut['recordFrame'])<1e-6 and abs(item.GetDuration(True)-duration)<1e-6 and abs(item.GetLeftOffset(True)-start)<1e-6,'Native cut readback differs from precision plan; preserve evidence, do not round')
+   for item,start,duration,record in [(vi,cut['sourceInFrame'],cut['frames'],cut['recordFrame']),(ai,astart,aduration,arecord)]:
+    require(abs(item.GetStart(True)-record)<1e-6 and abs(item.GetDuration(True)-duration)<1e-6 and abs(item.GetLeftOffset(True)-start)<1e-6,'Native cut readback differs from precision plan; preserve evidence, do not round')
    require(timeline.SetClipsLinked([vi,ai],True),'Could not link picture/audio');pairs.append((cut,vi,ai))
    shot=spec.get('framing',{}).get('shots',{}).get(cut['id'])
    audio_props={'AudioVolumeEnabled':True,'AudioVolume':spec.get('audio',{}).get('gainDb',0),**spec.get('audio',{}).get('properties',{})}

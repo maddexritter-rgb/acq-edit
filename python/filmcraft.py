@@ -26,9 +26,31 @@ class Adapter:
    for s in p['sources']:sources[s['id']]=c.tool('media_import',{'paths':[s['path']]})['items'][0]
    c.run('file.newSequence',{'name':p['title'],'width':p['width'],'height':p['height'],'fps':p['fps']['numerator']/p['fps']['denominator'],'sampleRate':sr,'video':3,'audio':2})
    for cut in p['cuts']:
-    # No quantization: unequal speech/picture boundaries require canonical paired-audio assembly.
-    require(cut['audioInSample']*TICKS//sr==cut['sourceInFrame']*ft and cut['audioSamples']*TICKS//sr==cut['frames']*ft,'Use canonical apply_filmcraft_assembly.py for sample-precision unequal A/V boundaries')
-    c.run('timeline.place',{'item':sources[cut['sourceId']],'track':'V1','audioTrack':'A1','time':cut['recordFrame']*ft,'sourceIn':cut['sourceInFrame']*ft,'duration':cut['frames']*ft,'insert':False})
+    if cut.get('audioSourceId'):
+     before=c.tool('sequence_inspect');ids={i['clip'] for kind in ['video','audio'] for track in before[kind] for i in track['items']}
+     c.run('timeline.place',{'item':sources[cut['sourceId']],'track':'V1','video':True,'audio':False,'time':cut['recordFrame']*ft,'sourceIn':cut['sourceInFrame']*ft,'duration':cut['frames']*ft,'insert':False})
+     st=TICKS//sr;c.run('timeline.place',{'item':sources[cut['audioSourceId']],'track':'A1','video':False,'audio':True,'time':cut['recordFrame']*ft,'sourceIn':cut['sourceInFrame']*ft,'duration':cut['frames']*ft,'insert':False})
+     state=c.tool('sequence_inspect');vv=[i for i in state['video'][0]['items'] if i['clip'] not in ids];aa=[i for i in state['audio'][0]['items'] if i['clip'] not in ids]
+     require(len(vv)==len(aa)==1,'Paired placement created unexpected source streams');v,a=vv[0],aa[0]
+     require((v['start'],v['sourceIn'],v['duration'])==(cut['recordFrame']*ft,cut['sourceInFrame']*ft,cut['frames']*ft),'Picture placement differs from paired plan')
+     require((a['start'],a['sourceIn'],a['duration'])==(cut['recordFrame']*ft,cut['sourceInFrame']*ft,cut['frames']*ft),'Native placeholder differs from picture range')
+     require(v['start']-v['sourceIn']==a['start']-a['sourceIn'],'Paired source clocks differ');c.run('clip.link',{'clips':[v['clip'],a['clip']]})
+     linked=c.tool('sequence_inspect');v=next(i for i in linked['video'][0]['items'] if i['clip']==v['clip']);a=next(i for i in linked['audio'][0]['items'] if i['clip']==a['clip']);require(v['link'] is not None and v['link']==a['link'],'Native AV linkage failed')
+    else:
+     require(cut['audioInSample']*TICKS//sr==cut['sourceInFrame']*ft and cut['audioSamples']*TICKS//sr==cut['frames']*ft,'Compile the canonical paired-source plan for unequal A/V boundaries')
+     c.run('timeline.place',{'item':sources[cut['sourceId']],'track':'V1','audioTrack':'A1','time':cut['recordFrame']*ft,'sourceIn':cut['sourceInFrame']*ft,'duration':cut['frames']*ft,'insert':False})
+   if any(cut.get('audioSourceId') for cut in p['cuts']):
+    require(all(cut.get('audioSourceId') for cut in p['cuts']),'Do not mix paired and unbound dialogue cuts')
+    # The canonical assembly skill uses saved native data for sample geometry:
+    # timeline.place snaps record/duration to frames even for audio-only media.
+    frame_project=out/'frame-assembly.fcproj';c.run('file.saveAs',{'path':str(frame_project)});c.close()
+    data=read(frame_project);sequence=data['project']['items'][str(data['view']['active_sequence'])]['kind']['Sequence'];items=sequence['audio_tracks'][0]['items'];require(len(items)==len(p['cuts']),'Unexpected dialogue stream count')
+    st=TICKS//sr
+    for item,cut in zip(items,p['cuts']):item.update(start=cut['audioRecordSample']*st,source_in=cut['audioInSample']*st,duration=cut['audioSamples']*st)
+    save(native,data);c=Filmcraft(self.config['filmcraft'],out/'paired-reopen',str(native));state=c.tool('sequence_inspect')
+    for cut,v,a in zip(p['cuts'],state['video'][0]['items'],state['audio'][0]['items']):
+     require((a['start'],a['sourceIn'],a['duration'])==(cut['audioRecordSample']*st,cut['audioInSample']*st,cut['audioSamples']*st),'Reopened audio differs from exact paired samples')
+     require(v['link'] is not None and v['link']==a['link'] and v['start']-v['sourceIn']==a['start']-a['sourceIn'],'Reopened native linkage/source clocks differ')
    self.audio(c,p,sources,ft)
    self.finish(c,p,ft)
    c.run('file.saveAs',{'path':str(native)})

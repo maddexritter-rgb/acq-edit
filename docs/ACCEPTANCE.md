@@ -11,7 +11,7 @@ A pilot release is blocked until every required row passes on actual media and e
 | Premiere only | Packaged Lab builds; read-only installed-host response | Fresh isolated toolkit scope, native complete render/revision |
 | Intake | Local/YouTube/Drive implementations | Real authenticated Drive checksum and restart scenarios |
 | Monologue/Q&A/multicamera | Canonical design/ingest skills packaged | Blind review of real examples in every engine |
-| Difficult speech joins | Canonical paired-boundary helpers packaged | Played-audio proof, identity, endings and AV sync |
+| Difficult speech joins | Canonical compiled-word/paired-range binding added; FilmCraft exact-sample synthetic native render verified; Resolve source-trim rounding reproduced and refused | Resolve native sample-precision route; real played-audio proof, identity, endings and AV sync in every engine |
 | Caption-only changes | Owner routing tested | Resolve native caption-color revision passed; other engines and real footage still pending |
 | Music placement/revision | FilmCraft and Resolve native gain/fade fixtures and music-only revision measured; dialogue and cuts preserved | Real approved music auditions, envelopes/replacement, Premiere toolkit fixture, human listening |
 | Fixed framing/revision | FilmCraft Motion and Resolve Fusion vertical crops rendered; one-shot shift, caption bounds and cuts verified; audio identity limitation recorded | Real subject inspection/tracking, multicamera layouts, Premiere toolkit fixture and human review |

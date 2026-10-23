@@ -12,4 +12,8 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run audit:distribution
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python3 -m pip install -r requirements-core.txt
       - run: python3 -m unittest discover -s tests -p '*_test.py'

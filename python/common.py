@@ -25,14 +25,8 @@ def plan(project,packet):
  if selection.get('testFixture'):
   require(os.environ.get('ACQ_EDIT_TEST_FIXTURE')=='1','Synthetic plans require explicit ACQ_EDIT_TEST_FIXTURE=1 and cannot certify editorial acceptance')
  else:
-  sys.path.insert(0,str(SKILLS/'edit/scripts'))
-  from compile_assembly import validate_compiled
-  compiled_path=p['editorial'].get('compiledPath');require(compiled_path,'Canonical compiled source-word assembly required; timestamp-only plans are refused');inside(project['root'],compiled_path)
-  require(sha(compiled_path)==p['editorial'].get('compiledSha256'),'Compiled assembly changed')
-  compiled=validate_compiled(Path(compiled_path));require(compiled['design_sha256']==p['editorial']['sha256'],'Plan selection differs from compiled design')
-  clips=[c for c in compiled['clips'] if c['id']==p['clipId']];require(len(clips)==1,'Exact compiled clip missing');spans=clips[0]['spans'];require(len(spans)==len(p['cuts']),'Cut plan does not match compiled source-word spans')
-  for cut,span in zip(p['cuts'],spans):
-   first,last=span['word_range'];require(cut['wordIds']==[str(i) for i in range(first,last+1)],'Cut word IDs do not match canonical selection')
+  from assembly_plan import verify_bound_plan
+  verify_bound_plan(project,p)
 
  for s in p['sources']:
   inside(Path(project['root'])/'00_SOURCE',s['path']);require(sha(s['path'])==s['sha256'],'Source changed')

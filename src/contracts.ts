@@ -42,8 +42,8 @@ export interface FramingPlan {schema:'acq-edit/framing-v1';receiptPath:string;re
 export interface EditPlan {
   schema:'acq-edit/plan-v1'; projectId:string; backend:Backend; clipId:string; title:string;
   fps:{numerator:number;denominator:number}; width:number;height:number; sampleRate:number;
-  brain:{receiptPath:string;sha256:string}; editorial:{selectionPath:string;sha256:string;compiledPath?:string;compiledSha256?:string;reviewed:boolean};
-  sources:Source[]; cuts:{id:string;sourceId:string;sourceInFrame:number;frames:number;recordFrame:number;audioInSample:number;audioSamples:number;wordIds:string[];boundaryEvidence:string}[];
+  brain:{receiptPath:string;sha256:string}; editorial:{selectionPath:string;sha256:string;compiledPath?:string;compiledSha256?:string;execution?:{decisionsPath:string;decisionsSha256:string;routingPath:string;routingSha256:string;phonemesPath?:string;phonemesSha256?:string};reviewed:boolean};
+  sources:Source[]; cuts:{id:string;sourceId:string;audioSourceId?:string;audioRecordSample?:number;sourceInFrame:number;frames:number;recordFrame:number;audioInSample:number;audioSamples:number;wordIds:string[];boundaryEvidence:string}[];
   captions:{startFrame:number;endFrame:number;text:string;style:Record<string,unknown>}[];
   graphics:{path:string;startFrame:number;frames:number;sha256:string}[];
   framing:FramingPlan|Record<string,never>; audio:AudioPlan;
@@ -57,6 +57,7 @@ export function validatePlan(p:EditPlan,project:Project):void {
     invariant(p.sources.some(s=>s.id===cut.sourceId&&s.projectId===project.id),'Unknown project source');
     invariant([cut.frames,cut.sourceInFrame,cut.recordFrame,cut.audioInSample,cut.audioSamples].every(Number.isSafeInteger),'Integer frame/sample timing required');
     invariant(cut.frames>0&&cut.sourceInFrame>=0&&cut.audioInSample>=0&&cut.audioSamples>0&&cut.recordFrame===end,'Cuts must form a contiguous sequence');
+    if(cut.audioSourceId!==undefined){invariant(p.sources.some(s=>s.id===cut.audioSourceId&&s.projectId===project.id),'Unknown played-audio source');invariant(Number.isSafeInteger(cut.audioRecordSample)&&cut.audioRecordSample!>=0,'Exact audio record sample required')}
     invariant(cut.wordIds.length&&cut.boundaryEvidence,'Source words and inspected speech-boundary evidence required');
     end+=cut.frames;
   }
