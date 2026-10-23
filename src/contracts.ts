@@ -32,6 +32,11 @@ export function routeRevision(text:string):string[] {
   if(/motion|animation|graphic/i.test(text)) owners.add('promo');
   return [...owners];
 }
+export interface MusicPlacement {
+  id:string;sourceId:string;startFrame:number;sourceInSample:number;samples:number;gainDb:number;
+  fadeInSamples?:number;fadeOutSamples?:number;receiptPath:string;receiptSha256:string;
+}
+export interface AudioPlan {gainDb?:number;music?:MusicPlacement[];properties?:Record<string,unknown>}
 export interface EditPlan {
   schema:'acq-edit/plan-v1'; projectId:string; backend:Backend; clipId:string; title:string;
   fps:{numerator:number;denominator:number}; width:number;height:number; sampleRate:number;
@@ -39,7 +44,7 @@ export interface EditPlan {
   sources:Source[]; cuts:{id:string;sourceId:string;sourceInFrame:number;frames:number;recordFrame:number;audioInSample:number;audioSamples:number;wordIds:string[];boundaryEvidence:string}[];
   captions:{startFrame:number;endFrame:number;text:string;style:Record<string,unknown>}[];
   graphics:{path:string;startFrame:number;frames:number;sha256:string}[];
-  framing:Record<string,unknown>; audio:Record<string,unknown>;
+  framing:Record<string,unknown>; audio:AudioPlan;
 }
 export function validatePlan(p:EditPlan,project:Project):void {
   invariant(p.schema==='acq-edit/plan-v1'&&p.projectId===project.id&&p.backend===project.backend,'Plan identity/backend mismatch');

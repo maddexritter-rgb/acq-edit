@@ -17,7 +17,7 @@ def save(path,value):
 def inside(root,p):
  p=Path(p).resolve();require(p.is_relative_to(Path(root).resolve()),'Path outside selected project');return p
 def plan(project,packet):
- p=read(packet['plan']);require(p['schema']=='acq-edit/plan-v1','Unsupported plan');require(p['projectId']==project['id'] and p['backend']==project['backend'],'Plan identity/backend mismatch')
+ p=read(inside(project['root'],packet['plan']));require(p['schema']=='acq-edit/plan-v1','Unsupported plan');require(p['projectId']==project['id'] and p['backend']==project['backend'],'Plan identity/backend mismatch')
  for evidence in [p['brain'],p['editorial']]:
   file=evidence.get('receiptPath') or evidence.get('selectionPath');inside(project['root'],file);require(sha(file)==evidence['sha256'],'Pinned evidence changed')
  require(p['editorial']['reviewed'],'Reviewed source-word selection required')
@@ -40,9 +40,12 @@ def plan(project,packet):
  for c in p['cuts']:
   require(c['wordIds'] and c['boundaryEvidence'],'Source-word and speech-boundary evidence required')
   require(c['recordFrame']==end and c['frames']>0,'Noncontiguous cut plan');end+=c['frames']
- require(end>0,'No cuts');return p
+ require(end>0,'No cuts')
+ from audio_plan import validate_audio
+ validate_audio(project,p,end)
+ return p
 def fingerprint(value):return hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest()
 def result_receipt(project,packet,p,native,media,inspection):
  require(Path(native).is_file() and Path(media).is_file(),'Native project or export missing')
  receipt={'schema':'acq-edit/render-v1','projectId':project['id'],'backend':project['backend'],'clipId':p['clipId'],'parentId':packet.get('parentId'),'media':str(media),'nativeProject':str(native),'nativeFingerprint':sha(native),'planPath':packet['plan'],'expected':{'frames':sum(c['frames'] for c in p['cuts']),'width':p['width'],'height':p['height'],'fps':str(p['fps']['numerator'])+'/'+str(p['fps']['denominator'])},'nativeInspectionPath':str(inspection),**({'jobId':os.environ['ACQ_EDIT_JOB_ID']} if os.environ.get('ACQ_EDIT_JOB_ID') else {}),'nativeRendered':True,'qualification':'mechanical-fixture' if read(p['editorial']['selectionPath']).get('testFixture') else 'editorial-workflow'}
- save(packet['receipt'],receipt);return receipt
+ save(inside(project['root'],packet['receipt']),receipt);return receipt

@@ -6,6 +6,8 @@
 
 `python/filmcraft.py` performs native source import, frame-aligned linked AV cuts, text graphics, imported motion assets, inspection/reopen and export. Unequal speech/picture boundaries must use the packaged canonical `assembly-design/scripts/apply_filmcraft_assembly.py`, which verifies paired sample boundaries and source-word coverage. Framing uses the canonical FilmCraft helper. Automatic orchestration of all finishing variants remains open; missing capabilities fail explicitly.
 
+Source-linked music, dialogue/bed gain and fades are available through the explicit shared audio plan; see `NATIVE_AUDIO.md` for timing, measured behavior and limits. Music-gain revisions preserve existing automation and cuts.
+
 Caption-only revision operates on an inspected copy and changes explicit graphic properties. Native media/render checkpoints are always new files.
 
 ## Premiere Pro
@@ -30,7 +32,7 @@ A live production project was open during development. Read-only connectivity wa
 
 Install Studio 21.1 and enable **Preferences → System → General → External scripting: Local**. The bundled `ResolvePython` interpreter is used; no Premiere, FilmCraft, XML conversion or foreign project is required.
 
-`python/resolve.py` directly imports source media, creates timelines, appends video/audio, checks exact source and record boundaries, links AV, sets native properties, creates Fusion Text+ captions, imports motion graphics, saves DRP checkpoints and renders through Resolve. Caption revisions duplicate the native timeline and change owned Fusion text nodes. Version-specific API changes are verified against the installed scripting documentation.
+`python/resolve.py` directly imports source media, creates timelines, appends video/audio, checks exact source and record boundaries, links AV, sets native properties, creates Fusion Text+ captions, imports motion graphics, saves DRP checkpoints and renders through Resolve. Native music uses an independent source track, read-back volume and fades. Music-gain revisions duplicate the timeline and preserve source cut ranges. See `NATIVE_AUDIO.md` for the measured fixture and picture-difference limitation. Caption revisions duplicate the native timeline and change owned Fusion text nodes. Version-specific API changes are verified against the installed scripting documentation.
 
 Native 21.1.1 testing established exclusive `endFrame` semantics for `AppendToTimeline`. The adapter checks actual durations and source offsets after each placement. Fractional sample boundaries, variable/mixed frame rates, multicamera layouts and complex Fusion modifications still need qualification; do not label them supported because the frame-aligned fixture passes.
 

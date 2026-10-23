@@ -13,6 +13,7 @@ A pilot release is blocked until every required row passes on actual media and e
 | Monologue/Q&A/multicamera | Canonical design/ingest skills packaged | Blind review of real examples in every engine |
 | Difficult speech joins | Canonical paired-boundary helpers packaged | Played-audio proof, identity, endings and AV sync |
 | Caption-only changes | Owner routing tested | Resolve native caption-color revision passed; other engines and real footage still pending |
+| Music placement/revision | FilmCraft and Resolve native gain/fade fixtures and music-only revision measured; dialogue and cuts preserved | Real approved music auditions, envelopes/replacement, Premiere toolkit fixture, human listening |
 | Spoken recuts/hook replacement | Dependent owners routed | Full layer recomputation in each engine |
 | Duplicate/stale submission | SQLite tests and browser duplicate-click fixture pass | Actual agent race test |
 | Notes added during rendering | Pending feedback, withdrawals, exact old timestamps, next submission and partial batches tested; browser verified | Actual long-running native revision with concurrent feedback |
