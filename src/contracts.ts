@@ -37,6 +37,8 @@ export interface MusicPlacement {
   fadeInSamples?:number;fadeOutSamples?:number;receiptPath:string;receiptSha256:string;
 }
 export interface AudioPlan {gainDb?:number;music?:MusicPlacement[];properties?:Record<string,unknown>}
+export interface FixedCrop {mode:'fixed-crop';sourceWidth:number;sourceHeight:number;x:number;y:number;width:number;height:number}
+export interface FramingPlan {schema:'acq-edit/framing-v1';receiptPath:string;receiptSha256:string;shots:Record<string,FixedCrop>}
 export interface EditPlan {
   schema:'acq-edit/plan-v1'; projectId:string; backend:Backend; clipId:string; title:string;
   fps:{numerator:number;denominator:number}; width:number;height:number; sampleRate:number;
@@ -44,7 +46,7 @@ export interface EditPlan {
   sources:Source[]; cuts:{id:string;sourceId:string;sourceInFrame:number;frames:number;recordFrame:number;audioInSample:number;audioSamples:number;wordIds:string[];boundaryEvidence:string}[];
   captions:{startFrame:number;endFrame:number;text:string;style:Record<string,unknown>}[];
   graphics:{path:string;startFrame:number;frames:number;sha256:string}[];
-  framing:Record<string,unknown>; audio:AudioPlan;
+  framing:FramingPlan|Record<string,never>; audio:AudioPlan;
 }
 export function validatePlan(p:EditPlan,project:Project):void {
   invariant(p.schema==='acq-edit/plan-v1'&&p.projectId===project.id&&p.backend===project.backend,'Plan identity/backend mismatch');

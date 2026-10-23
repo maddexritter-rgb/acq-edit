@@ -43,6 +43,8 @@ def plan(project,packet):
  require(end>0,'No cuts')
  from audio_plan import validate_audio
  validate_audio(project,p,end)
+ from framing_plan import validate_framing
+ validate_framing(project,p)
  return p
 def fingerprint(value):return hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest()
 def result_receipt(project,packet,p,native,media,inspection):

@@ -3,6 +3,7 @@ import json,sys,time,shutil,math
 from pathlib import Path
 from common import *
 from audio_plan import linear_fade_points
+from framing_plan import filmcraft_motion
 sys.path.insert(0,str(SKILLS/'edit/scripts'))
 from filmcraft_client import Filmcraft
 TICKS=254016000000
@@ -53,7 +54,12 @@ class Adapter:
      c.run('effects.setParam',{'clip':clip['clip'],'effect':'volume','param':'level','value':db,'time':clip['start']+offset*sample_tick,'keyframe':True})
      c.run('effects.setInterpolation',{'clip':clip['clip'],'effect':'volume','param':'level','mediaTime':clip['sourceIn']+offset*sample_tick,'interpolation':'linear'})
  def finish(self,c,p,ft):
-  require(not p.get('framing'),'Nontrivial framing must use canonical filmcraft_smooth_x.py with an inspected camera plan')
+  shots=p.get('framing',{}).get('shots',{})
+  if shots:
+   items=c.tool('sequence_inspect')['video'][0]['items'];require(len(items)==len(p['cuts']),'Picture coverage differs from framing plan')
+   for cut,item in zip(p['cuts'],items):
+    require(item['start']==cut['recordFrame']*ft and item['sourceIn']==cut['sourceInFrame']*ft and item['duration']==cut['frames']*ft,'Stale native picture range')
+    for param,value in filmcraft_motion(p,shots[cut['id']]).items():c.run('effects.setParam',{'clip':item['clip'],'effect':'motion','param':param,'value':value})
   for card in p.get('captions',[]):
    style=card['style'];graphic=c.run('graphics.newText',{'newClip':True,'text':card['text'],'position':style.get('position',[p['width']/2,p['height']*.78]),'font':style.get('font','Arial'),'fontStyle':style.get('fontStyle','Bold'),'size':style.get('size',64),'time':card['startFrame']*ft,'seconds':(card['endFrame']-card['startFrame'])*p['fps']['denominator']/p['fps']['numerator'],'track':1});c.run('graphics.set',{'clip':graphic['clip'],'layer':graphic['layer'],'props':{'align':'center'}})
   for asset in p.get('graphics',[]):
@@ -63,12 +69,24 @@ class Adapter:
   # Work from an inspected copy so manual effects survive caption-only revisions.
   before=self.inspect(project,{'nativeProject':packet['nativeProject'],'session':packet['inspectSession']})
   require(before['fingerprint']==packet['expectedFingerprint'],'Native state changed; merge intervening edits before revising')
-  require(packet.get('kind') in ['caption-style','music-gain'],'Use Assembly Design for recuts; this operation supports caption style or music gain only')
+  require(packet.get('kind') in ['caption-style','music-gain','fixed-framing'],'Use Assembly Design for recuts; this operation supports caption style, music gain or fixed framing only')
+  spec=plan(project,packet) if packet['kind']=='fixed-framing' else None
+  if spec:require(before['state']['settings']['width']==spec['width'] and before['state']['settings']['height']==spec['height'],'Framing revision cannot resize the approved timeline')
   target=inside(project['root'],packet['outputProject']);require(not target.exists(),'Revision destination exists');shutil.copy2(packet['nativeProject'],target)
   c=Filmcraft(self.config['filmcraft'],inside(project['root'],packet['session']),str(target))
   try:
    if packet['kind']=='caption-style':
     for edit in packet['edits']:c.run('graphics.set',{'clip':edit['clip'],'layer':edit.get('layer',0),'props':edit['props']})
+   elif packet['kind']=='fixed-framing':
+    native_data=read(target)
+    for edit in packet['edits']:
+     cut=next((cut for cut in spec['cuts'] if cut['id']==edit['cutId']),None);require(cut,'Framing cut absent from plan')
+     items=[i for i in c.tool('sequence_inspect')['video'][0]['items'] if i['clip']==edit['clip']];require(len(items)==1,'Exact framing target missing');item=items[0]
+     ft=TICKS*spec['fps']['denominator']//spec['fps']['numerator']
+     require(item['start']==cut['recordFrame']*ft and item['sourceIn']==cut['sourceInFrame']*ft and item['duration']==cut['frames']*ft,'Framing target range changed')
+     source=next(s for s in spec['sources'] if s['id']==cut['sourceId']);actual=native_data['project']['items'][str(item['item'])]['kind']['Media']['media']['File']['path'];require(Path(actual).resolve()==Path(source['path']).resolve(),'Framing target source differs')
+     motion=next(e['params'] for e in item['effects'] if e['effect']=='motion');require(not any(motion[k]['keyframes'] for k in ['anchor','position','scale']),'Animated framing requires a tracking revision; never replace it with a fixed crop')
+     for param,value in filmcraft_motion(spec,spec['framing']['shots'][cut['id']]).items():c.run('effects.setParam',{'clip':item['clip'],'effect':'motion','param':param,'value':value})
    else:
     for edit in packet['edits']:
      state=c.tool('sequence_inspect');clips=[i for i in state['audio'][1]['items'] if i['clip']==edit['clip']];require(len(clips)==1,'Exact music-track clip missing')

@@ -7,6 +7,7 @@ import time,math,tempfile
 from pathlib import Path
 from common import *
 from audio_plan import resolve_music_frames
+from framing_plan import fusion_crop,require_static_fusion_crop
 class Adapter:
  def __init__(self,config):self.config=config
  def connect(self):
@@ -36,6 +37,7 @@ class Adapter:
   self.project_root=Path(project['root']);spec=plan(project,packet);r=self.connect();pm=r.GetProjectManager();current=pm.GetCurrentProject();name='ACQ_'+project['id']
   require(not current or current.GetName()==name,'Another Resolve project is open. Close it before creating this isolated project.');p=current or pm.CreateProject(name);require(p,'Could not create native Resolve project')
   for bed in spec.get('audio',{}).get('music',[]):resolve_music_frames(spec,bed)
+  require(spec['width']>=256 and spec['height']>=256,'Resolve clamps timeline dimensions below 256 pixels; choose a supported output size')
   fps=spec['fps']['numerator']/spec['fps']['denominator'];require(p.SetSettings({'timelineFrameRate':str(fps),'timelineResolutionWidth':str(spec['width']),'timelineResolutionHeight':str(spec['height'])}),'Could not configure native project')
   pool=p.GetMediaPool();timeline=pool.CreateEmptyTimeline(spec['title']+'_'+packet['versionId']);require(timeline and p.SetCurrentTimeline(timeline),'Could not create selected timeline');require(timeline.SetStartTimecode('00:00:00:00'),'Could not set timeline clock')
   timeline.SetSettings({'useCustomSettings':'1'});timeline.SetSettings({'timelineResolutionWidth':str(spec['width']),'timelineResolutionHeight':str(spec['height'])});settings=timeline.GetSettings();require(int(settings['timelineResolutionWidth'])==spec['width'] and int(settings['timelineResolutionHeight'])==spec['height'] and abs(float(settings['timelineFrameRate'])-fps)<1e-6,'Native timeline geometry readback mismatch')
@@ -51,15 +53,14 @@ class Adapter:
    for item,start,duration in [(vi,cut['sourceInFrame'],cut['frames']),(ai,astart,aduration)]:
     require(abs(item.GetStart(True)-cut['recordFrame'])<1e-6 and abs(item.GetDuration(True)-duration)<1e-6 and abs(item.GetLeftOffset(True)-start)<1e-6,'Native cut readback differs from precision plan; preserve evidence, do not round')
    require(timeline.SetClipsLinked([vi,ai],True),'Could not link picture/audio');pairs.append((cut,vi,ai))
-   props=spec.get('framing',{}).get(cut['id'],{})
-   if props:require(vi.SetProperties(props),'Native framing failed')
+   shot=spec.get('framing',{}).get('shots',{}).get(cut['id'])
    audio_props={'AudioVolumeEnabled':True,'AudioVolume':spec.get('audio',{}).get('gainDb',0),**spec.get('audio',{}).get('properties',{})}
    if audio_props:
     require(ai.SetProperties(audio_props),'Native audio treatment failed')
     actual=ai.GetProperties()
     for key,value in audio_props.items():require(actual.get(key)==value,'Native audio treatment readback mismatch: '+key)
    cards=[c for c in spec.get('captions',[]) if c['startFrame']<cut['recordFrame']+cut['frames'] and c['endFrame']>cut['recordFrame']]
-   if cards:self.captions(vi,cut,cards,spec)
+   if cards or shot:self.compose(vi,cut,cards,spec,shot)
   for graphic in spec.get('graphics',[]):
    require(sha(graphic['path'])==graphic['sha256'],'Graphic hash mismatch');media=pool.ImportMedia([graphic['path']]);require(media,'Graphic import failed')
    while timeline.GetTrackCount('video')<2:require(timeline.AddTrack('video'),'Cannot add graphics track')
@@ -79,10 +80,16 @@ class Adapter:
    fades={'FadeIn':timing['fadeInSamples'],'FadeOut':timing['fadeOutSamples']}
    require(item.SetFades(fades),'Native music fades failed');actual=item.GetFades()
    require(all(actual.get(key)==value for key,value in fades.items()),'Native music fade readback mismatch')
- def captions(self,item,cut,cards,spec):
+ def compose(self,item,cut,cards,spec,shot=None):
   require(item.GetFusionCompCount()==0,'Existing Fusion comp must be merged rather than replaced');comp=item.AddFusionComp();require(comp,'Fusion unavailable');nodes=comp.GetToolList(False);source=next((n for n in nodes.values() if n.GetAttrs()['TOOLS_RegID']=='MediaIn'),None);output=next((n for n in nodes.values() if n.GetAttrs()['TOOLS_RegID']=='MediaOut'),None);require(source and output,'Fusion media endpoints missing')
+  if shot:
+   crop=comp.AddTool('Crop');resize=comp.AddTool('BetterResize');require(crop and resize,'Native Fusion framing nodes unavailable')
+   crop.SetAttrs({'TOOLS_Name':'ACQ_FramingCrop'});resize.SetAttrs({'TOOLS_Name':'ACQ_FramingResize'})
+   for key,value in fusion_crop(spec,shot).items():crop.SetInput(key,value);require(crop.GetInput(key)==value,'Native crop readback mismatch: '+key)
+   for key,value in {'KeepAspect':0,'Width':spec['width'],'Height':spec['height']}.items():resize.SetInput(key,value);require(resize.GetInput(key)==value,'Native resize readback mismatch: '+key)
+   crop.ConnectInput('Input',source);resize.ConnectInput('Input',crop);source=resize
   for index,card in enumerate(cards):
-   text=comp.AddTool('TextPlus');merge=comp.AddTool('Merge');require(text and merge,'Fusion text/merge unavailable');text.SetAttrs({'TOOLS_Name':f'ACQ_Caption_{index}'});style=card['style'];text.SetInput('StyledText',card['text']);text.SetInput('Font',style.get('font','Arial'));text.SetInput('Size',style.get('size',64)/spec['height']);text.SetInput('Center',{1:.5,2:style.get('centerY',.22)})
+   text=comp.AddTool('TextPlus');merge=comp.AddTool('Merge');require(text and merge,'Fusion text/merge unavailable');text.SetAttrs({'TOOLS_Name':f'ACQ_Caption_{index}'});style=card['style'];text.SetInput('UseFrameFormatSettings',0);text.SetInput('Width',spec['width']);text.SetInput('Height',spec['height']);text.SetInput('StyledText',card['text']);text.SetInput('Font',style.get('font','Arial'));text.SetInput('Size',style.get('fusionSize',style.get('size',64)/spec['width']));text.SetInput('Center',{1:.5,2:style.get('centerY',.22)})
    merge.ConnectInput('Background',source);merge.ConnectInput('Foreground',text)
    # Fusion source clock must be inspected for each media type; no timeline-clock assumptions.
    start=comp.GetAttrs()['COMPN_RenderStart']+max(0,card['startFrame']-cut['recordFrame']);end=comp.GetAttrs()['COMPN_RenderStart']+min(cut['frames'],card['endFrame']-cut['recordFrame'])
@@ -90,12 +97,22 @@ class Adapter:
   output.ConnectInput('Input',source)
  def revise(self,project,packet):
   r,p=self.selected(project);before=self.snapshot(p);require(fingerprint(before)==packet['expectedFingerprint'],'Native state changed; inspect and merge user edits')
-  require(packet['kind'] in ['caption-style','music-gain'],'Spoken recuts require a new reviewed Assembly Design plan and new timeline; no partial dependent-layer edits')
+  require(packet['kind'] in ['caption-style','music-gain','fixed-framing'],'Spoken recuts require a new reviewed Assembly Design plan and new timeline; no partial dependent-layer edits')
+  spec=plan(project,packet) if packet['kind']=='fixed-framing' else None
+  if spec:require(int(before['settings']['timelineResolutionWidth'])==spec['width'] and int(before['settings']['timelineResolutionHeight'])==spec['height'],'Framing revision cannot resize the approved timeline')
   original=p.GetCurrentTimeline();copy=original.DuplicateTimeline(packet['title']);require(copy and p.SetCurrentTimeline(copy),'Cannot preserve prior timeline before revision')
   for edit in packet['edits']:
    if packet['kind']=='caption-style':
     items=copy.GetItemListInTrack('video',edit['track']);require(0<=edit['itemIndex']<len(items),'Caption target absent');comp=items[edit['itemIndex']].GetFusionCompByIndex(edit['compIndex']);require(comp,'Caption Fusion comp absent');tool=comp.FindTool(edit['tool']);require(tool and edit['tool'].startswith('ACQ_Caption_'),'Only ACQ-owned caption nodes may be edited')
     for key,value in edit['inputs'].items():require(key in ['StyledText','Font','Size','Center','Style','Red1','Green1','Blue1'],'Unsupported caption property');tool.SetInput(key,value);actual=tool.GetInput(key);require(abs(actual-value)<1e-6 if isinstance(value,(int,float)) else actual==value,'Fusion input readback mismatch')
+   elif packet['kind']=='fixed-framing':
+    require(edit['track']==1,'Fixed framing targets the primary picture track');cut=next((c for c in spec['cuts'] if c['id']==edit['cutId']),None);require(cut,'Framing cut absent from plan')
+    items=copy.GetItemListInTrack('video',1);require(0<=edit['itemIndex']<len(items),'Framing target absent');item=items[edit['itemIndex']]
+    require(item.GetStart(True)==cut['recordFrame'] and item.GetLeftOffset(True)==cut['sourceInFrame'] and item.GetDuration(True)==cut['frames'],'Framing target range changed')
+    source=next(s for s in spec['sources'] if s['id']==cut['sourceId']);require(Path(item.GetMediaPoolItem().GetClipProperty('File Path')).resolve()==Path(source['path']).resolve(),'Framing target source differs')
+    comp=item.GetFusionCompByIndex(1);require(comp,'Native framing comp missing');crop=comp.FindTool('ACQ_FramingCrop');require(crop,'Owned native crop missing; do not replace an unrelated graph')
+    geometry=fusion_crop(spec,spec['framing']['shots'][cut['id']]);require_static_fusion_crop(crop,geometry)
+    for key,value in geometry.items():crop.SetInput(key,value);require(crop.GetInput(key)==value,'Framing revision readback mismatch: '+key)
    else:
     require(edit['track']==2,'Music revisions target the inspected music track only');items=copy.GetItemListInTrack('audio',2);require(0<=edit['itemIndex']<len(items),'Music target absent');item=items[edit['itemIndex']]
     delta=edit['deltaDb'];require(isinstance(delta,(int,float)) and math.isfinite(delta) and -60<=delta<=12,'Invalid music gain delta')
