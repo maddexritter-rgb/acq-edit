@@ -12,15 +12,17 @@ Implemented:
 - Native FilmCraft and Resolve adapters, current Premiere Agent Lab source/panel package and scoped adapter, optional Remotion asset renderer.
 
 Verified in this checkout:
-- 13 service/state/API/artifact-integrity tests pass. Browser fixture verified autosave, duplicate submission (one job), V2 with previous feedback, fresh unreviewed state, and historical timecode navigation to read-only V1.
+- 32 service/state/API/artifact-integrity/process tests pass. Browser fixture verified autosave, duplicate submission (one job), V2 with previous feedback, fresh unreviewed state, and historical timecode navigation to read-only V1.
 - Browser pending-feedback fixture: V2 retained the original submitted request separately from later notes; a late timestamp opened V1 at 1.25 seconds; two Apply clicks created one queued V2 job containing the V1 carryover. This used identical synthetic footage for V1/V2 and does not prove an actual agent revision.
 - FilmCraft pinned binary built/reopened a native two-cut project and exported H264/AAC: 640×360, 25 fps, exactly 50 decoded frames. Full decode passed. First visual inspection exposed text alignment; the adapter was corrected to center its text.
 - Resolve Studio 21.1.1 connected and built source-native linked cuts and Fusion Text+. Native H264/AAC export and caption-color revision: 640×360, 25 fps, exactly 50 decoded frames. Full decode and sampled visible-text inspection passed. Testing corrected the Fusion render clock for trimmed sources and switched input validation to native readback. Fusion graph exports are now included in state fingerprints.
+- Real installed Codex app-server completed a no-tool response and exact-session resume using the toolkit transport. Installed Claude reached its result channel but returned an explicit low-credit error; its successful live round trip remains blocked on usable account credentials/credit. These checks do not prove editorial execution.
+- Agent/process regression fixtures cover missing results, malformed output, wrong turn/session, approval requests, disconnects, log failures, timeout termination and service shutdown. Shutdown waits for the owned agent and exports reconciliation state before releasing the service lock.
 - Packaged Premiere integration installs dependencies and compiles. Runtime dependency audit is clean after lockfile-only SDK/transitive updates. Installed live host responded to read-only snapshot; its production project was left untouched.
 - Canonical exported Python files parse. Distribution secret-pattern/hash scan passes.
 
 Remaining before pilot:
-- Test both agent runners end to end; permissions currently stop unattended work that needs an interactive decision.
+- Prove full native editing jobs through both agent runners; Codex transport/start/resume passed but editorial execution remains unproven. Claude live success needs usable account credentials/credit. Interactive permission requests stop for reconciliation.
 - Complete automatic finishing orchestration and native revisions; add robust complete native-state preconditions, including stable inspection across save/reopen.
 - Remove/replace remaining optional legacy path references; provide brand profiles, licensed fonts/music/templates separately.
 - Prove a dedicated Premiere toolkit fixture; do not use the currently open production project.

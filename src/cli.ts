@@ -42,7 +42,14 @@ async function main(){
  }
  if(command==='serve'){
   const release=await serviceLock(HOME);store.recover();const room=serve(store,c,!args.includes('--no-worker'));room.server.listen(c.port,'127.0.0.1',()=>console.log(`Review room: http://127.0.0.1:${c.port}/session?token=${room.token}`));
-  const stop=()=>room.server.close(()=>{store.close();void release().finally(()=>process.exit(0))});room.server.on('error',e=>{console.error(e.message);void release().finally(()=>process.exit(1))});process.on('SIGINT',stop);process.on('SIGTERM',stop);return;
+  let stopping=false;const stop=()=>{if(stopping)return;stopping=true;void room.stop().then(()=>{store.close();return release()}).then(()=>process.exit(0)).catch(e=>{console.error(e.message);process.exitCode=1})};room.server.on('error',e=>{console.error(e.message);void release().finally(()=>process.exit(1))});process.on('SIGINT',stop);process.on('SIGTERM',stop);return;
+ }
+ if(command==='worker'){
+  const release=await serviceLock(HOME),controller=new AbortController();
+  const stop=()=>controller.abort();process.on('SIGINT',stop);process.on('SIGTERM',stop);
+  try{store.recover();output({worked:await workOne(store,c,controller.signal)})}
+  finally{process.off('SIGINT',stop);process.off('SIGTERM',stop);store.close();await release()}
+  return;
  }
  try{
  switch(command){
@@ -54,7 +61,6 @@ async function main(){
  case 'build':output(store.enqueueBuild(args[0]!,args.slice(1).join(' ')));break;
  case 'clip':{store.project(args[0]!);const clip={id:randomUUID(),projectId:args[0]!,number:store.clips(args[0]!).length+1,title:args.slice(1).join(' '),currentVersionId:null};invariant(clip.title,'Title required');store.addClip(clip);output(clip);break}
  case 'publish':output(await publish(store,args[0]!,path.resolve(args[1]!)));break;
- case 'worker':output({worked:await workOne(store,c)});break;
  case 'reconcile':{const j=store.job(args[0]!);invariant(j.state==='reconciliation_required','Job does not need reconciliation');invariant(args[1]==='failed'||args[1]==='ready','Choose ready or failed after native inspection');invariant(args[2],'Evidence path required');const evidence=await containedFile(store.project(j.projectId).root,path.resolve(args[2]!));
   if(args[1]==='ready'){const result=await readJson<{jobId:string;versionIds:string[]}>(evidence);invariant(result.jobId===j.id,'Reconciliation result belongs to another job');await verifyPublishedVersions(store,j.id,result.versionIds);output(store.finishJob(j.id,result.versionIds));}
   else output(store.setJob(j.id,'failed','Operator reconciled the native outcome; see evidence.'));

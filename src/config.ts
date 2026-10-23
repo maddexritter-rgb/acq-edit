@@ -6,7 +6,7 @@ import { atomicJson, readJson } from './files.js';
 import { type Backend,type Agent,invariant } from './contracts.js';
 export const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 export const HOME=process.env.ACQ_EDIT_HOME||path.join(os.homedir(),'.config','acq-edit');
-export interface Config {storageRoot:string;backend:Backend;agent:Agent;python:string;filmcraft?:string;premiereProfile?:string;resolvePython?:string;brainConfig?:string;agentCommand?:string;port:number}
+export interface Config {storageRoot:string;backend:Backend;agent:Agent;python:string;filmcraft?:string;premiereProfile?:string;resolvePython?:string;brainConfig?:string;agentCommand?:string;agentTimeoutMs?:number;port:number}
 export const configPath=path.join(HOME,'config.json');
 export async function config(){return readJson<Config>(configPath)}
 export async function saveConfig(c:Config){await mkdir(HOME,{recursive:true,mode:0o700});await atomicJson(configPath,c);await chmod(configPath,0o600)}

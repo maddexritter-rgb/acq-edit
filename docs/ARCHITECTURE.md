@@ -41,6 +41,6 @@ Contracts are in `src/contracts.ts`. Native plans use integer picture frames and
 
 Native state fingerprints are preconditions, not proof that every unexposed effect is captured. Resolve's snapshot records timing, properties and exported Fusion-graph hashes; stable save/reopen behavior still requires broader qualification. A project DRP or fcproj checkpoint does not by itself prove a rendered effect.
 
-Agent execution uses Codex app-server stdio JSON-RPC and Claude Code headless stream JSON. Sessions are recorded by exact ID. Interactive requests are surfaced as reconciliation rather than granting broad unattended permissions. Agent CLI policies must be configured by the operator for approved toolkit commands.
+Agent execution uses Codex app-server stdio JSON-RPC and Claude Code headless stream JSON. Sessions are recorded by exact ID, and completion is matched to the exact Codex turn or Claude result. Process termination and log flushing finish before the worker releases ownership. The HTTP service and standalone worker share the same service lock. Interactive requests are surfaced as reconciliation rather than granting broad unattended permissions. Agent CLI policies must be configured by the operator for approved toolkit commands.
 
 References: [Codex app-server](https://learn.chatgpt.com/docs/app-server), [Claude Code headless](https://code.claude.com/docs/en/headless).

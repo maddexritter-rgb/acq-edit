@@ -6,10 +6,10 @@ import { invariant } from './contracts.js';
 import { readJson } from './files.js';
 import { verifyPublishedVersions } from './publish.js';
 import { exportState } from './projects.js';
-export async function workOne(store:Store,config:Config){const job=store.claim();if(!job)return false;const p=store.project(job.projectId);
+export async function workOne(store:Store,config:Config,signal?:AbortSignal){if(signal?.aborted)return false;const job=store.claim();if(!job)return false;const p=store.project(job.projectId);
  try{
   await exportState(store,p.id);
-  await executeAgent(config,p,job,id=>store.setJob(job.id,store.job(job.id).state,null,id));
+  await executeAgent(config,p,job,id=>store.setJob(job.id,store.job(job.id).state,null,id),signal);
   const result=await readJson<{jobId:string;versionIds:string[]}>(path.join(p.root,'10_WORK','jobs',job.id,'result.json'));
   invariant(result.jobId===job.id&&Array.isArray(result.versionIds)&&result.versionIds.length>0,'Agent returned no completed versions');
   await verifyPublishedVersions(store,job.id,result.versionIds);

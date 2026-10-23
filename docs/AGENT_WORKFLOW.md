@@ -25,3 +25,13 @@ Use `watch` to study the complete reference with audio. Use `scripts/reference_f
 ## Scope of optional capabilities
 
 Brand fonts, music, footage, stock assets, template donors, FFmpeg models and private case libraries are not bundled. Load only explicitly configured profile/assets. Audits are optional unless requested. External delivery, social posting and brain publication are not part of a review revision job. The Premiere-to-Resolve converter is packaged as an optional compatibility skill and must never satisfy a Resolve-native job.
+
+## Process lifecycle and recovery
+
+Agent completion must match the exact Codex thread and turn, or a successful Claude result from the exact session. Exit code alone is insufficient. JSONL logs are flushed before the worker checks published artifacts. Missing results, errors, disconnects and interactive input requests leave the job in reconciliation.
+
+The default agent deadline is six hours; `agentTimeoutMs` in local configuration can set another positive duration in milliseconds. Protocol requests time out after 60 seconds. A deadline does not authorize replay. Native subprocess timeouts likewise terminate the owned command before returning failure.
+
+Ctrl-C or SIGTERM on `serve` stops dispatch, interrupts the owned agent process group, waits for exit (escalating after five seconds), saves reconciliation state and then releases the service lock. The standalone `worker` uses the same lock and shutdown path; stop `serve` before running it. Do not interpret process termination as proof that an editor-host render or remote task stopped. Inspect the selected host and its receipts before resolving an uncertain job. A hard OS kill still requires native-state reconciliation after restart.
+
+The installed Claude CLI may emit `subtype: success` together with `is_error: true` for an account failure. The toolkit treats that as failure. Fix the operator's account configuration before retrying; do not change accounts or credentials automatically.

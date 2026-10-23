@@ -11,7 +11,7 @@ import { exportState } from './projects.js';
 import { workOne } from './worker.js';
 async function body(req:IncomingMessage){let s='';for await(const b of req){s+=b;if(s.length>1_000_000)throw new Error('Request too large')}return JSON.parse(s)}
 function json(res:ServerResponse,value:unknown,status=200){res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(value))}
-export function serve(store:Store,config:Config,runWorker=true){const token=randomBytes(32).toString('hex');let workerBusy=false;let timer:NodeJS.Timeout|undefined;
+export function serve(store:Store,config:Config,runWorker=true){const token=randomBytes(32).toString('hex');let worker:Promise<unknown>|undefined;let closing=false;const controller=new AbortController();let timer:NodeJS.Timeout|undefined;
  const server=createServer(async(req,res)=>{try{
   const host=req.headers.host||'';invariant(host===`127.0.0.1:${(server.address() as any).port}`,'Invalid host');const origin=`http://${host}`;const url=new URL(req.url||'/',origin);
   res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; media-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
@@ -34,7 +34,13 @@ export function serve(store:Store,config:Config,runWorker=true){const token=rand
   const assets:Record<string,string>={'/':'index.html','/app.js':'app.js','/style.css':'style.css'};const asset=assets[url.pathname];if(asset&&req.method==='GET'){res.setHeader('Content-Type',asset.endsWith('.html')?'text/html; charset=utf-8':asset.endsWith('.css')?'text/css':'text/javascript');res.end(await readFile(path.join(ROOT,'web',asset)));return}
   json(res,{error:'Not found'},404);
  }catch(e){json(res,{error:(e as Error).message},400)}});
- server.on('listening',()=>{if(runWorker)timer=setInterval(()=>{if(workerBusy)return;workerBusy=true;void workOne(store,config).catch(e=>console.error('Worker:',e.message)).finally(()=>workerBusy=false)},1500)});
+ server.on('listening',()=>{if(runWorker)timer=setInterval(()=>{if(worker||closing)return;worker=workOne(store,config,controller.signal).catch(e=>console.error('Worker:',e.message)).finally(()=>worker=undefined)},1500)});
  server.on('close',()=>{if(timer)clearInterval(timer)});
- return {server,token};
+ const stop=async()=>{
+  closing=true;if(timer)clearInterval(timer);controller.abort();
+  const closed=new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));
+  server.closeIdleConnections();
+  await Promise.all([closed,worker]);
+ };
+ return {server,token,stop};
 }
