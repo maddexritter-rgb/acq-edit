@@ -41,7 +41,18 @@ def plan(project,packet):
  validate_framing(project,p)
  return p
 def fingerprint(value):return hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+def verify_native_render(media,spec):
+ from fractions import Fraction
+ info=json.loads(subprocess.check_output(['ffprobe','-v','error','-count_frames','-show_streams','-of','json',str(media)]));streams=info.get('streams',[]);video=[s for s in streams if s['codec_type']=='video'];audio=[s for s in streams if s['codec_type']=='audio']
+ require(len(video)==1 and audio,'Native output must contain exactly one picture stream and an audio stream; host completion is insufficient')
+ v=video[0];require(v['width']==spec['width'] and v['height']==spec['height'],'Native render geometry differs')
+ require(Fraction(v['avg_frame_rate'])==Fraction(spec['fps']['numerator'],spec['fps']['denominator']),'Native render frame rate differs')
+ require(int(v.get('nb_read_frames',-1))==sum(c['frames'] for c in spec['cuts']),'Native render frame count differs')
+ subprocess.run(['ffmpeg','-v','error','-xerror','-i',str(media),'-f','null','-'],check=True,capture_output=True)
+ return {'frames':int(v['nb_read_frames']),'width':v['width'],'height':v['height'],'fullDecode':True}
+
 def result_receipt(project,packet,p,native,media,inspection):
  require(Path(native).is_file() and Path(media).is_file(),'Native project or export missing')
- receipt={'schema':'acq-edit/render-v1','projectId':project['id'],'backend':project['backend'],'clipId':p['clipId'],'parentId':packet.get('parentId'),'media':str(media),'nativeProject':str(native),'nativeFingerprint':sha(native),'planPath':packet['plan'],'expected':{'frames':sum(c['frames'] for c in p['cuts']),'width':p['width'],'height':p['height'],'fps':str(p['fps']['numerator'])+'/'+str(p['fps']['denominator'])},'nativeInspectionPath':str(inspection),**({'jobId':os.environ['ACQ_EDIT_JOB_ID']} if os.environ.get('ACQ_EDIT_JOB_ID') else {}),'nativeRendered':True,'qualification':'mechanical-fixture' if read(p['editorial']['selectionPath']).get('testFixture') else 'editorial-workflow'}
+ verification=verify_native_render(media,p)
+ receipt={'schema':'acq-edit/render-v1','projectId':project['id'],'backend':project['backend'],'clipId':p['clipId'],'parentId':packet.get('parentId'),'media':str(media),'nativeProject':str(native),'nativeFingerprint':sha(native),'planPath':packet['plan'],'expected':{'frames':sum(c['frames'] for c in p['cuts']),'width':p['width'],'height':p['height'],'fps':str(p['fps']['numerator'])+'/'+str(p['fps']['denominator'])},'nativeInspectionPath':str(inspection),**({'jobId':os.environ['ACQ_EDIT_JOB_ID']} if os.environ.get('ACQ_EDIT_JOB_ID') else {}),'nativeRendered':True,'mediaVerification':verification,'qualification':'mechanical-fixture' if read(p['editorial']['selectionPath']).get('testFixture') else 'editorial-workflow'}
  save(inside(project['root'],packet['receipt']),receipt);return receipt

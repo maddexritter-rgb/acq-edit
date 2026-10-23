@@ -11,7 +11,7 @@ A pilot release is blocked until every required row passes on actual media and e
 | Premiere only | Packaged Lab builds; read-only installed-host response | Fresh isolated toolkit scope, native complete render/revision |
 | Intake | Local/YouTube/Drive implementations | Real authenticated Drive checksum and restart scenarios |
 | Monologue/Q&A/multicamera | Canonical design/ingest skills packaged | Blind review of real examples in every engine |
-| Difficult speech joins | Canonical compiled-word/paired-range binding added; FilmCraft exact-sample synthetic native render verified; Resolve source-trim rounding reproduced and refused | Resolve native sample-precision route; real played-audio proof, identity, endings and AV sync in every engine |
+| Difficult speech joins | Canonical compiled-word/paired-range binding added; FilmCraft exact-sample synthetic native render verified; Resolve version-gated native sample checkpoint/import, save/reopen, render and caption revision verified | Real played-audio proof, identity, endings and AV sync in every engine; broader host/source qualification |
 | Caption-only changes | Owner routing tested | Resolve native caption-color revision passed; other engines and real footage still pending |
 | Music placement/revision | FilmCraft and Resolve native gain/fade fixtures and music-only revision measured; dialogue and cuts preserved | Real approved music auditions, envelopes/replacement, Premiere toolkit fixture, human listening |
 | Fixed framing/revision | FilmCraft Motion and Resolve Fusion vertical crops rendered; one-shot shift, caption bounds and cuts verified; audio identity limitation recorded | Real subject inspection/tracking, multicamera layouts, Premiere toolkit fixture and human review |
@@ -19,7 +19,7 @@ A pilot release is blocked until every required row passes on actual media and e
 | Duplicate/stale submission | SQLite tests and browser duplicate-click fixture pass | Actual agent race test |
 | Notes added during rendering | Pending feedback, withdrawals, exact old timestamps, next submission and partial batches tested; browser verified | Actual long-running native revision with concurrent feedback |
 | Completion integrity | Rejects unrelated/omitted versions and modified media/checkpoints | Native interrupted-batch reconciliation |
-| Restart/disconnect/render failure | Reconciliation state and shutdown/process termination tested | Kill native exports/agent sessions and recover on each host |
+| Restart/disconnect/render failure | Reconciliation state and shutdown/process termination tested; Resolve audio-only export-state recovery reproduced, and false success receipt prevented | Kill native exports/agent sessions and recover on each host |
 | Version history/timecodes | Passing persistence/API tests | Browser fixture verified V2/history/timecode behavior; real editorial review pending |
 | Brain updates | Existing restricted reader packaged | New guidance affects new design only; no approval rewrite |
 | Reference fidelity | Recipe contract + dense-frame utility + motion integration | Supplied benchmark, complete viewing/listening, human assessment |

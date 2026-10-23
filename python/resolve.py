@@ -1,6 +1,6 @@
 """Native Resolve Studio 21.1 adapter. Imports only the selected editor's API.
 
-No XML, Premiere project, FilmCraft runtime or flattened cross-editor output.
+No foreign-editor conversion, FilmCraft runtime or flattened cross-editor output.
 All timings read back before a render can be accepted. Unqualified host versions fail closed.
 """
 import time,math,tempfile
@@ -8,6 +8,7 @@ from pathlib import Path
 from common import *
 from audio_plan import resolve_music_frames
 from framing_plan import fusion_crop,require_static_fusion_crop
+from resolve_precision import patch_checkpoint
 class Adapter:
  def __init__(self,config):self.config=config
  def connect(self):
@@ -16,7 +17,7 @@ class Adapter:
   require(r.IsStudio(),'DaVinci Resolve Studio required');require(r.GetVersionString().startswith('21.1.'),'This adapter is qualified against the 21.1 API; review installed scripting docs for other versions')
   return r
  def doctor(self):
-  r=self.connect();p=r.GetProjectManager().GetCurrentProject();return {'backend':'resolve','connected':True,'version':r.GetVersionString(),'studio':r.IsStudio(),'currentProject':p.GetName() if p else None,'nativeAcceptance':'pending dedicated fixture renders'}
+  r=self.connect();p=r.GetProjectManager().GetCurrentProject();return {'backend':'resolve','connected':True,'version':r.GetVersionString(),'studio':r.IsStudio(),'currentProject':p.GetName() if p else None,'samplePrecision':{'available':r.GetVersion()[:4]==[21,1,1,10],'route':'new native DRT checkpoint with exact import/readback'},'nativeAcceptance':'mechanical fixtures verified; real editorial and pilot acceptance remain pending'}
  def selected(self,project):
   self.project_root=Path(project['root']);r=self.connect();p=r.GetProjectManager().GetCurrentProject();require(p and p.GetName()=='ACQ_'+project['id'],'Open this toolkit project in Resolve. Never switch or mutate an unrelated project implicitly.');return r,p
  def fusion_fingerprints(self,item):
@@ -29,14 +30,15 @@ class Adapter:
  def snapshot(self,p):
   t=p.GetCurrentTimeline();require(t,'No current timeline');tracks={}
   for kind in ['video','audio']:
-   tracks[kind]=[[{'id':i.GetUniqueId(),'name':i.GetName(),'start':i.GetStart(True),'end':i.GetEnd(True),'left':i.GetLeftOffset(True),'duration':i.GetDuration(True),'properties':i.GetProperties(),'source':i.GetMediaPoolItem().GetUniqueId() if i.GetMediaPoolItem() else None,'fusion':self.fusion_fingerprints(i),'fades':i.GetFades()} for i in t.GetItemListInTrack(kind,n) or []] for n in range(1,t.GetTrackCount(kind)+1)]
+   tracks[kind]=[[{'id':i.GetUniqueId(),'name':i.GetName(),'start':i.GetStart(True),'end':i.GetEnd(True),'left':i.GetLeftOffset(True),'duration':i.GetDuration(True),'properties':i.GetProperties(),'source':i.GetMediaPoolItem().GetUniqueId() if i.GetMediaPoolItem() else None,'fusion':self.fusion_fingerprints(i),'fades':i.GetFades(),'linkedIds':sorted(j.GetUniqueId() for j in (i.GetLinkedItems() or []))} for i in t.GetItemListInTrack(kind,n) or []] for n in range(1,t.GetTrackCount(kind)+1)]
   return {'project':p.GetName(),'timeline':t.GetUniqueId(),'name':t.GetName(),'settings':t.GetSettings(),'tracks':tracks}
  def inspect(self,project,packet):
   r,p=self.selected(project);state=self.snapshot(p);return {'state':state,'fingerprint':fingerprint(state),'version':r.GetVersionString()}
  def build(self,project,packet):
   self.project_root=Path(project['root']);spec=plan(project,packet);r=self.connect();pm=r.GetProjectManager();current=pm.GetCurrentProject();name='ACQ_'+project['id']
-  for cut in spec['cuts']:
-   for value in [cut['audioInSample'],cut['audioSamples']]:require(value*spec['fps']['numerator']%(spec['sampleRate']*spec['fps']['denominator'])==0,'Resolve AppendToTimeline rounds source audio trims to frames on this host. Exact sample-edge execution requires a qualified native precision route; preserve the paired plan without rounding.')
+  precise=any(value*spec['fps']['numerator']%(spec['sampleRate']*spec['fps']['denominator']) for cut in spec['cuts'] for value in [cut['audioInSample'],cut['audioSamples']])
+  if precise:require(r.GetVersion()[:4]==[21,1,1,10],'Native sample geometry is qualified only for Resolve Studio 21.1.1 build 10; review the installed archive/API before changing this gate')
+  if precise:require(all(c.get('audioSourceId') and 'audioRecordSample' in c for c in spec['cuts']),'Native precision needs compiled paired-source cuts')
   require(not current or current.GetName()==name,'Another Resolve project is open. Close it before creating this isolated project.');p=current or pm.CreateProject(name);require(p,'Could not create native Resolve project')
   for bed in spec.get('audio',{}).get('music',[]):resolve_music_frames(spec,bed)
   require(spec['width']>=256 and spec['height']>=256,'Resolve clamps timeline dimensions below 256 pixels; choose a supported output size')
@@ -51,11 +53,28 @@ class Adapter:
    media=sources[cut['sourceId']];video=pool.AppendToTimeline([{'mediaPoolItem':media,'startFrame':cut['sourceInFrame'],'endFrame':cut['sourceInFrame']+cut['frames'],'recordFrame':cut['recordFrame'],'mediaType':1,'trackIndex':1}]);require(video and len(video)==1,'Picture placement failed')
    astart=cut['audioInSample']*fps/spec['sampleRate'];aduration=cut['audioSamples']*fps/spec['sampleRate']
    arecord=cut['audioRecordSample']*fps/spec['sampleRate'] if 'audioRecordSample' in cut else cut['recordFrame']
+   if precise:astart,aduration,arecord=cut['sourceInFrame'],cut['frames'],cut['recordFrame']
    audio=pool.AppendToTimeline([{'mediaPoolItem':sources[cut.get('audioSourceId',cut['sourceId'])],'startFrame':astart,'endFrame':astart+aduration,'recordFrame':arecord,'mediaType':2,'trackIndex':1}]);require(audio and len(audio)==1,'Audio placement failed')
    vi,ai=video[0],audio[0]
    for item,start,duration,record in [(vi,cut['sourceInFrame'],cut['frames'],cut['recordFrame']),(ai,astart,aduration,arecord)]:
     require(abs(item.GetStart(True)-record)<1e-6 and abs(item.GetDuration(True)-duration)<1e-6 and abs(item.GetLeftOffset(True)-start)<1e-6,'Native cut readback differs from precision plan; preserve evidence, do not round')
    require(timeline.SetClipsLinked([vi,ai],True),'Could not link picture/audio');pairs.append((cut,vi,ai))
+  if precise:
+   checkpoint=inside(project['root'],packet['nativeProject']);frame_checkpoint=checkpoint.with_suffix('.frame.drt');sample_checkpoint=checkpoint.with_suffix('.precision.drt')
+   require(not frame_checkpoint.exists() and not sample_checkpoint.exists(),'Precision construction paths exist; reconcile before retrying')
+   require(timeline.Export(str(frame_checkpoint),r.EXPORT_DRT),'Native frame checkpoint export failed')
+   proof=patch_checkpoint(frame_checkpoint,sample_checkpoint,spec);save(checkpoint.with_suffix('.precision.json'),proof)
+   imported=pool.ImportTimelineFromFile(str(sample_checkpoint));require(imported and p.SetCurrentTimeline(imported),'Native precision checkpoint import failed');timeline=imported;require(timeline.SetName(spec['title']+'_'+packet['versionId']+'_precise'),'Native precision timeline naming failed')
+   videos=timeline.GetItemListInTrack('video',1);audios=timeline.GetItemListInTrack('audio',1);require(len(videos)==len(audios)==len(spec['cuts']),'Imported source coverage differs');pairs=[]
+   for cut,vi,ai in zip(spec['cuts'],videos,audios):
+    for item,source_id,start,length,record in [(vi,cut['sourceId'],cut['sourceInFrame'],cut['frames'],cut['recordFrame']),(ai,cut['audioSourceId'],cut['audioInSample']*fps/spec['sampleRate'],cut['audioSamples']*fps/spec['sampleRate'],cut['audioRecordSample']*fps/spec['sampleRate'])]:
+     source=next(s for s in spec['sources'] if s['id']==source_id);require(Path(item.GetMediaPoolItem().GetClipProperty('File Path')).resolve()==Path(source['path']).resolve(),'Imported source identity differs')
+     require(max(abs(item.GetStart(True)-record),abs(item.GetLeftOffset(True)-start),abs(item.GetDuration(True)-length))*spec['sampleRate']/fps<.001,'Imported timing differs from exact paired samples')
+    require(abs((vi.GetStart(True)-vi.GetLeftOffset(True))-(ai.GetStart(True)-ai.GetLeftOffset(True)))*spec['sampleRate']/fps<.001,'Imported source clocks differ')
+    require(timeline.SetClipsLinked([vi,ai],True),'Native precision AV linkage failed');require(ai.GetUniqueId() in [i.GetUniqueId() for i in vi.GetLinkedItems()],'Native link readback failed');pairs.append((cut,vi,ai))
+   settings=timeline.GetSettings();require(int(settings['timelineResolutionWidth'])==spec['width'] and int(settings['timelineResolutionHeight'])==spec['height'] and abs(float(settings['timelineFrameRate'])-fps)<1e-6,'Imported native geometry differs')
+  if precise:save(checkpoint.with_suffix('.precision-readback.json'),{'status':'native-import-ranges-sources-and-links-verified','timelineId':timeline.GetUniqueId(),'cuts':[{'cutId':cut['id'],'videoId':vi.GetUniqueId(),'audioId':ai.GetUniqueId(),'sourceInSample':cut['audioInSample'],'audioRecordSample':cut['audioRecordSample'],'audioSamples':cut['audioSamples']} for cut,vi,ai in pairs]})
+  for cut,vi,ai in pairs:
    shot=spec.get('framing',{}).get('shots',{}).get(cut['id'])
    audio_props={'AudioVolumeEnabled':True,'AudioVolume':spec.get('audio',{}).get('gainDb',0),**spec.get('audio',{}).get('properties',{})}
    if audio_props:
@@ -127,7 +146,8 @@ class Adapter:
   spec=plan(project,packet);r,p=self.selected(project);state=self.snapshot(p);require(fingerprint(state)==packet['expectedFingerprint'],'Timeline changed before export');save(inside(project['root'],packet['inspection']),state)
   native=inside(project['root'],packet['nativeProject']);checkpoint_hash=sha(native)
   require(not p.IsRenderingInProgress(),'Another Resolve render is active');media=inside(project['root'],packet['media']);require(not media.exists(),'Never overwrite render');media.parent.mkdir(parents=True,exist_ok=True)
-  require(p.SetCurrentRenderFormatAndCodec('mp4','H264'),'Native H264 export unavailable');require(p.SetCurrentRenderMode(1),'Cannot select single-clip render');require(p.SetRenderSettings({'SelectAllFrames':True,'TargetDir':str(media.parent),'CustomName':media.stem,'ExportVideo':True,'ExportAudio':True,'FormatWidth':spec['width'],'FormatHeight':spec['height'],'FrameRate':spec['fps']['numerator']/spec['fps']['denominator']}),'Render settings refused')
+  require('H.264 Master' in p.GetRenderPresetList() and p.LoadRenderPreset('H.264 Master'),'Built-in H.264 Master preset unavailable; cannot reset native export state')
+  require(p.SetCurrentRenderFormatAndCodec('mp4','H264'),'Native H264 export unavailable');require(p.SetCurrentRenderMode(1),'Cannot select single-clip render');require(p.SetRenderSettings({'SelectAllFrames':True,'TargetDir':str(media.parent),'CustomName':media.stem,'ExportVideo':True,'ExportAudio':True,'AudioCodec':'aac','AudioSampleRate':spec['sampleRate'],'FormatWidth':spec['width'],'FormatHeight':spec['height'],'FrameRate':spec['fps']['numerator']/spec['fps']['denominator']}),'Render settings refused')
   job=p.AddRenderJob();require(job,'Render job refused');save(str(media)+'.job.json',{'jobId':job});require(p.StartRendering([job],False),'Render did not start');deadline=time.monotonic()+4*3600
   while p.IsRenderingInProgress():require(time.monotonic()<deadline,'Render timeout; reconcile original job');time.sleep(1)
   status=p.GetRenderJobStatus(job);save(str(media)+'.status.json',status);require(status.get('JobStatus')=='Complete','Native render did not complete')
