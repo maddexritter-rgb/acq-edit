@@ -9,6 +9,8 @@ import subprocess
 import sys
 from pathlib import Path
 from materialize import materialize
+from prepare_premiere_panel import prepare as prepare_premiere_panel
+from prepare_premiere_runtime import copy_resources, check_transport
 
 ROOT = Path(__file__).resolve().parents[1]
 PIN = '71438c627b5cbcfb550526c3971f4d0037733c5c'
@@ -51,7 +53,7 @@ def preflight(backend):
             'errors': errors, 'nativeWorkflowQualified': False}
 
 
-def install(backend, assets):
+def install(backend, assets, premiere_port=17878):
     check = preflight(backend)
     if check['errors']:
         raise RuntimeError('\n'.join(check['errors']))
@@ -93,9 +95,10 @@ def install(backend, assets):
             run(['npm', 'ci', '--ignore-scripts'], dest)
             # Invoke the installed compiler directly; npx must not fetch another version.
             run([str(dest / 'node_modules/.bin/tsc')], dest)
+            resource_hashes = copy_resources(dest)
             (dest / 'lab').mkdir(exist_ok=True)
             (dest / 'lab/node-path.txt').write_text(check['executables']['node'] + '\n')
-            run(['node', 'scripts/lab-prepare.mjs'], dest)
+            panel=prepare_premiere_panel(dest, check['executables']['node'], premiere_port)
             profile = {'schema': 'edit.premiere-bridge-profile/v1',
                        'command': [check['executables']['node'], str(local / 'skills/assembly-design/scripts/precision_bridge.mjs'), str(dest)],
                        'cwd': str(dest), 'fixture_root': str(dest / 'lab/runtime/fixtures'),
@@ -105,7 +108,8 @@ def install(backend, assets):
             with target.open('x') as stream:
                 json.dump(profile, stream, indent=2)
             target.chmod(0o600)
-            print('Prepared isolated panel: ' + str(dest / 'lab/packages/PremiereAgentLabCEP'))
+            check_transport(dest, target, local / 'skills/edit/scripts/premiere_agent.py', resource_hashes)
+            print('Prepared isolated panel: ' + panel['cep'])
             print('Profile: ' + str(target))
             print('Panel not installed into Adobe automatically. Follow docs/ENGINES.md.')
         else:
@@ -120,12 +124,13 @@ def main():
     parser.add_argument('backend', choices=['filmcraft', 'premiere', 'resolve'])
     parser.add_argument('--assets', type=Path, default=Path.home() / 'Movies/ACQ Edit Assets')
     parser.add_argument('--check', action='store_true', help='Read-only selected-engine prerequisite check')
+    parser.add_argument('--premiere-port', type=int, default=17878, help='Dedicated ACQ Edit UXP port; never the production Lab port')
     args = parser.parse_args()
     if args.check:
         result = preflight(args.backend)
         print(json.dumps(result, indent=2))
         return 0 if result['prerequisitesPresent'] else 1
-    install(args.backend, args.assets)
+    install(args.backend, args.assets, args.premiere_port)
     return 0
 
 

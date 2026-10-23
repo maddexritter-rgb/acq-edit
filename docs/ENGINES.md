@@ -14,9 +14,13 @@ Transparent Remotion assets use the shared media preflight and separate ordered 
 
 ## Premiere Pro
 
-`integrations/premiere-agent` snapshots the current Agent Lab implementation, CEP/UXP panels and source, with original MIT notice. `install_engine.py premiere` builds a separate ignored toolkit installation, generates a new local runtime/token, and prepares the panel. It does not overwrite an installed panel or global connector configuration.
+`integrations/premiere-agent` snapshots the current Agent Lab implementation, CEP/UXP panels and source, with original MIT notice. `install_engine.py premiere` builds a separate ignored toolkit installation, generates a new local runtime/token, prepares the separately identified **ACQ Edit Agent** panel, and verifies actual MCP initialization/tool discovery. It does not overwrite an installed panel or global connector configuration.
 
-For a clean Mac, copy the generated `PremiereAgentLabCEP` directory to the user's Adobe CEP extensions directory and open **Premiere Agent Lab** in Premiere. Configure the supported Adobe CEP debug setting if required by the host. If the same panel ID is already installed, coordinate a deliberate installation change first; never replace a working production panel implicitly.
+For a clean Mac, copy `.local/premiere-agent/lab/packages/ACQEditAgentCEP` to the user's Adobe CEP extensions directory and open **ACQ Edit Agent** in Premiere. Configure the supported Adobe CEP debug setting if required by the host. The generated CEP ID is `com.acqedit.premiere.bridge`; the optional UXP package `ACQEditAgentUXP` uses `com.acqedit.premiere.uxp`. Both retain the original implementation and licenses. Only generated copies receive these identities; the source snapshot is unchanged.
+
+The panel pins its mailbox to this checkout. UXP uses a new local token and port **17878**, separate from production Agent Lab's 17877. Choose another available dedicated port with `--premiere-port`; 17877 is refused. Port availability is checked during preparation, not reserved indefinitely. Browser storage keys are separate as well. If an ACQ Edit panel is already installed, coordinate its upgrade explicitly; the installer never replaces it or edits global MCP configuration. Preserve the prepared checkout at its installed path, since generated packages contain absolute runtime paths.
+
+Preparation records package hashes in `.local/premiere-agent/lab/panel-preparation.json` and runtime resource hashes/tool discovery in `lab/runtime-preparation.json`. These receipts deliberately do not claim Adobe installation or host qualification. Startup discovery does not open or switch a project, dispatch an editor command, or authorize a mutation.
 
 The generated toolkit profile uses canonical `precision_bridge.mjs` and the packaged Lab. Add that profile's command/arguments to the selected agent's MCP configuration if desired. The CLI fallback always works through the same profile:
 
