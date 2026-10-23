@@ -1,0 +1,15 @@
+{
+  "extends": "spice.json",
+  "_color_note": "COLOR = whose voice. White = Alex's own voice. Yellow = a different voice (live Q&A guest, or Alex impersonating a customer/objection). Drive via the style stream's per-word 'c' or top-level voice_spans.",
+  "colors": {
+    "guest": "FFFFFF"
+  },
+  "_layout_note": "y 50% = mid-frame, DATA-DRIVEN (2026-06-10): measured across Oliver's 24 workshop Q&A clips (599 shots, training/height_study) \u2014 his overall median caption-Y is ~49.7%, his dominant medium/closeup tight-shot anchor is ~50%, and he NEVER goes below ~50%. (Old 55 sat too low.) This static default is for renders with NO layout track; when a layout track IS present (caption-app, and /edit which now runs layout_analyze on its reframed output), each shot's Y is per-angle: WIDE 45% / TIGHT 50%. Chunk caps LOCKED: <=18 displayed chars AND <=3 words, hard-broken at every sentence (.?!) and clause (,). For 1080x1920 set video 1080x1920 and font_size_px ~75.",
+  "layout": {
+    "y_percent_from_top": 58
+  },
+  "_alex_note": "LOCKED 2026-06-11: Alex single-cam desk/talking-head caption height. Use with spice_caption --no-layout so this STATIC y is honored (the per-angle analyzer otherwise forces ~50% = too high). y58 renders ~59% = top of tank-top V / lav-mic line. Approved by Maddex on StayInAGreatMood.",
+  "_white_note": "ALL-WHITE variant of spice_alex58 (guest color = white). For clips Maddex wants mono-white (no yellow). Added 2026-06-17 (Frame.io HireForGrowth note).",
+  "name": "spice",
+  "_what": "Dynamic 'spice' pro captions \u2014 reverse-engineered from Oliver (the team's best editor). The locked pro_locked/alex_canon path is single-axis (Regular->Extrabold weight + optional yellow numbers). THIS path is multi-axis: a full Proxima Nova weight palette used as an emphasis dial, gentle (un-leaned) italics, and per-word voice color. Driven by generate_spice.py + a per-word style stream (hand- or LLM-authored 'caption director'). See references/spice_caption_spec.md."
+}

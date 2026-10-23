@@ -1,0 +1,5 @@
+{
+  "name": "anthropic-demo",
+  "description": "Remotion-composited 16:9 product demo (Anthropic-style). remotion_render (ProRes intermediate -> VideoToolbox H.264) -> audio_mix (music bed, loudnorm, tail fade). Engine delivers + emits contract.",
+  "stages": ["remotion_render", "audio_mix"]
+}

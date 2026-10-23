@@ -1,0 +1,10 @@
+{
+  "_what": "SCHEMA TEMPLATE for a project's 10_WORK/qa_sync.json — copy this into the project and fill it from MEASURED offsets. NEVER reuse another shoot's numbers.",
+  "_how": "cam_time = mic_time - offset. Solve per shoot by FFT cross-correlation at 10+ anchors (see RUNBOOK.md STEP 1 SYNC). Replaced the old checked-in 2026-04-16 workshop data on 2026-08-03 — that file was the default --sync for qa_assembly/qa_build, so a new shoot silently inherited April's offsets.",
+  "cam_dir": "<abs path to the camera folder>",
+  "offsets": { "<CAM_STEM>": 0.0 },
+  "roles": { "<CAM_STEM>": "alex|guest|wide" },
+  "mics": ["<host lav wav>", "<guest lav wav>"],
+  "speaker_mics": { "alex": "<host lav wav>", "guest": "<guest lav wav>" },
+  "guest_split": { "mode": "target", "target_face_h": 0.34, "target_face_y": 0.34, "roi": "0.05 0.00 0.55 0.60" }
+}

@@ -1,0 +1,21 @@
+{
+  "id": "alex",
+  "display_name": "Alex",
+  "normalization": "oliver_v2",
+  "max_lines": 1,
+  "progressive_reveal": false,
+  "body_font_postscript": "ProximaNova-Medium",
+  "italic_font_postscript": "ProximaNova-MediumIt",
+  "allow_weight_variation": true,
+  "allow_quote_italics": true,
+  "guest_turn_italics": true,
+  "shadow_profile": "spice-premiere-two-layer",
+  "default_y_pct": 50.0,
+  "frame_width_px": 2160,
+  "frame_height_px": 3840,
+  "max_text_width_pct": 76.3889,
+  "font_size_px": 160,
+  "caption_hold_through_seconds": 0.75,
+  "caption_trailing_hold_seconds": 0.35,
+  "filmcraft_caption_motion": "measured_fast_settle"
+}

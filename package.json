@@ -1,0 +1,8 @@
+{
+  "name": "@acq/edit", "version": "0.1.0-dev", "private": true,
+  "description": "Local agent-driven editing and review across independent native engines",
+  "type": "module", "engines": {"node": ">=24.0.0"},
+  "bin": {"acq-edit": "dist/cli.js"},
+  "scripts": {"build": "tsc", "test": "npm run build && node --test tests/*.test.mjs", "start": "node dist/cli.js serve", "doctor": "node dist/cli.js doctor", "audit:distribution": "python3 scripts/audit_distribution.py"},
+  "devDependencies": {"@types/node": "26.6.5", "typescript": "7.0.2"}
+}

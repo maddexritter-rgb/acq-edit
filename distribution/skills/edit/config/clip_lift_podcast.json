@@ -1,0 +1,159 @@
+{
+  "subset": "podcast_clip (2-person, AlexHormozi+MoreMozi sources)",
+  "n_pairs": 158,
+  "winner_view_floor": 918476,
+  "base_winrate": 0.253,
+  "note": "Small sample (n=158); low_n cells are directional only. Opens FLIP vs monologue (bold_claim wins, number weak); weld_reorder underperforms / interior_trims is fine. Use the JUDGE (source-agnostic) as the primary ranker.",
+  "open_type_lift": {
+    "cut_to_payoff": {
+      "n": 4,
+      "lift": 1.97,
+      "low_n": true
+    },
+    "principle": {
+      "n": 2,
+      "lift": 1.97,
+      "low_n": true
+    },
+    "bold_claim": {
+      "n": 69,
+      "lift": 1.32,
+      "low_n": false
+    },
+    "other": {
+      "n": 11,
+      "lift": 1.08,
+      "low_n": false
+    },
+    "direct_address": {
+      "n": 17,
+      "lift": 0.93,
+      "low_n": false
+    },
+    "question": {
+      "n": 21,
+      "lift": 0.56,
+      "low_n": false
+    },
+    "anecdote": {
+      "n": 22,
+      "lift": 0.54,
+      "low_n": false
+    },
+    "extreme_number": {
+      "n": 10,
+      "lift": 0.4,
+      "low_n": false
+    },
+    "kept_source_open": {
+      "n": 2,
+      "lift": 0.0,
+      "low_n": true
+    }
+  },
+  "exit_type_lift": {
+    "question": {
+      "n": 1,
+      "lift": 3.95,
+      "low_n": true
+    },
+    "trails_off": {
+      "n": 3,
+      "lift": 2.63,
+      "low_n": true
+    },
+    "punchline_peak": {
+      "n": 16,
+      "lift": 1.97,
+      "low_n": false
+    },
+    "sentence_end": {
+      "n": 7,
+      "lift": 1.69,
+      "low_n": true
+    },
+    "cut_before_explanation": {
+      "n": 13,
+      "lift": 0.91,
+      "low_n": false
+    },
+    "imperative_button": {
+      "n": 14,
+      "lift": 0.85,
+      "low_n": false
+    },
+    "other": {
+      "n": 10,
+      "lift": 0.79,
+      "low_n": false
+    },
+    "principle": {
+      "n": 94,
+      "lift": 0.76,
+      "low_n": false
+    }
+  },
+  "structure_lift": {
+    "front_trim": {
+      "n": 10,
+      "lift": 1.18,
+      "low_n": false
+    },
+    "interior_trims": {
+      "n": 104,
+      "lift": 1.1,
+      "low_n": false
+    },
+    "verbatim_lift": {
+      "n": 19,
+      "lift": 0.83,
+      "low_n": false
+    },
+    "weld_reorder": {
+      "n": 25,
+      "lift": 0.63,
+      "low_n": false
+    }
+  },
+  "cut_taxonomy": {
+    "tangent_digression": {
+      "span_share": 0.36
+    },
+    "redundant_restatement": {
+      "span_share": 0.202
+    },
+    "framework_scaffold": {
+      "span_share": 0.1
+    },
+    "discourse_marker": {
+      "span_share": 0.098
+    },
+    "repair_falsestart": {
+      "span_share": 0.085
+    },
+    "hedge_filler": {
+      "span_share": 0.032
+    },
+    "weak_example": {
+      "span_share": 0.031
+    },
+    "cta_outro": {
+      "span_share": 0.021
+    },
+    "preamble_personal": {
+      "span_share": 0.021
+    },
+    "throat_clear": {
+      "span_share": 0.014
+    },
+    "name_drop": {
+      "span_share": 0.013
+    },
+    "justification_why": {
+      "span_share": 0.012
+    },
+    "other": {
+      "span_share": 0.012
+    }
+  }
+}

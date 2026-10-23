@@ -1,0 +1,112 @@
+# ElitexVision™ Editing Mastery — "Carousel Mastery"  (9:13)
+# Pulled from the lesson's own English CC track, 2026-08-10.
+# Lesson blurb: create stunning visuals for slideshows / maintain true 4k quality /
+#               choose different variations of texts
+#
+# 🛑 THIS IS THE MOST VALUABLE LESSON IN THE COURSE FOR OUR REEL CAPTIONS, despite being about
+#    static carousels. It is the only place he states the TEXT-BEHIND-SUBJECT technique
+#    explicitly, in his own words, along with the rules governing when to use it.
+
+## VERBATIM (lightly punctuated ASR)
+
+Okay guys in this video I will show you how I create my slideshows... I will show you four
+different variations, all possible options and the things you need to pay attention to.
+
+The best ratio for Instagram and TikTok feed posts is three to four. That's what I do right now.
+That's what I also personally always use, so I recommend it to you as well. This is also how it
+will appear in your profile grid.
+
+[quality] ...go to the right side, click on enhance quality, then go to level and choose AI HD.
+It will take a short moment and everything will become a little bit sharper.
+
+[text] ...click on text in the top left and simply add a new text layer over the image. And just
+add any quote or phrase you like. In this case I choose "I can't lose." Then we copy it and place
+it a little bit higher and make another text. In this example "I am chosen." So now we select both
+text layers and choose for font.
+
+**One very important thing is the text must clearly stand on its own over the image. So it
+shouldn't be placed in a way where it sits inside the face or it's hard to reach, you know — so
+the message has to be clear and easy to recognize.**
+
+What I really like to do, and what looks very clean and aesthetic, is stacking the text nicely on
+top of each other, because if we just leave it like this you can see it doesn't look clean or
+aesthetic or smooth. **So what I always do is zoom in fully and look closely at the individual
+letters, then I check where I can place the line or sentence so that it fits perfectly over the
+other word. I carefully adjust the position so it looks clean, balanced and also aesthetic.**
+...Just make sure the text stays inside the image.
+
+[VARIATION 1 — the overlay blend]
+We select the two text layers and **create a compound clip. Then we go to video, blend mode, and
+choose overlay.** So you can see it already looks much better and **the text automatically adapts
+to the colour in the background.** We could even **duplicate the compound clip and place it on top
+again — that makes the text a little bit brighter, and we could repeat that if we want.**
+
+[VARIATION 2 — recolour the BACKGROUND only]
+...if we want the background to become brighter or have a different colour, but we don't want the
+face or the ball to change: **we copy the photo and place it above the two text layers. Then we
+remove the background.** Now when we go to the very first image at the bottom of the timeline and
+click on adjust, we can change the brightness or the saturation and **it will only affect the
+background. So the face and the ball will not change at all.** We could make it completely black,
+we could make it blue, any colour you want — just make sure it still looks static and clean.
+Then the same as before: both text layers -> compound clip -> blend mode -> overlay.
+
+[VARIATION 3 — text behind the head]
+Always make sure the person is centered properly, so we scale it so he's fully inside the frame
+and standing in the middle. Now if you want the text to appear behind the head...
+
+**We want the text to appear behind the head, right, but the text still needs to be readable.
+People need to understand what the quote says. It doesn't make sense to hide everything completely
+behind the person so nobody can read it. So we can move the text slightly higher, or adjust the
+position of the main image a bit lower.** In this case this position works well.
+
+Now here's what we do. **We take the original image at the bottom of the timeline, we copy it and
+place it above the two text layers and remove the background.** As you can see it already looks
+clean — the person is now in front and the text is behind the head. Again we can refine it by
+creating a compound clip, going to blend, then mode, then overlay. And we can also duplicate it to
+make it a little bit brighter and have more this glow effect.
+
+[VARIATION 4 — inverted curves + text mask]  (he says he rarely uses it)
+Very important to say this does not work with every picture. It has to match the image and
+especially the background, so you need to experiment. ...we copy it without adding the text yet.
+Then we go to adjust, then to curves, and move all the curves in the opposite direction — just
+basically invert them. It looks a little bit stupid and weird at first, but that's how it's
+supposed to be. Once you have inverted all the curves, go to mask, add mask, and go to text. Now
+you can position text wherever you want.
+
+
+## 🛑 WHAT THIS SETTLES, AND WHAT IT CHANGES
+
+**1. The matte is CONFIRMED, and it is his method — not our inference.**
+"Copy the image, place it above the text layers, remove the background" is exactly what our
+`matte.py` (u2net_human_seg) reproduces. We reverse-engineered this from pixels in
+VARIANT_matted_bigword.md; here he states it outright. No further verification needed.
+
+**2. LEGIBILITY OUTRANKS THE EFFECT — and the fix is POSITION, not a weaker matte.**
+His own rule: "the text still needs to be readable... it doesn't make sense to hide everything
+completely behind the person." His remedy is to **move the text up, or move the subject down** —
+he never suggests softening the knockout. So our `CINEMATIC_MATTE_STRENGTH` partial-knockout is
+OUR invention, not his. It is a legitimate fallback, but the FIRST move should always be to place
+the caption where the subject is narrow (which is already the measured rule in
+VARIANT_matted_bigword.md, and now has the author's backing).
+
+**3. The overlay blend is CONFIRMED, including the stacking trick.**
+"Compound clip -> blend mode -> overlay", and duplicate the compound clip to brighten. Our
+OVERLAY_PASSES is exactly his duplicate-to-brighten. He also states its PURPOSE plainly: **"the
+text automatically adapts to the colour in the background."** It is a colour-adaptation device,
+not a texture — which is why applying it to every word (as V9 did) reads as murk.
+
+**4. NEW — recolour only the background, never the subject.**
+Duplicate plate above the text, remove background, then grade the BOTTOM copy: the plate behind
+the words darkens while the subject stays untouched. This is the clean fix for unreadable captions
+on a busy plate, and it is strictly better than dimming the words.
+🛑 NOT IMPLEMENTED AND NOT APPLIED — this is a colour change, and COLOUR GRADE IS MADDEX'S JOB.
+Flag it, offer it, never switch it on unasked.
+
+**5. Optical alignment, not just left-alignment.**
+"Zoom in fully and look closely at the individual letters, then check where I can place the line
+so that it fits perfectly over the other word." He aligns stacked lines BY EYE AT 100% ZOOM. Our
+renderer left-aligns on a fixed x. That is close but not the same thing, and it is why his stacks
+look tighter than ours.
+
+**6. Carousels themselves: 3:4, AI-HD upscale every image, logo optional top-right/bottom-left.**
+Not our pipeline today, but this is a complete recipe if ACQ ever wants quote carousels.

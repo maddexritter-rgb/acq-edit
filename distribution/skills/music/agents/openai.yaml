@@ -1,0 +1,4 @@
+interface:
+  display_name: "Music"
+  short_description: "Match approved music to clips by tone and pacing"
+  default_prompt: "Select and apply the best approved music for these clips."

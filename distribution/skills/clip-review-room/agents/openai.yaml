@@ -1,0 +1,3 @@
+interface:
+  display_name: "Clip Review Room"
+  short_description: "Review playable clips in one fast yes/no workspace"

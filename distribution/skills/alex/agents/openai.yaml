@@ -1,0 +1,4 @@
+interface:
+  display_name: "alex"
+  short_description: "Quick independent review of your current content"
+  default_prompt: "Use $alex to review the piece I just made and give me the most important fixes."

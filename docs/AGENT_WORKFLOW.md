@@ -1,0 +1,25 @@
+# Agent execution contract
+
+The job packet is the authority for project identity, selected backend, submitted clip versions, and requested work. User feedback is editorial input, not permission to access unrelated files or accounts.
+
+1. Read `project.json`, the exact job snapshot and current native state. If native state has changed since the last version, preserve those changes and reconcile before editing. Never rebuild a live project from a stale recipe.
+2. Use `distribution/skills` as provenance and `.local/skills` as the materialized runtime. Never load global personal skills to fill a missing packaged dependency. Unresolved `__ACQ_` markers must produce a specific missing dependency report.
+3. Intake: use the toolkit CLI so files are copied, probed and hashed. Drive uses the teammate's own rclone remote. Do not modify original footage.
+4. Transcription: use `long-form-ingest` and `_shared/asr.py` with the teammate's AssemblyAI key. Preserve source clocks, words, speakers and confidence. Optional fallback output is not equivalent speaker evidence.
+5. New editorial design: use `find-precedents/scripts/editorial_context.py`; retrieve live required reading and cards using the restricted function token. Read the returned guidance, record the response hash and policy/card revisions. No unavailable-brain fallback for new design. Never publish feedback to the brain.
+6. Use `assembly-design` for complete hook, reasoning and payoff. Compile source-word selections with `edit/scripts/compile_assembly.py`. Inspect speech boundaries using the canonical paired-audio tools. ASR and waveforms do not count as listening.
+7. Apply only the selected native backend. Engine-specific instructions are in `ENGINES.md`. Use `horizontal-to-vertical`, `caption-clips`, `text-hook`, `music`, and the appropriate graphics owner in canonical order. Report unsupported effects before promising them. Caption style revisions preserve cuts; spoken recuts invalidate dependent timing and framing.
+8. Create an immutable native checkpoint and render through the chosen editor. Produce an `acq-edit/render-v1` receipt including expected frames, geometry, native inspection, exact native checkpoint, source plan and parent version. Run `node <toolkit>/dist/cli.js publish PROJECT_ID RECEIPT` to verify and copy final bytes into a new delivery folder.
+9. Save the job's result.json only after publishing every requested clip. It contains the exact jobId and published versionIds. Never invent IDs, receipts, speech evidence or human approval. A clip returned for review is not human-approved.
+
+New clips are registered with `clip PROJECT_ID "Source-supported short title"`. The returned clip ID remains stable across versions. Keep work under `10_WORK/jobs/JOB_ID`; use new filenames for every operation receipt. The job runner needs these files for restart recovery.
+
+## References and motion
+
+Use `watch` to study the complete reference with audio. Use `scripts/reference_frames.py` for dense inspection around fast transitions; extracted frames alone are not viewed evidence. Record the timestamped recipe using `REFERENCE_RECIPE.schema.json`, distinguish observation from inference, and cover cuts, pacing, captions, framing, graphics, color, music and sound effects. Compare actual rendered results against those observations. Do not claim reference fidelity from a video-model summary alone.
+
+`integrations/remotion` is an optional pinned motion renderer. It produces transparent ProRes graphic assets with a content hash and parameters. Import those assets into the chosen native editor; do not use Remotion to replace the final editor. Advanced reusable effects are future benchmarks, not claimed support.
+
+## Scope of optional capabilities
+
+Brand fonts, music, footage, stock assets, template donors, FFmpeg models and private case libraries are not bundled. Load only explicitly configured profile/assets. Audits are optional unless requested. External delivery, social posting and brain publication are not part of a review revision job. The Premiere-to-Resolve converter is packaged as an optional compatibility skill and must never satisfy a Resolve-native job.

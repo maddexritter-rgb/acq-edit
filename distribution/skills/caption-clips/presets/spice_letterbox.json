@@ -1,0 +1,8 @@
+{
+  "extends": "spice.json",
+  "name": "spice",
+  "_what": "Letterboxed 16:9-in-9:16 build (PlayToWinLive0811). Footage band sits y647-1273 at Motion Scale 58; captions live in the BLACK BAND BELOW it, never over the picture. Editor-specified 2026-08-12.",
+  "video": { "width": 1080, "height": 1920 },
+  "font_size_px": 75,
+  "layout": { "y_percent_from_top": 73, "max_chars_per_line": 18, "max_words_per_screen": 3 }
+}

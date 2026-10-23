@@ -1,0 +1,66 @@
+# Sourcing & Execution — "Finding every A-Roll Clip (Main Clip)"  (4:40)
+# Pulled from the lesson's own English CC track, 2026-08-10.
+
+Ok guys, now I'm going to show you how to find every single clip, every single podcast clip,
+every single cinematic clip you want, you like. So there are basically a few methods you can use
+to find every single clip. Basically we're gonna just search at everything on YouTube.
+
+So in this example we have a clip of Kevin Hart, let's just watch it real quick. "The only
+consequence is failure. By the way, not trying is failing. There's a lot of things that people
+can't do, simply because you've never tried to do it."
+
+So, and if you want to find that exact clip right now, first of all what you do is, if you don't
+know the person that are speaking there, you know, Kevin Hart and Jay Shetty. In this example, if
+you don't know them, the first thing you do is just to search for it in the captions, right? So
+right now, here it says Kevin Hart for real Jay Shetty, YouTube "Kevin Hart on the secret to
+success and happiness nobody talks about" from Jay Shetty, right? Gonna go to YouTube and we're
+gonna search it on YouTube. And we have this exact clip right here.
+
+So, what we do now is, we're gonna click on it. What we see is that the video is like 90 minutes
+long, and of course we don't want to watch the entire podcast. So, what we do now is, we click on,
+we go here, down, and we go on transcript and show transcript. We're gonna click on that, and
+we're gonna press Ctrl and F, so this bar opens up right here. And we go back to this post and we
+see what he says in the beginning. "Let me try it. Let me try it," right? So what we do now, we're
+gonna search in this bar, "let me try it." And we see it's 1:01 here in the transcript and we see
+if we click on the video now. "...and know how. Let me try it. The only consequence is failure. By
+the way, not trying is failing. I wanna make that very clear. Not trying is failing." So, this is
+the exact clip we have right here, right? So, that's basically how easy it is. So, you just
+download it and you have this clip.
+
+Of course, this wasn't a pretty easy example, just because you have like everything in the
+captions and like everything written down here. So, there's another example right here. So, let's
+just watch the video really quick. "We lose a lot of money chasing women. She'll never lose women
+chasing money."
+
+So, in this example, we don't have anything in the captions or like any, you know, hint for the
+person that is speaking or like the movie clip. What we do is we're just gonna search for the
+quote or for the sentence he says. So, we're gonna use it again and we're gonna search for the
+keywords. For example, "chasing women chasing money," for example, right? And the videos pop up
+here. And we just wanna download a good quality video, right? So, this video doesn't have good
+quality. It is one as well, so we're just gonna keep searching for it. And here is good quality.
+And there we go. And in the next video, you will see how to download.
+
+
+## WHAT THIS IS ACTUALLY TEACHING (the method, stripped of the examples)
+
+His A-roll sourcing is REVERSE-ENGINEERING SOMEONE ELSE'S VIRAL CLIP back to its full source:
+
+1. Start from a clip that already performed (not from a podcast you happen to have).
+2. Identify the source. Two paths, in order of effort:
+   a. The caption/handle names the guest + host -> search that title on YouTube.
+   b. Nothing identifying -> **search the literal spoken sentence as the query.** The quote IS
+      the search key.
+3. Open the full (60-120 min) source video, open **Show transcript**, Ctrl-F the first few words
+   of the hook. The transcript timestamp jumps you straight to the moment.
+4. Judge the RESULT LIST BY QUALITY and keep scrolling until a high-quality upload appears —
+   he explicitly rejects two low-quality results before taking a third. Resolution of the source
+   is a selection criterion, not an afterthought.
+5. Download that source (next lesson).
+
+🛑 This is the same job our clip-miner does from the OTHER end: we already own the source and mine
+it for moments. His constraint is that he does NOT own footage, so his whole pipeline starts from
+proven-viral text and works backwards to a file. The transferable parts for us:
+  - **Ctrl-F on the YouTube transcript is his seek tool.** Cheap, exact, no ASR needed when the
+    source has captions.
+  - **The spoken sentence is a better search key than any description of the clip.**
+  - **Source resolution is a gate before anything else.** Reject and keep searching.

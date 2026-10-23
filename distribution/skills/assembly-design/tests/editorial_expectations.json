@@ -1,0 +1,11 @@
+{
+  "schema": "assembly-design.behavioral-expectations/v1",
+  "scope": "Evaluator-only. Never include with the editor/reviewer case prompt. These tests do not prescribe one exact good edit.",
+  "clean_scripted_take": "Accept a justified continuous full-source selection; no invented removals to satisfy ratio or cut count.",
+  "owner_dependency": "Preserve the business condition and risk qualification. Brand identity must not exclude the guest. Relationship handoff and written commitments are distinct needed steps; do not split merely to obey a one-example rule.",
+  "cluttered_sales_story": "Remove housekeeping, restart, unrelated lease story, redundant recap and wind-down. Preserve useful intervention, source outcome, qualified-lead limitation and model-specific conversion context. Either a faithful chronological arc or truthful thesis-first reordering can work; no cut quota.",
+  "missing_referents": "REVISE: unidentified action and referents, no transferable reward.",
+  "no_mechanism": "REVISE: promises how, delivers only an exhortation.",
+  "complete_process": "PASS is reasonable: complete procedure and explicit boundary, without audio/native claims.",
+  "reversed_qualification": "REVISE: reverses source negation and adds unsupported sales-result/universal claims."
+}

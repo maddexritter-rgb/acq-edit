@@ -1,0 +1,9 @@
+{
+  "name": "single",
+  "description": "Single-cam monologue talking-head short (no numbered tabs). Same chain as listicle. Use when the clip is one continuous answer without the rapid-fire numbered structure.",
+  "stages": ["cut", "reframe", "grade", "captions", "mix", "leadfix"],
+  "notes": {
+    "reframe.preset": "alex-listicle (most common for desk talking-head) or alex-stage if stage cam",
+    "captions": "Plain spice style — no category tabs/pills. Use caption-clips generate_spice.py output without the tabs pass."
+  }
+}

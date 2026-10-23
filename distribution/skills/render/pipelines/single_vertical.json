@@ -1,0 +1,9 @@
+{
+  "name": "single_vertical",
+  "description": "Single-cam talking-head short whose SOURCE is already native 9:16 (phone/livestream vertical). Same as 'single' but WITHOUT the reframe stage — the footage is already vertical, so cropping/zooming it would wrongly re-frame an already-9:16 frame. Use when 00_SOURCE is portrait 1080x1920.",
+  "stages": ["cut", "grade", "captions", "mix", "leadfix"],
+  "notes": {
+    "reframe": "OMITTED on purpose — source is native 9:16, no horizontal-to-vertical crop needed.",
+    "captions": "Plain spice style (generate_spice), same locked look as single/listicle."
+  }
+}

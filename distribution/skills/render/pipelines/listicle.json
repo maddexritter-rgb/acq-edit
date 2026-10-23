@@ -1,0 +1,5 @@
+{
+  "name": "listicle",
+  "description": "Numbered rapid-fire listicle (Alex/Mozi locked style). 4K master + lav audio -> cut -> reframe -> grade -> burned captions + tabs -> music+audio mix -> leadfix head trim -> deliver.",
+  "stages": ["cut", "reframe", "grade", "captions", "mix", "leadfix"]
+}

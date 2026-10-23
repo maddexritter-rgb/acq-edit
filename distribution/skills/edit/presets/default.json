@@ -1,0 +1,40 @@
+{
+  "name": "default",
+  "padding": {
+    "lead_frames": 3,
+    "tail_frames": 3,
+    "_note": "Alex SOP: add 3 extra video frames to the start (30fps) so clip doesn't start mid-syllable"
+  },
+  "audio_fade": {
+    "fade_sec": 0.067,
+    "_note": "SOP: silent audio fade on first 2 / last 2 frames. 2/30 = 0.067s"
+  },
+  "encode": {
+    "crf": 18,
+    "preset": "medium",
+    "audio_bitrate": "192k"
+  },
+  "target_duration": {
+    "min_sec": 25,
+    "max_sec": 75,
+    "sweet_spot_sec": 35,
+    "_note": "SOP: most top-performing shorts are 30-40s"
+  },
+  "filler_detection": {
+    "single_tokens": ["um", "uh", "uhm", "umm", "uhh"],
+    "phrases": [
+      "the thing is is that",
+      "and so for context",
+      "so if you think about",
+      "for me personally",
+      "for example"
+    ],
+    "pad_before_sec": 0.04,
+    "pad_after_sec": 0.08
+  },
+  "lut": {
+    "enabled": false,
+    "path": null,
+    "_note": "Set path to a .cube or .3dl file in luts/. Per-brand toggle \u2014 some brands should never be color-graded."
+  }
+}

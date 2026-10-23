@@ -1,0 +1,65 @@
+{
+ "source": "__ACQ_LEGACY_HOME__/Downloads/CTA_QA-boltOn_take2_ALEX-TWEAK.mp4",
+ "transcript": "cta_new.json",
+ "out": "CTA_FINAL_v3.mp4",
+ "work": "_ovH2",
+ "caption_mode": "headline",
+ "hook_end": 5.4,
+ "head_y1": 96,
+ "head_y2": 244,
+ "head_size": 124,
+ "matte": true,
+ "matte_video": "matte_new/mat_new_pha.mp4",
+ "matte_feather": 1.2,
+ "crop_x": 1406,
+ "crop_y": 200,
+ "crop_w": 1013,
+ "crop_h": 1800,
+ "cta_at": "so go grab it",
+ "cta_y": 1300,
+ "cta_line1": "Get the free constraint finder",
+ "cta_line2": "Click the link below",
+ "overlays": [
+  {
+   "type": "broll",
+   "src": "broll_qa.mp4",
+   "at": "compressed version",
+   "dur": 5.2,
+   "w": 800,
+   "h": 450,
+   "y": 930,
+   "radius": 30
+  },
+  {
+   "type": "png",
+   "src": "gfx/g_stat.png",
+   "at": "if you would like",
+   "dur": 5.2,
+   "y": 1020
+  },
+  {
+   "type": "seq",
+   "src": "__ACQ_SKILLS__/ad-edit/remotion/out/frames",
+   "at": "we made this free tool",
+   "dur": 5.0,
+   "y": 960,
+   "scale": 0.62
+  },
+  {
+   "type": "png",
+   "src": "gfx/g_chips.png",
+   "at": "its new",
+   "dur": 2.3,
+   "y": 1090
+  },
+  {
+   "type": "seq",
+   "src": "__ACQ_SKILLS__/ad-edit/remotion/out/cta",
+   "at": "so go grab it",
+   "dur": 7.0,
+   "y": 1230,
+   "hold": true
+  }
+ ],
+ "cta_builtin": false
+}

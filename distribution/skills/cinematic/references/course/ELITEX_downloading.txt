@@ -1,0 +1,31 @@
+# Sourcing & Execution — "Downloading the videos"  (1:00)
+# Captured 2026-08-10. The lesson body IS the content; the 1-min video is a screen demo of it.
+
+Where i download my videos (FREE):
+  https://www.4kdownload.com/downloads/34        <- his primary (4K Video Downloader)
+
+Other Download-Sites (FREE):
+  https://app2.ytdown.to/en3
+  https://y2down.cc/enmw/
+
+Instagram / TikTok downloaders (FREE):
+  Instagram: https://snapinsta.to/en1/instagram-video-downloader
+             https://savevid.net/de
+  TikTok:    https://tikmate.app/
+             https://musicaldown.com/tiktok-mp3
+
+
+## RELEVANCE TO US — NOTHING TO ADOPT
+
+This is the weakest lesson in the course for our purposes. It is a list of consumer GUI/web
+downloaders aimed at editors with no terminal. **We already do this better:** `yt-dlp` handles
+every one of these sources, scriptably, at native quality, and is what the rest of our pipeline
+already uses.
+
+The one substantive point that carries over is implicit in his A-roll lesson, not this one:
+**he picks the highest-quality available upload and rejects low-quality results before
+downloading.** With yt-dlp that is an explicit format selection rather than eyeballing a
+results page — so our version of his rule is a format/height floor at download time.
+
+🛑 Do NOT route any ACQ work through these third-party web downloaders. They re-encode, they
+strip metadata, and they are an unnecessary external dependency for a job `yt-dlp` already does.

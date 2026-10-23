@@ -1,0 +1,31 @@
+{
+  "name": "acq-workflow-demo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "npx remotion studio src/index.tsx --port=3333",
+    "render:v1": "npx remotion render Video01Create out/01-CREATE.mp4 --codec=h264",
+    "render:v2": "npx remotion render Video02Analyze out/02-ANALYZE.mp4 --codec=h264",
+    "render:v3": "npx remotion render Video03Distribute out/03-DISTRIBUTE.mp4 --codec=h264",
+    "render:v4": "npx remotion render Video04Compound out/04-COMPOUND.mp4 --codec=h264",
+    "render:all": "npm run render:v1 && npm run render:v2 && npm run render:v3 && npm run render:v4"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "remotion": {
+    "entryPoint": "src/Root.tsx"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.476",
+    "@remotion/google-fonts": "^4.0.476",
+    "@remotion/transitions": "^4.0.476",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "remotion": "^4.0.476",
+    "typescript": "^6.0.3"
+  }
+}

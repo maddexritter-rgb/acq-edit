@@ -1,0 +1,27 @@
+{
+  "schema": "assembly-design.behavioral-cases/v1",
+  "scope": "Synthetic text-only inputs. Give an editor only its case, current skills and task; keep evaluation expectations separate. No audio verification or production acceptance.",
+  "design_cases": [
+    {
+      "id": "clean_scripted_take",
+      "task": "Make the best useful short from this complete source. Return exact selected dialogue and limitations.",
+      "source": "Before you hire another salesperson, check where your current calls fail. If qualified buyers never get a follow-up, another rep will inherit the same leak. Assign every qualified lead an owner and a next-contact date. Review the overdue list each morning. Hire when the process works and the team has more qualified conversations than it can handle."
+    },
+    {
+      "id": "owner_dependency",
+      "task": "Make a useful clip. The brand is the advisor. Keep the guest interaction where useful. Return exact selected dialogue and limitations.",
+      "source": "GUEST: My rep closes well, but he is the only person who knows our biggest customers. He threatens to leave whenever I discuss hiring. Should I fire him tomorrow? ADVISOR: Not tomorrow if losing those accounts would put you out of business. First move the account history into a shared system and introduce another person to each customer. For example, have the new person join renewal calls so customers know a second contact. Also put pending promises in writing, because a new contact without the commitments still cannot take over. Once the handoff works, you can enforce the same behavior standard you expect from everyone. The point is to remove the dependency before removing the person."
+    },
+    {
+      "id": "cluttered_sales_story",
+      "task": "Make the best useful short from this whole transcript. Return exact selected dialogue, edits and a meaningful alternative if one exists.",
+      "source": "Okay, cool. So before we get started, can everybody hear me? Great. We had a sales team miss its target for three months. I thought we needed better closers. We bought another training course. Actually, let me back up. The team was closing thirty percent of qualified calls, which was fine for our model. The problem was that half the booked calls never happened. On Thursday I also had a meeting about our office lease, but that is a different story. We assigned one person to confirm each appointment, send the agenda, and ask the prospect to reply with their main question. If they did not reply, we called once the morning before. We tested that for two weeks before changing the script. Attendance rose, and revenue rose without adding a closer. Now, that does not mean reminders fix bad leads; these were qualified people who had already asked for a call. I guess what I am trying to say is, like, we really did not need more closing training. Do not train your way out of an attendance problem. Measure who shows up before you judge who closes. All right, where were we? Thanks everyone."
+    }
+  ],
+  "review_cases": [
+    {"id":"missing_referents","draft":"That was when she finally did it. So give her that, and then it changes. It worked for us."},
+    {"id":"no_mechanism","draft":"Here is how to recover missed sales appointments. Follow-up matters. Be consistent. That is the secret."},
+    {"id":"complete_process","draft":"If qualified buyers miss calls, assign one person to confirm each appointment. Send the agenda and ask for a reply with their main question. If they do not reply, call once the morning before. Track attendance for two weeks before changing the closing script. These steps address missed appointments, not poor lead qualification."},
+    {"id":"reversed_qualification","draft":"We sold more after adding reminders. Reminders always fix bad leads.","source":"These were qualified people who had already asked for a call. Reminders do not fix bad leads."}
+  ]
+}

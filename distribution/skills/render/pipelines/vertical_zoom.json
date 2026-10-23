@@ -1,0 +1,9 @@
+{
+  "name": "vertical_zoom",
+  "description": "Native-9:16 talking-head short that DOES want a punch-in + horizontal face-track (unlike single_vertical which passes the vertical source straight through). Runs the reframe stage on the already-vertical cut: qa_reframe_v2 crops a tighter 9:16 window (zoom>1) from the 1080x1920 source, giving left/right room for X face-tracking, and anchors Y (eye_y small => bottom-aligned = subject pushed as high as possible with no black at the bottom). Use for a phone/livestream vertical clip that needs to be tightened and tracked.",
+  "stages": ["cut", "reframe", "grade", "captions", "mix", "leadfix"],
+  "notes": {
+    "reframe": "zoom 1.1-1.2 for a gentle punch-in; pass an explicit roi covering the seated face (the 16:9 preset ROIs miss it) + detw 1080 + face_conf ~0.3 so detection hits; eye_y small => bottom-aligned (subject high, no bottom black); scene_split false (single continuous shot).",
+    "captions": "chin_layout true => layout_below_chin.py sets per-shot Y below the jaw+beard on the FINAL reframed pixels."
+  }
+}

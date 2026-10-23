@@ -1,0 +1,80 @@
+{
+  "name": "oliver_caption",
+  "_note": "Alex Q&A SF caption look (Oliver house style, per the official Visual Guide). = caption-clips spice_1080 with: y=48% center (under chin), default weight = Medium / highlights = Black, guest=#FED90F / alex=#FFFFFF (v2 spec 2026-07-06), numbers auto-Black. Color+italic per-word is set by qa_build's EDL director (guest => yellow+italic, alex => white upright). fonts_dir resolves against the caption-clips skill (where generate_spice.py lives).",
+  "video": {
+    "width": 1080,
+    "height": 1920
+  },
+  "fonts_dir": "fonts/proxima_full",
+  "weights": {
+    "mute": "Proxima Nova Light",
+    "base": "Proxima Nova Regular",
+    "soft": "Proxima Nova Medium",
+    "strong": "Proxima Nova Bold",
+    "emphasis": "Proxima Nova Extrabold",
+    "payoff": "Proxima Nova Black"
+  },
+  "default_weight": "soft",
+  "font_size_px": 80,
+  "sizes": {
+    "base": 100,
+    "emph": 125,
+    "strong": 150,
+    "peak": 185
+  },
+  "auto_size": {
+    "numbers": "emph"
+  },
+  "italic_fax": -0.12,
+  "colors": {
+    "alex": "FFFFFF",
+    "guest": "FED90F"
+  },
+  "default_voice": "alex",
+  "number_color": null,
+  "layout": {
+    "y_percent_from_top": 48,
+    "max_chars_per_line": 18,
+    "max_words_per_screen": 3
+  },
+  "shadow": {
+    "enabled": true,
+    "alpha": 0,
+    "offset_y": 8,
+    "blur": 9,
+    "color": "000000",
+    "stroke_px": 7,
+    "stroke_color": "000000"
+  },
+  "animation": {
+    "position_drop_px": 8,
+    "position_drop_duration_ms": 500,
+    "opacity_from": 0.9,
+    "opacity_fade_duration_ms": 83
+  },
+  "timing": {
+    "onset_correct": true,
+    "min_cue_dur": 0.21,
+    "_note": "v2 spec Part 2 (2026-07-06): min_cue_dur 0.21s = the 5-frame ABSOLUTE floor (sequential layout: a crammed cue PUSHES the next, nothing dropped; dense cues get a +1-frame reading bump in generate_spice). onset_correct = hold a caption through a pause Groq folded into the next FUNCTION word. pause_split_s defaults to 0.25 (>=250ms silence = break) in generate_spice."
+  },
+  "auto_emphasis": {
+    "numbers": "payoff",
+    "words_strong": [
+      "never",
+      "always",
+      "every",
+      "only",
+      "most",
+      "best",
+      "worst",
+      "nothing",
+      "everything",
+      "exactly",
+      "real",
+      "truth",
+      "proof",
+      "key",
+      "secret"
+    ]
+  }
+}

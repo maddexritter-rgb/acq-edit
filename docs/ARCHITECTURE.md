@@ -1,0 +1,42 @@
+# Architecture
+
+The TypeScript service owns durable coordination and review state. Python adapters own native execution. Packaged canonical skills own editorial decisions.
+
+```text
+Local / YouTube / authenticated Drive
+                 │
+          verified source copies
+                 │
+       transcription + source evidence
+                 │
+        live read-only brain guidance
+                 │
+       Assembly Design + precise boundaries
+                 │
+          project.backend (fixed)
+        ┌────────┼──────────┐
+    FilmCraft  Premiere   Resolve Studio
+    headless   Agent Lab  scripting + Fusion
+        └────────┼──────────┘
+         verified native render
+                 │
+       immutable version + review room
+                 │
+     version-bound notes → Apply revisions
+                 │
+        durable per-project job queue
+```
+
+SQLite uses WAL, foreign keys, immediate transactions, a unique submission fingerprint, and a partial unique index for active project mutation jobs. Feedback updates use optimistic revisions, so a stale browser cannot silently erase another tab's changes. JSON exports are serialized per project and atomically replaced.
+
+Applying a revision stores the exact old version and feedback as the job snapshot. Job execution never rereads a mutable text field as the original request. A later submission against an obsolete version fails before execution. An uncertain agent/native operation blocks further project mutations until reconciliation. Old media is never overwritten.
+
+Media endpoints resolve only database-registered files inside the associated project and support byte ranges. The server binds to 127.0.0.1, validates Host and Origin, and requires a random per-session HttpOnly SameSite cookie. It serves no arbitrary filesystem paths. It is not a remotely hosted collaborative service.
+
+Contracts are in `src/contracts.ts`. Native plans use integer picture frames and audio samples with rational frame rates. The current production path still requires canonical source-word selection, paired-cut evidence and brain receipts. See engine limitations before passing a plan to an adapter.
+
+Native state fingerprints are preconditions, not proof that every unexposed effect is captured. Resolve's snapshot records timing, properties and exported Fusion-graph hashes; stable save/reopen behavior still requires broader qualification. A project DRP or fcproj checkpoint does not by itself prove a rendered effect.
+
+Agent execution uses Codex app-server stdio JSON-RPC and Claude Code headless stream JSON. Sessions are recorded by exact ID. Interactive requests are surfaced as reconciliation rather than granting broad unattended permissions. Agent CLI policies must be configured by the operator for approved toolkit commands.
+
+References: [Codex app-server](https://learn.chatgpt.com/docs/app-server), [Claude Code headless](https://code.claude.com/docs/en/headless).

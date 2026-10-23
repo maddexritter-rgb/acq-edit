@@ -1,0 +1,58 @@
+# ACQ Edit
+
+A private, Mac-based editing toolkit for Codex and Claude Code. Give your agent footage and a brief. Review the resulting clips in a local browser, add timecoded feedback, and apply revisions without managing a timeline yourself.
+
+**Development build — not released for the team pilot.** FilmCraft and Resolve have passed isolated native construction/render fixtures. Premiere's packaged integration builds and its installed host responds, but the new toolkit has not completed a Premiere render fixture. Real speech, multicamera, clean-machine setup, and full agent-driven revision acceptance remain open. See [current evidence and remaining work](docs/STATUS.md).
+
+## Start here
+
+Requirements: macOS, Node.js 24+, Python 3.11+, FFmpeg/ffprobe, and an authenticated Codex or Claude Code CLI. Install only the editor you choose. Resolve requires Studio 21.1; Premiere requires a supported Agent Lab host profile. FilmCraft runs headlessly.
+
+```sh
+git clone git@github.com:maddexritter-rgb/acq-edit.git
+cd acq-edit
+npm ci
+npm run build
+bash scripts/install_shared.sh
+python3 scripts/install_engine.py filmcraft  # or premiere / resolve
+node dist/cli.js setup
+node dist/cli.js credentials
+node dist/cli.js doctor
+```
+
+Setup stores configuration and API keys under `~/.config/acq-edit`, outside the checkout. API key entry is hidden. Supply your own AssemblyAI and Gemini keys. Maddex supplies the restricted editorial-brain reader configuration through a separate private channel. No database service-role key belongs on a teammate's machine.
+
+```sh
+node dist/cli.js project "Workshop short clips"
+node dist/cli.js source PROJECT_ID /absolute/path/recording.mp4
+# Alternatives:
+node dist/cli.js youtube PROJECT_ID https://www.youtube.com/watch?v=VIDEO_ID
+node dist/cli.js drive PROJECT_ID https://drive.google.com/file/d/FILE_ID/view drive
+node dist/cli.js build PROJECT_ID "Design three complete, useful short clips."
+node dist/cli.js serve
+```
+
+Open the authenticated loopback URL printed by `serve`. The worker runs the project's selected agent. Missing permissions or uncertain native outcomes stop the job with recoverable evidence. Do not treat an agent's completion message as a successful render.
+
+Use `serve --no-worker` to review without dispatching jobs. `projects` lists persisted projects; `open PROJECT_ID` re-exports its state. The next `serve` session reopens the same projects, versions, and feedback.
+
+## What stays constant
+
+- One backend per project: FilmCraft, Premiere, or Resolve. No hidden conversion or fallback to another editor.
+- Assembly Design owns word selection and story construction; native adapters execute the design.
+- `00_SOURCE` contains verified, project-owned copies. Work goes into `10_WORK`; published immutable renders go into `20_DELIVER`.
+- Feedback is bound to an exact version. Applying revisions captures that version and its notes. Later notes stay separate. Changed clips return unreviewed.
+- The shared brain is read-only here. New design fetches current guidance and records its versions; approved edits do not change when guidance changes.
+- Remotion produces graphic assets. Final composition and export happen in the chosen editor.
+
+## Development
+
+```sh
+npm test
+npm run audit:distribution
+python3 -m unittest discover -s tests -p '*_test.py'
+```
+
+[Architecture](docs/ARCHITECTURE.md) · [Agent workflow](docs/AGENT_WORKFLOW.md) · [Engine setup](docs/ENGINES.md) · [Acceptance matrix](docs/ACCEPTANCE.md) · [Third-party notices](THIRD_PARTY_NOTICES.md)
+
+`distribution/SOURCE_MANIFEST.json` records canonical source hashes, distribution hashes, and explicit portability transformations. `PORTABILITY_REPORT.json` records excluded assets and unresolved optional references. Canonical source and older repositories are never modified by this toolkit.

@@ -1,0 +1,9 @@
+{
+  "name": "acq-ad-graphics",
+  "version": "1.0.0",
+  "scripts": {
+    "studio": "npx remotion studio src/index.tsx --port=3345",
+    "render:card": "npx remotion render src/index.tsx ReportCard out/report_card.mov --codec=prores --prores-profile=4444 --image-format=png"
+  },
+  "remotion": { "entryPoint": "src/index.tsx" }
+}

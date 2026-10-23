@@ -1,0 +1,24 @@
+{
+  "extends": "spice.json",
+  "name": "spice_longform_glass",
+  "_what": "Long-form 16:9 testimonial variant of spice \u2014 SAME chunker logic, wider lines (editor note 2026-07-14: 18 chars is a 9:16 constraint; long-form gets mid-20s chars and more words per screen). Visual styling ignored downstream (glass chips render in Remotion).",
+  "layout": {
+    "max_chars_per_line": 26,
+    "max_words_per_screen": 5,
+    "hard_max_chars": 30,
+    "tier_caps": {
+      "slow": [
+        3,
+        20
+      ],
+      "med": [
+        4,
+        26
+      ],
+      "fast": [
+        6,
+        30
+      ]
+    }
+  }
+}

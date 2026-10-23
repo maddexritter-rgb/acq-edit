@@ -1,0 +1,4 @@
+interface:
+  display_name: "Book Doodle"
+  short_description: "Propose and animate useful drawing cutaways"
+  default_prompt: "Use $book-doodle to review this approved clip batch and propose useful drawing moments before final vertical finishing."

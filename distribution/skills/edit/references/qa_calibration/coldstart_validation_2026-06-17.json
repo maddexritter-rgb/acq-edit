@@ -1,0 +1,50 @@
+{
+ "date": "2026-06-17",
+ "test": "cold-start: agent reads ONLY skill SOP files, cuts held-out raw blind, scored vs Oliver",
+ "avg_similarity": 58,
+ "per_case": {
+  "case_002_tanya_parentchild": {
+   "score": 62,
+   "hook": "close",
+   "payoff": "match",
+   "cold_s": 128,
+   "oliver_s": 80
+  },
+  "case_004_nedu_overnight_babies": {
+   "score": 72,
+   "hook": "match",
+   "payoff": "close",
+   "cold_s": 118,
+   "oliver_s": 109
+  },
+  "case_005_pelvic_floor_coaching": {
+   "score": 42,
+   "hook": "miss",
+   "payoff": "match",
+   "cold_s": 97,
+   "oliver_s": 113
+  },
+  "case_006_thomas_vietnamese_coffee": {
+   "score": 55,
+   "hook": "match",
+   "payoff": "close",
+   "cold_s": 128,
+   "oliver_s": 172
+  },
+  "case_007_trey_golf_carts": {
+   "score": 58,
+   "hook": "close",
+   "payoff": "miss",
+   "cold_s": 128,
+   "oliver_s": 68
+  }
+ },
+ "reliably_right": [
+  "Payoff discipline mostly fixed: 3 of 5 (Tanya, pelvic-floor, Nedu) land Oliver's exact portable principle; the close ones route through the same button. Only Trey regressed to a wind-down restatement.",
+  "Core spine reliably identified on all 5: it finds the same load-bearing principle Oliver built around. Right meaning, right moment now.",
+  "Contrast-hook shape lands when the line is adjacent: 2 outright matches (Nedu, Thomas) plus 2 close.",
+  "Brand-safe, one-arc framing holds: no off-topic threads bled into any final principle."
+ ],
+ "remaining_gap": "Two gaps pointing the same way. (1) Compression still too loose: cold runs ~2x Oliver on 3 of 5 (Tanya 128 vs 80, Trey 128 vs 68); it keeps the diagnostic detours Oliver removes and does not aggressively delete the middle once the answer is reached. (2) Hook selection and exit polish are the low floor: pelvic-floor was a hard miss (opened on Alex's rhetorical question, dropped the guest-context front a cold viewer needs); Trey lost the self-deprecating contrast turn and ended on a label not the quantified result. Meta-pattern: it knows the rules but applies them unevenly when the winning line is not adjacent. It does not reliably hunt backward for the context beat, forward one beat past a tactic to the quantified result, or choose numbers over feelings when Oliver chose the analytical middle (Thomas math vs cold's emotional arc). Editorial judgment under ambiguity, not missing knowledge.",
+ "highest_leverage_fix": "Move qa_editorial_score.py from a post-hoc pass/fail gate into the cut-design step: build edit/scripts/cut_design.py that scores keep-spans on all 5 editorial dimensions in one pass, so the contrast hook, principle payoff, and minimum context beat are chosen at design time rather than only rejected after. Add a hard compression anchor (Oliver diagnostic Q&A median ~109s; delete the diagnostic middle once the answer lands), since 3 of 5 misses are pure over-length."
+}

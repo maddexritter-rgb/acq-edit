@@ -1,0 +1,5 @@
+httpx==0.28.1
+numpy==2.2.6
+scipy==1.15.3
+Pillow==11.3.0
+soundfile==0.13.1

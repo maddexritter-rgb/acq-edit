@@ -1,0 +1,36 @@
+Reverse-engineer the QUESTION CARDS for one L3 testimonial from the real interviewer questions.
+
+Inputs in the WORKDIR I give you:
+- clip_00.json  → {"words":[{word,start,end}]} full raw transcript (interviewer AND subject).
+- cutlist_v2.json → {"spans":[{n,in,out,text}], ...} the KEPT answer spans (subject only; interviewer voice was cut).
+
+The interviewer's actual questions live in the transcript GAPS before each kept answer span
+(text with start-time between the previous span's out and this span's in). Extract them.
+
+TASK: produce cards.json = a list of question cards to overlay before selected answers.
+For each answer span that ANSWERS A DISTINCT INTERVIEWER QUESTION, create ONE card:
+- Find the interviewer's real question in the gap right before that span (ignore the subject's
+  trailing words from the previous answer and any "restate the question" chatter).
+- Rewrite it TIGHT, 2nd person, ALL CAPS, as it would read on screen — like these reference cards:
+  "HOW HAS YOUR BUSINESS BEEN SINCE YOUR LAST L3?"
+  "WHAT WERE THE CHALLENGES YOU WERE FACING BEFORE YOU CAME TO L3?"
+  "DID YOU HAVE DOUBTS AND FEARS AROUND SIGNING UP FOR L3?"
+  "IF SOMEONE IN YOUR INDUSTRY IS ON THE FENCE ABOUT DOING L3... WHAT WOULD YOU TELL THEM?"
+  When the real question matches one of those standard themes, prefer the reference wording.
+- Split into 2-3 lines, each line <= ~30 characters, balanced.
+
+RULES:
+- One card per DISTINCT question. Do NOT card continuation spans of the same answer.
+- Aim for 3-6 cards across the clip (the reference used ~4). Every clip MUST get at least 3
+  cards (this is the whole point — no clip with zero cards). If the interview only has a few
+  clean questions, card the strongest 3+.
+- The FIRST span is usually the name/business intro or the opening answer — only card it if
+  there's a real opening question ("how has business been since your last L3", "walk me
+  through what shifted today"). The name/business lives in the super, not a card.
+- Card the fence-sitter/advice question near the end if present.
+
+OUTPUT: write cards.json to the WORKDIR:
+{"cards":[{"span": <0-based index into cutlist spans>, "lines":["LINE ONE","LINE TWO"]}, ...]}
+Spans must be valid indices, strictly increasing, no duplicates.
+
+FINAL MESSAGE: one line — person, N cards, and the card texts.

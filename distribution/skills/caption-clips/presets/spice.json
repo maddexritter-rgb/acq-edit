@@ -1,0 +1,106 @@
+{
+  "name": "spice",
+  "_what": "Dynamic 'spice' pro captions — reverse-engineered from Oliver (the team's best editor). The locked pro_locked/alex_canon path is single-axis (Regular->Extrabold weight + optional yellow numbers). THIS path is multi-axis: a full Proxima Nova weight palette used as an emphasis dial, gentle (un-leaned) italics, and per-word voice color. Driven by generate_spice.py + a per-word style stream (hand- or LLM-authored 'caption director'). See references/spice_caption_spec.md.",
+  "video": {
+    "width": 2160,
+    "height": 3840
+  },
+  "_fonts_note": "Full Adobe-licensed Proxima Nova family, extracted from the user's CoreSync cache and renamed so each weight is its own libass family. fonts_dir is relative to the skill root. These are the user's licensed fonts — do NOT web-download Proxima Nova.",
+  "fonts_dir": "fonts/proxima_full",
+  "_weights_note": "LOCKED 2026-06-10 (Maddex): default caption weight is Proxima Nova MEDIUM — NEVER Regular/Light/Thin. A thin Regular base made the shadow read wrong (not enough glyph mass). Emphasis ladder is Medium(base) -> Bold -> Extrabold -> Black, plus italics. mute/base/soft all floor at Medium so the text never goes lighter than Medium.",
+  "weights": {
+    "mute": "Proxima Nova Medium",
+    "base": "Proxima Nova Medium",
+    "soft": "Proxima Nova Medium",
+    "strong": "Proxima Nova Bold",
+    "emphasis": "Proxima Nova Extrabold",
+    "payoff": "Proxima Nova Black"
+  },
+  "default_weight": "base",
+  "_fontsize_note": "LOCKED 2026-06-10 (Maddex): 150px at 4K (2160 wide). (250 was WAY too big — Maddex; the one Oliver frame that looked larger was an outlier, don't size off a single frame.)",
+  "font_size_px": 150,
+  "_size_note": "SIZE axis measured from Oliver's 19 clips (1271 captions): ~27% bumped above base; among bumps p50~1.28 / p75~1.36 / p90~1.60 / peak~1.8-2.0. base=100; emph=125 (light, the common bump); strong=150; peak=185 (rare payoff word/line). Triggers: numbers/money, the payoff/punchline, key/identity & proper nouns, vivid words. Rendered via \\fscx/\\fscy on the word — INDEPENDENT of color/weight/italic, they STACK (e.g. $100M = yellow + extrabold + peak). HARD RULE (user 2026-06-03): a size bump may ONLY land on a SINGLE-WORD caption — generate_spice gates size on len(chunk)==1; multi-word lines emphasize via WEIGHT only (mixed sizes read broken / can wrap to two lines). To bump a specific word, the director isolates it into its own caption.",
+  "_size_correction_2026-06-11": "SIZE AXIS ON, but SUBTLE (Maddex 2026-06-11): a size bump is a 10-15% increase, NOT 25-80%. The big tiers (125/150/180) pushed lines off-screen — 'be at $10M minimum' at 150% = 99% of frame width, out of the UI safe zone. New tiers: emph 110 / strong 115 / peak 120 (the rare single-word punch). RULES: (1) size is decided PER CUE — single-word caption OR the whole line uniformly, NEVER one word inside a multi-word line (looks broken; generate_spice enforces). (2) A SAFE-ZONE CAP in generate_spice measures each bumped line (PIL) and reduces the bump so the rendered width never exceeds ~82% of frame — captions can't run off-screen or out of the UI regardless of word count. Size stacks with weight + italic.",
+  "sizes": {
+    "base": 100,
+    "emph": 110,
+    "strong": 115,
+    "peak": 120
+  },
+  "auto_size": {},
+  "_italic_note": "Gentle x-shear (\\fax) instead of synthetic oblique (\\i1). -0.12 ~= 7deg forward/RIGHT (positive fax leans LEFT/backslant in libass); \\i1 ~= 12deg read too leaned (user 2026-06-03). True italic .otf files are also in fonts_dir if real italic letterforms are ever wanted.",
+  "italic_fax": -0.12,
+  "_color_note": "COLOR = whose voice, and ONLY whose voice (v2 standard, Maddex 2026-07-06). White = Alex's own voice. Yellow (guest #FED90F, per Oliver's v2 caption spec) = a different voice (live Q&A guest, or Alex impersonating a customer/objection). There is NO separate emphasis color: emphasis follows the speaker's voice color (Alex's emphasis stays WHITE, carried by weight/size/italic; a guest's stays yellow). A quote-wrap phrase = {\"q\":true} -> italic + quotation marks, color from the voice. An old style stream that still says c:\"emphasis\" resolves to the cue's voice color (generate_spice fallthrough). This replaces the 2026-06-22 distinct emphasis hex.",
+  "colors": {
+    "alex": "FFFFFF",
+    "guest": "FED90F"
+  },
+  "default_voice": "alex",
+  "number_color": null,
+  "_layout_note": "y 50% = mid-frame, DATA-DRIVEN (2026-06-10): measured across Oliver's 24 workshop Q&A clips (599 shots, training/height_study) — his overall median caption-Y is ~49.7%, his dominant medium/closeup tight-shot anchor is ~50%, and he NEVER goes below ~50%. (Old 55 sat too low.) This static default is for renders with NO layout track; when a layout track IS present (caption-app, and /edit which now runs layout_analyze on its reframed output), each shot's Y is per-angle: WIDE 45% / TIGHT 50%. Chunking = v2 spec Part 2 (2026-07-06, references/oliver_caption_formatting_spec.md): pace-adaptive tiers (slow ~2w/13c, med ~3w/17c, fast ~4w/25c), 18c soft cadence cap, 25c HARD max, break priority speaker>sentence>timing>comma>cap>seams, atomic money/collocation units. For 1080x1920 set video 1080x1920 and font_size_px ~75.",
+  "layout": {
+    "y_percent_from_top": 50,
+    "max_chars_per_line": 18,
+    "max_words_per_screen": 3
+  },
+  "_shadow_note": "Premiere Drop Shadow — LOCKED 2026-06-10, built from Oliver's actual preset SLIDERS (Maddex screenshot) + picked by Maddex on his own clip. TWO layers, each = Opacity/Angle/Distance/Size/Blur. The decode lesson: the preset's two shadows are (1) Opacity100 Angle130 Distance20 Size15 BLUR110, (2) Opacity70 Angle135 Distance7 Size33.9 BLUR250 — the BLUR is HUGE (110/250), which is why a tight low-blur shadow looked like a 'stroke'. Mapped to gblur @FS150: ambient layer (premiere_*) = big soft halo σ75/border20(Size)/0.70 op, small offset (6,8); directional layer (premiere_*2) = σ33/border9(Size)/1.0 op with a real DOWN-RIGHT offset (18,22) — Maddex: 'more X and Y offset to the right and down'. border here encodes Premiere 'Size'(spread); offset encodes Distance@Angle (down-right). All FONT-RELATIVE (FS_REF=150). premiere_blur->gblur sigma ≈ blur×0.3 (the conversion that matched).",
+  "shadow": {
+    "enabled": true,
+    "mode": "premiere",
+    "premiere_layer2": true,
+    "offset_x": 3,
+    "premiere_offset_y": 4,
+    "premiere_sigma": 48,
+    "premiere_border": 13,
+    "premiere_intensity": 0.7,
+    "offset_x2": 7,
+    "premiere_offset_y2": 11,
+    "premiere_sigma2": 20,
+    "premiere_border2": 6,
+    "premiere_intensity2": 1.0,
+    "premiere_stroke_px": 0,
+    "premiere_blur": 22,
+    "premiere_spread": 35,
+    "premiere_opacity": 0.28,
+    "color": "000000",
+    "stroke_px": 6,
+    "stroke_color": "000000",
+    "alpha": 0,
+    "offset_y": 16,
+    "blur": 18,
+    "_locked": "SHADOW LOCKED 2026-06-11 (Maddex: 'we finally figured out a shadow, lock it in everywhere'): two-layer gblur Premiere drop shadow, TIGHTENED softness/size — sigma 48/20, border(spread) 13/6 (was 75/33, 20/9 — the dark halo hugs the letters, more defined, less diffuse), opacity UNCHANGED (intensity 0.70/1.0), down-right offset. Values are FONT-RELATIVE (scaled by FS/150 in generate_spice) so 4K and 1080 render identically. This is THE default shadow for every footage type. Approved on _swindle_1080_shadowtight.mp4."
+  },
+  "animation": {
+    "_note": "Alex Shorts 'Text Down Small': drop ~16px from above over 500ms + fade 90%->100% over 83ms. (16px at 4K ~= 8px at 1080.)",
+    "position_drop_px": 16,
+    "position_drop_duration_ms": 500,
+    "opacity_from": 0.9,
+    "opacity_fade_duration_ms": 83
+  },
+  "timing": {
+    "_note": "v2 spec Part 2 (2026-07-06): min_cue_dur 0.21s = the 5-frame ABSOLUTE floor (sequential layout: a crammed cue PUSHES the next, nothing dropped; dense cues get a +1-frame reading bump in generate_spice). onset_correct = hold a caption through a pause Groq folded into the next FUNCTION word. pause_split_s defaults to 0.25 (>=250ms silence = break) in generate_spice.",
+    "onset_correct": true,
+    "min_cue_dur": 0.21
+  },
+  "auto_emphasis": {
+    "_note": "Light DEFAULT styling when no per-word style stream is supplied, so solo clips are reasonable without the director. The director (style JSON) overrides this entirely.",
+    "numbers": "emphasis",
+    "words_strong": [
+      "never",
+      "always",
+      "every",
+      "only",
+      "most",
+      "best",
+      "worst",
+      "nothing",
+      "everything",
+      "exactly",
+      "real",
+      "truth",
+      "proof",
+      "key",
+      "secret"
+    ]
+  }
+}

@@ -1,0 +1,209 @@
+# Preserved cutting playbook (historical source)
+
+This is the full cutting playbook retained from the retired `/cut` skill. Its
+seam, word-tail, filler, and ASR-failure observations inform Assembly Design.
+For the current 16:9 assembly route, `assembly-design/SKILL.md` and
+`references/assembly-boundaries.md` govern: old renderer, finishing, music,
+audit, provider, and fixed timing prescriptions below are historical, not
+mandatory steps. Do not let an old heuristic restore an excluded word or
+override the editor's exact source-word selection.
+
+---
+
+# CLIP-CUTTING PLAYBOOK — raw talking-head take → finished short
+
+*The "how we automate clipping" reference. Distilled from the the client Brief-02 session (2026-06-05) where every seam, phantom-word, and ending was fought through live. **Load this before cutting ANY take — this is the GLOBAL cutting standard (every client, every session).** Rules are general; tools cited are Maddex's locked pipeline. **Engine (DEFAULT): `__ACQ_SKILLS__/_shared/faded_trim_cut.py`** — keep-spans by word index; snaps every splice to inter-word silence, ends each span at the word's TRUE acoustic end, ≥12ms fades, and PROBES & preserves source fps. (`precision_cut.py` is LEGACY — it force-30fps's the output and borks 23.976 sources; captions/reframe are downstream.)*
+
+---
+
+## 🔒 NON-NEGOTIABLES — each is a safe DEFAULT + a BLOCKING gate (not just prose)
+*Same standard as the edit spine (`feedback_compounding_standard_default_plus_gate`): a cutting rule that
+lives only as prose gets skipped — sessions don't read the whole playbook. So every rule below is BOTH
+(a) done correctly **by default** by the cited tool, AND (b) **BLOCKED at edit step 9** by the cited gate
+if it's wrong. The gates run whether or not you opened this file — that's what makes the standard hold.*
+
+| # | NON-NEGOTIABLE | SAFE DEFAULT (use this) | BLOCKING GATE (edit step 9) |
+|---|---|---|---|
+| 1 | Splice ONLY at sentence/clause boundaries — **never mid-phrase** (§SEAM RULES) | hand-pick spans at boundaries | `audit-visual` jump-cut · `reqc.py` JUMP-CUT |
+| 2 | Every splice lands in inter-word **SILENCE**, ends at the word's **TRUE acoustic end**, ≥12ms fade — no mid-word cut, no pop/click | **`_shared/faded_trim_cut.py`** (snaps + fades automatically) | **`audit-audio`** — word-clipping + pops/clicks (calibrated; FAIL blocks) |
+| 3 | **HARD-END on the payoff** — NEVER fade-to-black, NEVER frozen frame, never cut the speaker off mid-point | cut on the last word's full decay (§ENDINGS) | **`_shared/ending_check.py`** · `reqc.py` PAYOFF_TRUNCATED / FALSE-ENDING |
+| 4 | **PRESERVE source fps** (23.976 etc.) — `precision_cut.py` force-30fps's it (drift/borked audio) = BANNED on non-30fps | **`faded_trim_cut.py`** (probes & preserves fps) | A/V-drift in `audit-audio`; ffprobe the output |
+| 5 | **VERIFY by EAR / spectrogram / RMS** — ASR transcripts are BLIND to clipping (they re-read the expected word) | RMS-envelope / spectrogram check (§VERIFY) | `audit-audio` confirms acoustically, NOT via ASR |
+| 6 | **DIFFERENT vibe-matched music** per clip (never the same song twice) | **`_shared/pick_music.py`** (calibrated to `_APPROVED.txt`) | `MUSIC_BLACKLIST.txt` filter + the ear |
+| 7 | **NEVER cut through an audible word** — use a Silero-verified nonspeech gap, or the narrowly measured RMS micro-gap between nonoverlapping word labels described below; otherwise REFUSE (§SPEECH-MAP) | **`_shared/speech_map_cut.py`** (source-rate frame grid; Silero+RMS) | its own exit 2 BLOCKS; retained-word reconciliation and `audit-audio` backstop |
+
+**The cutter is `_shared/faded_trim_cut.py` (default) — it bakes #2 + #4. Boundaries FEED it from
+`_shared/speech_map_cut.py` (#7) — never from raw labels.** Everything below is the detailed
+"how" behind each rule; this table is the part you cannot skip.
+
+---
+
+## THE PIPELINE (in order)
+0. **CONTEXT — do this FIRST for any commentary / reaction / answer / Q&A clip (Maddex's #1 note, 2026-06-07).** The clip MUST carry the QUESTION or STORY the speaker is responding to — the scenario, names, setup the commentary references ("her ex had surgery, then went back to him"). Find the submission read just before the answer (dump the transcript ~`[answerStart−130s, answerStart]`) and **OPEN on it** (it's the hook; a guest reading it = yellow caption), then the answer. Completeness over duration. A bare answer with no question = the viewer is lost. Build it as a multi-segment cut (question span + commentary span).
+1. **Transcribe** the raw take → word-level timestamps (Groq `whisper-large-v3`, `verbose_json` + word granularity). Keep the punctuated `text` too.
+2. **Content cut = HAND-CUT, NOT an LLM-timestamp auto-batch.** Choose keep-spans by EDITORIAL hook + payoff PHRASE and anchor each WORD-PRECISE to the transcript — trust the LLM's TEXT, never its raw timestamps (they drift → filler openers, over/under-long clips, broken cuts). Drop flubs, restarts, duplicate lines, rambles. Assemble via ffmpeg trim+concat. (Tooling: `cut_by_phrase.py` single-span / `recut.py` multi-span.)
+3. **Dead-air jump-cut**: cap every pause (`jumpcut.py`).
+4. **Audio**: clean + loudness-normalize.
+5. **Captions**: the locked SPICE pipeline.
+6. **Ending = HARD-CUT on the payoff** (the last word of the point). **A FADE-OUT IS BANNED** — video fade-to-black is never allowed (Maddex 2026-06-06: *"both ended on a fade out. We never do that. That's not allowed. Don't ever do that. End it after the clip has the payoff."*). **Never frozen frames** either. Let the last word ring on a LIVE frame, then cut. Only the MUSIC may carry a ~0.6 s tail; the picture never fades.
+7. **VERIFY** every seam (transcript + independent listen) **before** showing the user.
+
+---
+
+## ⭐ SEAM RULES — this is where clips live or die
+1. **NEVER splice MID-PHRASE.** Stitching two halves of one sentence from different source points makes the VIDEO jump ("super jumpy / there's a cut in between") even though the audio flows. Cut **only at sentence/clause boundaries.** A sentence-boundary cut where his head jumps position is *fine*; a mid-sentence one reads as broken.
+2. **Prefer ONE continuous segment per phrase.** If a line is clean in the raw, take it whole — don't assemble a sentence from pieces.
+3. **Clamp the span START to the word edge:** `start = max(word.start − 0.04, prev_word.end)` — stops the previous (cut) word's tail bleeding into the seam. **The END is handled differently — do NOT clamp it to `next_word.start`** (see rule 6, it's a trap).
+4. **Phantom-word bleeds are acoustically FUSED — you CANNOT trim them out.** A bleed like "art" (from "st**art**") fuses onto the *next* word's onset; cutting the labeled span of "art" leaves the fused part. **Route AROUND the bad word** — start the segment one word *later* so the stumble word never exists in the clip (e.g. start at "don't", let the prior "you" tail carry, exclude the fused "start"). Trying to surgically delete the fused span does not work — proven repeatedly.
+5. **If a stumble can't be cleanly excised, drop the whole stumbling phrase** and start from the next clean sentence. Cleaner beats complete.
+6. **⚠️ Whisper word timestamps OVERLAP — the next word is often labeled as starting BEFORE the current word ends.** So clamping a span's END to `next_word.start` slices the last word in half ("alone", "problems", "your test" got silently chopped this way). End each span at **`word.end + ~0.15`** (its own end + a tail), then **a-fade-out the ENTIRE tail** (`st = span_end − 0.15`, `d = 0.15`, i.e. cover `word.end → span end` fully). A *partial* end-fade leaves the next (cut) word's onset audible as a **leftover glitch / false-double** — exactly what "…hoped for the best · [leftover] · so six months" and "So when · So when I" were. Never use `next_word.start` for the end.
+   - **The tail is a BLEED BUDGET — make it PER-SPAN, not global.** 0.15 is the default, but if the *next (cut)* word is LOUD/distinct (a fricative-onset "So…", a hard consonant), even a fully-faded 0.15 tail leaks it as a ghost: "experiencing" → cut "So when" came back as a phantom "so I'm talking" that Whisper's transcript HID but the ear (and Gemini) caught. For **that one seam**, shrink the tail to ~**0.06** (just the kept word's own release) and still full-fade it. Everywhere else keep 0.15 so plosive/fricative-ending words ("test", "problems") aren't clipped. (Implemented as an optional 3rd element on a keep-span: `[a, b, 0.06]`.)
+7. **A leading fused word you want to DROP (a "So" fused into "technical") usually CAN'T be removed — keep it natural.** The dropped word's sound overruns its Whisper-labeled end *into* the kept word, so starting the span at the kept word's onset STILL catches the "So" tail. A fade-IN mask on the first span hides it from ASR but **NOT from the ear** — the user still heard the residue ("didn't get done all the way"), and the mask also softens the kept word's onset. Starting later clips the kept word ("t" of "technical"). **Verdict: for a fused leading discourse-marker ("So", "And", "Like"), keep his natural delivery** — it's a clean, strong opener — instead of leaving a masked residue. (the client 03: after a mask attempt failed, the user chose natural "So technical founders…".)
+   - **A drawn-out / stuttered repeat reads as ONE long word in Whisper.** Take-2 "So…[1.3 s]…when" labels as a single 1.3 s "So". Skip the stutter by starting the span at the NEXT word ("when"); its faint onset-tail still carries a natural "So when."
+8. **Re-transcribe the CUT clip and re-read it — the cleaner audio reveals content the raw transcription HID.** Whisper collapses stutters/repeats in a messy raw take; on the tightened clip they surface (a CTA he restarted 3× read as *one* line in the raw transcript, *three* in the cut). Verify the final transcript every time — never trust the raw word-list for completeness.
+9. **MULTICAM (2+ mics): EDL segments must be DISJOINT in source time (2026-06-07).** Every mic carries every line via BLEED, so two segments covering the same source seconds REPLAY the word ("what do you charge?" ×2, "one time" ×3) — even when they're on different cameras. The single-track fused-word rules (6–7) are the cousin of this. Make segment source-ranges non-overlapping (reordering for narrative is fine — content order ≠ source order — but the *ranges* must stay disjoint), check before rendering (`clip-miner/scripts/qa_overlap_check.py EDL.json`), and **whisper the RENDER** to hear dups (the transcript-reconstruction reads them as an intentional Q+echo and CANNOT catch them). Genuine crosstalk (two people truly over each other) can't be split at the segment level — pick the more important line; segment cuts can't do frame-level audio ducking.
+10. **Boundaries are only as accurate as the cache's TIMING.** Groq `whisper-large-v3` word times = accurate (use for cut boundaries). Local `whisper-cli -ml 1` = content-OK but timing DRIFTS by seconds over a long session → boundaries land on the wrong audio. Build the cache with Groq across the FULL range BEFORE deriving any boundary; transcribe each source ONCE, then slice. And **verify-by-reconstruction is only trustworthy on the Groq-accurate cache** — a recon off a coarse cache reads fine while the render plays the wrong seconds (false confidence).
+
+## DEAD AIR — `jumpcut.py <in> <out> --noise <floor> --max-pause 0.15 --min-detect 0.18`
+- **⚠️ Silence floor is RELATIVE TO HIS SPEECH LEVEL — measure, don't guess a fixed number.** Run `volumedetect` for `mean_volume`, then set the jumpcut floor **~7–10 dB BELOW the mean**. If the floor sits too close to his speech, `silencedetect` flags the SOFT END of his words (the unvoiced "·t", "·ing" tails) as the START of the silence — *inside the word* — and jumpcut keeps only `silence_start + half`, **eating the word's tail** ("test"/"everything" came out clipped). the client's mean was **−33 dB**; his unvoiced word-ENDS sit between −40 and −50 dB, so the jumpcut floor had to drop to **−52 dB** (MEASURED clear of "test"/"everything") — anything ≥−50 re-eats them. **BUT the bigger word-clipper was NOT jumpcut at all — it was the content cut's own per-span fade-out (see ⭐ CONTENT-CUT FADES below). ALWAYS localize before tuning the floor.** (Earlier "−36 / −40 for soft talkers" was wrong — it's speaker-level-dependent, and the floor was never the main bug.)
+- `--max-pause 0.15` = tight pacing; raise for a more relaxed feel.
+- **VERY quiet talkers (the client, mean ~−47 dB — speech sits low) — the floor goes the OPPOSITE way you'd think.** Her dead air is ~70% of the take (she reads a point off her phone, then looks DOWN to read the next — long silent look-downs). `jumpcut.py` works GREAT but you must (1) run it on the **RAW** clip — NOT loudnorm'd: loudnorm lifts room-tone ABOVE the threshold so nothing gets detected and the dead air survives ("still a ton of dead air"); and (2) set a **LOW floor ≈ −52 dB** (≈ her room-tone −55 dB + ~10 dB headroom). **−30 dB here is BACKWARDS — on quiet audio more of her actual speech falls below −30, so it deletes her words (a clip collapsed 53s→14s).** Measure first: `silencedetect` at −55/−52/−50/−47 and pick the floor where detected-silence ≈ the dead-air total and stops climbing (for her, −52 dB caught 86 s of a 124 s clip, all words intact). Then `jumpcut.py --noise −52dB --max-pause 0.12` (caps the MIDDLE, edges safe) → 124 s → 40 s, point-point-point. jumpcut also catches the pauses DTW hid inside inflated words (acoustic, not word-gap). loudnorm AFTER. Pipeline: `the client/.../10_WORK/playbook_clip.py` (raw content-cut → jumpcut −52 → loudnorm → re-transcribe → spice). Verified clean + concise on all 9.
+
+## ⭐ CONTENT-CUT FADES — the per-span fade-out must not erase the WORD (this bug cost 4 misses on one clip)
+- **Whisper labels a word's END ~0.1–0.25 s BEFORE its unvoiced tail finishes** ("-s/-t/-k/-th/-ing" are quiet & high-freq; ASR ends the token at the vowel). So a per-span `afade=t=out` that begins at `word.end` **fades out the consonant itself** — "test"→"te"/"task", "everything"→"everythin". This is in the CONTENT CUT, *before* jumpcut. It's invisible to a transcript (ASR re-reads the half-word as the whole word and even relabels the same short duration), so it shows ONLY in the user's ear or a fricative-band spectrogram.
+- **Localize first:** transcribe the PRE-jumpcut `_cut.mp4` AND the POST-jumpcut `_tight.mp4`, compare the word. Short already in `_cut` → it's the content-cut fade, not jumpcut. (Don't spend a day tuning the floor like I did.)
+- **Fix — end each span at the word's TRUE ACOUSTIC END, not the label:** `silencedetect` the RAW at ~−50 dB; the first `silence_start` at/after `word.end` is where the unvoiced tail actually ends. End the span there (+0.05) with only a **0.04 de-click** fade.
+- **No pause after the word? branch on its ENDING:** unvoiced fricative/plosive (s,t,k,p,f,th,ch,sh) → extend tail ~0.22 + de-click only (a full-tail fade re-erases the consonant); voiced/nasal/vowel → small 0.06 tail + full fade to mask the next cut word's bleed.
+- **A word fused with a LATER cut word can't be fully saved** ("…your test. **I've** seen it…" — run together, no pause; same wall as leading "So" / "experiencing→So"). Capture to where the next word begins; it may sound soft-ended. That's the raw's run-on, not the edit — say so.
+- **Whisper duration labels are NOT a clip-test** — it reports the same early end whether or not the consonant survived. Localize with pre/post transcribe, SEE it on a fricative-band spectrogram, CONFIRM with the user's ear.
+
+## LONG PAUSES & SPLITS — and true-end traps
+- **A multi-second pause INSIDE one content span → jump-cut crushes it into a "weird cut".** If he stops mid-take and resumes (e.g. a **6.5 s gap** between "…their own system." and "This process…"), that pause lives inside your span and jumpcut violently compresses it — a jarring jump, sometimes a doubled word ("system. system."). Fix: **SPLIT the span there into a deliberate content cut** at the sentence boundary (the pause is removed cleanly; a head-position jump across it is fine, per Seam Rule 1). Scan word-gaps for >2 s and split at them.
+- **True-acoustic-end detector — three traps that each clipped a word:** (a) a brief intra-word **DIP** (~0.10 s, mid-"everything") is NOT the end — require pause ≥0.12 s; (b) a mid-word **STOP-CLOSURE** ("sys·tem", "docu·ment") is a silence INSIDE the word — search for the end-pause from the LABEL END, not the onset (searching from onset clipped "system" to nothing); (c) an **INFLATED label** (Whisper stretches a label over a real pause, "one." = 2.1 s) — only a LONG (>0.4 s) silence inside the label counts as inflation; the word truly ended at that silence's start. To **delete a phrase**, end the prior span at that true end and start the next span after the phrase.
+- **⭐ NOISY / multi-person footage (events, handheld) breaks every FIXED-dB floor — use an ADAPTIVE floor (cross-cutting, testimonial-ad batch 2026-06-16).** `precision_cut.py` (−50 dB), `faded_trim_cut.py acoustic_word_end` (−33 dB) and a plain `silencedetect=-30dB` all detect the true-end/pause at a FIXED threshold. On noisy footage the inter-turn pause is **room tone ~−28 dB — LOUDER than the floor** — so none of them SEE it: trap (c) can't find the inflated-label silence, the cut trusts Whisper's bogus-long final-word end, and it **overshoots into the next word or an off-camera "Awesome / Thanks / Perfect" interviewer tag** (which then SHIPS). FIX: measure the tail's `mean_volume` and detect the pause at `floor = mean+1 dB`; a SHORT (<1.2 s) speech island sitting after that adaptive pause at the very end = an interviewer tag → peel it + trailing dead air. Reference impl: `build_ad.py tail_clean`. And Whisper is non-deterministic on the VERIFY pass too — it may DROP the tag word — so trust the acoustic peel, not one ASR read (this applies to Q&A/podcast cut-ends, not just ads).
+
+## AUDIO
+- `highpass=f=80, volume=1.2, loudnorm=I=-16:LRA=11:TP=-6` (canon voice chain; TP=−6 hits the −6 dB peak ship-gate).
+- **Drop `alimiter`** — its `release=` errors "Result too large" on this ffmpeg; loudnorm's TP handles the peak.
+- 20–40 ms a-fades at internal cut joins kill clicks.
+
+## ⭐ CAPTIONS — the LOCKED SPICE recipe (fought through end-to-end 2026-06-07; this is the WHOLE thing)
+The look = the team's spice-caption pipeline. **Symptoms each wrong turn gives** (recognize them fast): "old / cheap" = weak shadow · "hard stroke / too much" = a real outline, OR a native-1080 stroke scaled onto 4K · "fuzzy letters" = `\blur` with no border · "less accurate" = transcribing the denoised delivery audio. The recipe (engine `cap_spice.py` / `propagate.py`; reference `…/<client>/2026-06-05_PodcastEps77-79/10_WORK/multifinish.py`):
+1. **TIMING = whisper.cpp DTW** — `whisper-cli -m ggml-large-v3.bin -dtw large.v3 -ojf`. The `-dtw` flag is what lands captions tight on each word (mlx/Groq timing is looser). **Transcribe the CLEAN / RAW lav, NOT the denoised+compressed delivery audio** — denoise (afftdn) drops words (lost "raison d'être") and un-formats numbers ("100%"→"a hundred percent"). Run the delivery audio chain on a COPY.
+2. **TEXT** `normalize_simple → spice_normalize` (+ proper-noun vocab). **ACCURACY SCAN before any batch delivery:** dump every clip's transcript, eyeball for ASR mishears, fix via a per-clip phrase map (`corrections.json` `{title:[[old,new]]}`, timing redistributed across new tokens) — e.g. row ass→ROAS, spencer→something, ralph lauren→Ralph Lauren, spanish→Spanish.
+3. **EMPHASIS = `director_x.py`** — the EXPRESSIVE director (visible weight + italic variation per word = the "spice"); NOT the conservative `caption_director.py`. Needs ANTHROPIC_API_KEY (self-pulls from the login shell). Solo speaker → strip its color (all white); yellow only for a different/quoted voice.
+4. **RENDER = `generate_spice.py` + `spice_1080.json`** (font 76, y 60%, sizes 100/122/140/172, **shadow stroke 7 / blur 10 / alpha 0**). The stroke renders AS the soft drop shadow — that IS the premium look. **DO NOT:** set stroke 0 (`\blur` then fuzzes the letters) · use `alex_spice.json` (stroke 3 / alpha 50 = the weak "old" shadow) · hand-roll a plain style · force-isolate sized words in the chunker (solo-only size is intentional — don't "fix" it).
+5. **The soft shadow only reads right at NATIVE res.** Burn at **1080-native** → stroke 7 = soft. **At 4K, libass scales the stroke 7→14 = a hard crisp edge** ("too much"). For **4K delivery**: render captions on a 1080 transparent layer (`subtitles=…:alpha=1` over `color=…@0.0,format=rgba`) → `scale=2160:3840:flags=bilinear` → `overlay` on the native-4K base — soft text + sharp picture.
+6. **GLOSS a rare/foreign/jargon term** → a smaller Proxima-Medium "[…]" line under the caption (style-stream `gloss` map), e.g. raison d'être → "[life's purpose]"; also fix the term's ASR spelling.
+7. Always transcribe the FINAL post-cut clip (timings match the cut). To bold one extra punch word post-hoc, edit the `.ass` cue (font →Black, `\fscx132\fscy132`) targeting a unique word, re-burn, verify on a contact sheet.
+
+## ENDINGS — the buffer
+- Let the last line land (~1 s) — but **NEVER a frozen-frame hold** (`tpad=clone` = "just dead frames").
+- Use his **natural trailing footage** (real motion after the last word) if it's clean, OR a **fade-out** of the live frame. **Check the raw tail first** — make sure it isn't him reaching to stop the recording / looking away before using it.
+- **⚠️ On a NATURAL ending, do NOT a-fade-out the final content span's audio** — that fade clips the last word. Let the last span run unfaded.
+- **⚠️ Do NOT append a QUIETER raw tail right after the final word.** The body is loudnorm'd; raw trailing footage is ~10–15 dB quieter. Splicing it on immediately after the last word makes that word's natural decay fall off a cliff — it *sounds* cut in half even though the word is technically present ("everything … you can't hear all the way"). For the FINAL word, **hard-cut on the word's own full decay** (no quiet append). A natural tail is only safe after a clean pause, not glued to the last syllable.
+- **For a HARD end, don't fade the last word either** (`fo→0.01`): there's no next word to bleed at the clip end, so let it ring out fully and cut clean. (Verified: 06 "everything" 92.78→93.26 s ran to a clean 93.3 s end.)
+- **If the audio right after the last word is messy** (a stumbled CTA, no clean silence), a clean **hard cut on the word** beats a fade — the client may just want "end it there."
+
+## ⭐ VERIFY before you show — never ship a seam blind
+- **🛑 ASR IS BLIND TO CLIPPING — the #1 trap (it cost a whole revision round).** Whisper AND Gemini's `video_watch` both *transcribe* — they report the word they EXPECT, even when the audio is clipped, glitchy, or has a leftover fragment. A half-cut "everythin·" still transcribes as "everything"; a leftover "so I'm talking" gets smoothed away; a clipped "tes·" reads "test". **NEVER use a transcript (Whisper OR Gemini) to confirm a word is intact or a seam is clean — it will say "clean" and the user's ear will catch what you missed.**
+- **Verify word-integrity OBJECTIVELY, two ways:** (1) pull the word's `start/end` from the CUT clip's own word-json — a real word keeps its full ~0.2–0.5 s and the file doesn't end mid-word; a clipped one is suspiciously short or the clip ends before the word's label does. (2) Look at a **time-axis spectrogram** of the spot (`showspectrumpic=s=1280x460:legend=1`): a complete word's formants taper out; a clipped one ends on a hard vertical edge; a leftover shows extra energy sitting in the "gap." Compare against the RAW word if unsure.
+- **The user's ear is the final QC — and the ONLY reliable check for sub-200 ms artifacts.** Pre-empt what you can with spectrograms; for the rest, hand them SPECIFIC timestamps to confirm rather than claiming "fixed." Claiming fixed off an ASR pass and being wrong burns trust fast.
+
+## ⭐ THE TRANSCRIPT IS NOT GROUND TRUTH — timestamps drift, ASR hallucinates (the client batch, 2026-06-06; cross-client)
+- **Source-transcript timestamps can be LOCALLY WRONG by 1–5 s** — not a global offset, a *local* glitch at hard spots (restart-heavy / very slow / long-pause regions). The words are right but their TIMES are off, so a PHRASE-resolved cut trims the WRONG audio. (the client #22 ended its payoff a word early; #23 opened on the previous clip's "she's into you" bleed; #25's stumble survived 3 cuts — all the SAME bug at ~170 s / ~415 s.)
+  - **Tell-tale:** the RENDERED clip ≠ `--print-only` (print-only computes from transcript times; the file's real content differs). Or a phrase-cut "misses" something you can plainly hear.
+  - **Find the TRUE time:** frame-match the rendered clip's first frame against a SOURCE time-sweep (min mean-abs-diff over gray 160×284 frames = the real source time), AND/OR **re-transcribe just that 15–20 s region** (`whisper-cli -dtw`, add the ss offset) for ground-truth word times.
+  - **Fix:** cut by **NUMERIC TIME** there, not by phrase (engine now accepts numeric `start`/`end`; `cuts` already took `[t0,t1]`). Phrase-resolution is great when the transcript is trustworthy — bypass it when it's locally garbage.
+- **ASR doesn't just MISS clipping — it HALLUCINATES expected words.** Whisper AND Gemini will INSERT a word the context implies even after you cut its audio: a list "one… two… three" comes back with "two" re-inserted once "one" & "three" survive. After a cut, **DROP any words the re-transcribe re-inserts between your kept boundary words** (e.g. drop everything strictly between "are" and "how"), or the caption shows a word with no audio.
+- **The RMS ENVELOPE is your objective ground-truth** (faster than a spectrogram here): dump per-window dB of the RENDERED clip (30–50 ms windows, `sqrt(mean(x²))→dB`) and read it — voiced blobs = words/fillers, troughs = gaps, where energy decays to the floor = a word's TRUE end. Use it to (a) place a numeric cut, (b) confirm a filler/word is really gone, (c) find a drawn-out word's real end. Don't trust the transcript for any of these.
+- **Drawn-out vowel-final words ("are"→"areee", "so"→"soooo") end FAR past their label.** Cutting at the label (or "a little after") clips them — they sound chopped. End the keep at the envelope's decay-to-floor, NOT the label. (the client #25: "are" rang to 16.85 but I cut at 16.50 → clipped; client caught it instantly. The fix was starting the cut at 16.88.)
+
+## ⭐ FILLERS / breaths mid-gesture — MUTE or CUT, the CLIENT decides
+- A filler ("ahh", "um") or breath that lands WHILE she's mid-gesture (counting on fingers, hand moving) can't be hard-cut without a **pose jump** (the hand teleports — "you made it worse").
+  - **MUTE it** (`volume=enable='between(t,A,B)':volume=0`, video `-c:v copy`): video stays continuous (no jump), the music bed fills the beat. Best when the complaint is "jumpy."
+  - **HARD-CUT it** (trim+concat): tighter, pose jumps — fine **only if the client asked for a cut.**
+- **Don't decide for them.** If they say "cut," cut. If they say "jumpy," mute. Pick the tool they named.
+
+## MUSIC — a DIFFERENT, vibe-matched track per clip (NEVER the same song twice)
+- Pull from the client's TikTok music folder (`…/content-skill-system/(1) Tik Tok/(1) Calm/`). Match each clip's FEELING (reflective / flirty / uplifting / chill / cool). Reusing one song across a batch reads as lazy — the client WILL call it out ("not the same fucking song").
+- **Loudnorm each track to a consistent bed** (`loudnorm=I=-29:TP=-3`) before mixing under the −16 LUFS voice, so different masters all sit at the same felt level. Instrumental (or vocal-light) so it doesn't fight her words; `amix=…:normalize=0` keeps the voice level; gentle in/out afades.
+- **Vibe → track cheat-sheet** (Calm folder): reflective/mature → Einaudi *Experience* / Clair de Lune / *To Build A Home* · confident/cool → FKJ *Ylang Ylang* / Jack Harlow instrumental · warm/romantic → *Married Life* / yung kai *blue* · uplifting/aspirational → Harry Styles *Fine Line* / OneRepublic *I Ain't Worried* / Childish Gambino *Feels Like Summer* · flirty/playful → Hozier *Too Sweet* · chill → Mac Miller *Self Care* · cool/moody → Lorde *The Love Club* / Frank Ocean *Pink + White*.
+- Grade (blur/vignette) is OPT-IN per client — the client said NO grade. b-roll is also opt-in and "less is more" (she ended up pulling ALL of it except one clip). Don't add either unless asked.
+- **This is a STANDING RULE for EVERY music request, any client** — Maddex loved it on the the client batch ("save that literally everywhere"). Full logic + worked example: memory `reference_music_selection_2026-06-06.md`.
+
+## REFRAME (16:9 → 9:16) — → skill: `horizontal-to-vertical`
+> 🛑 CANONICAL = `qa_reframe_v2.py --preset {alex-listicle|alex-stage|alex-split-top|guest|podcast}`
+> (Y-LOCK eyeline + face-BOX center). The flags below belong to the LEGACY `reframe_yunet.py`
+> and are kept only for the older listicle chain — do NOT start new work from them
+> (corrected 2026-08-03; this section used to prescribe the legacy script outright).
+- `--pick anchor` locks to the dominant-position face + ignores audience/background; `--min-score 0.6` + the Y-band reject hand/skin false-positives on a gesturing speaker.
+- **`--static` = LOCK the crop to ONE constant nose (x,y) for the whole clip** — for SEATED speakers who gesture a lot (thrown-up hands kept stealing the track). A standing/moving speaker keeps tracking; `--anchor-x <frac>` biases onto the speaker amid a crowd (A-cam stand-ups).
+- **No face in the shot (whiteboard / wide board cam) → pass `--anchor-x`** so no-face frames hold there (a static board crop) instead of erroring "no faces detected".
+- `--face-y` Y-locks the nose high so captions clear the chin; `--res 4k` for finals.
+
+## ⭐ CACHED PIPELINE — don't regenerate the whole clip per note (Maddex 2026-06-07)
+- Build the finisher as make-style STAGES, each writing a cached artifact, each rebuilt ONLY when its input/params change. A grade change re-runs grade→burn; a caption restyle re-runs the burn; the slow 4K reframe, the LLM director, and the transcript run ONCE and are reused (worked example `…/revise/finish.py`). Never re-cut/re-transcribe a clip just to tweak a grade or a caption.
+- **Subjective grade rejected → render a STILL bake-off** (3–4 looks on a hero frame), let the client PICK; stop guessing on full renders. For well-balanced Rec.709 footage, RAW / no grade is often the right answer.
+- **Batch-propagating a locked recipe:** per-clip engine (`propagate.py`) + parallel runner (`batch_propagate.py`, skip-if-exists = resumable, cap ~3) + a rank-rename deliver step. SANITY-RUN 2–3 clips first, verify, then release the rest. Watch disk — 4K renders are big; self-clean each clip's intermediates.
+
+## B-ROLL (opt-in) — `broll-cutaway/`
+- Cut to VIDEO, never photos — named people on a stage/interview (when the speaker names them) + concept b-roll (e.g. a meditating monk) as multiple ~2 s shots. CENTER the b-roll subject (reframe/anchor) like the talking head.
+- **NO glare-sweep transition, NO click SFX** — Maddex tried both, then cut both (`insert_broll --no-transition`). Captions burn LAST (2-pass) over the b-roll.
+
+## PROCESS META-LESSONS
+- **Use the user's OWN locked pipeline/tools** — never hand-roll a worse version of something they've already built (captions, jumpcut, audio chain).
+- **HONOR the client's EXACT instructions — do NOT "improve" them.** When they give frame timestamps, use THOSE frames (don't over-trim "to be cleaner" — you'll clip a word). When they say "cut," CUT — a dissolve or a mute is a *different thing* and reads as ignoring them. Substituting my own approach (a dissolve on #26, a mute on #25, an over-clean cut that ate "are") cost multiple rounds and trust. Their timestamps are usually right; trust them over your instinct.
+- **BUT when literal marks would break a sentence (mid-phrase joins), PROPOSE a clean-boundary version and CONFIRM before rendering.** Snap cuts to sentence/phrase boundaries and drop the WHOLE tangent rather than slicing mid-thought. Don't render the broken literal cut — and don't *silently* substitute your own (that's what burned trust above); the one-line confirm is what makes the deviation safe. A confirmed clean cut can beat the raw marks (the lottery clip: "you did it differently than I wanted, but I like this better — kudos"). Engine: `recut_clip.sh` = precision_cut keep-spans → re-seam the gold question → re-caption + vibe music.
+- **One change = re-verify THAT change (envelope + ear) BEFORE showing.** Never hand back a "fix" that's secretly worse — that's how you turn one round into five.
+- **When the user flags a problem, FIX it directly** — don't circle on options/explanations. Change → verify → show.
+- **Diagnose on the transcript + word timings**, not by guessing. Pull exact `word.start/end` to locate a bad seam.
+- **Folders:** one project = one folder **under the client** (`~/Downloads/<client>/<date>_<title>/`): COPY raw → `00_SOURCE/`, all renders/versions → `10_WORK/`, ONLY the finished ACQ-named clip → `20_DELIVER/`.
+
+## ⭐ SPEECH-MAP BOUNDARIES — the Turing-test standard (LOCKED 2026-07-31, editor-approved "holy shit")
+The editor's spec, verbatim: *"have the most accurate frame measurement for when words start and
+end, and then don't make cuts when there are words talking."* Engine: **`_shared/speech_map_cut.py`**.
+1. **INVARIANT:** a cut lands on a source-rate video frame in a verified quiet inter-word gap,
+   edge-hugging (never wander deep into a pause). The default Silero path requires
+   `speech_end+45ms ≤ cut ≤ next_onset−60ms` in the current Assembly Design
+   editor-review path. The shared engine's 25/40ms defaults remain for older
+   strict callers; they are not the assembly defaults. Silero merges some genuine 65–140ms
+   pauses; the existing engine may mark `OK_MICRO_GAP` only when adjacent word
+   labels do not overlap, a frame has ≥25ms clearance on both sides, and its
+   20ms RMS window is ≤−36dB and below the surrounding speech. This is a
+   measured short quiet gap, not a license for arbitrary active-speech cuts.
+   Audit the rendered seam; ASR alone cannot prove the word tails survived.
+   Instruments triangulated: Silero = where speech physically is (breath/laugh ≠ words) · RMS 5ms =
+   quietest legal frame · ASR words = only WHICH gap a boundary belongs to, never WHERE it lands.
+2. **FUSED = REFUSE THAT EDGE, NOT THE CANDIDATE.** If another word's label sits between the boundary word and
+   the nearest gap, the engine refuses that requested cut and prints candidate boundary words. Fix is EDITORIAL:
+   **merge through the connective speech** (keeping more almost always reads better — proven: every
+   V2 "route-around-the-stammer" splice sat in continuous speech and bumped), move to a real pause,
+   restore the minimum inseparable connector through a revised plan, drop an optional segment, or
+   place playable uncertainty in `EDITOR_REVIEW` for human listening. The active
+   review resolver preserves independently measured opposite edges and uses a
+   bounded local-RMS source-frame choice with at most one extra handle frame at
+   refused edges; it never calls that edge certified clean.
+   Trailing laugh/breath with NO word between = extend through it, cut in the real gap beyond.
+3. **Loop to exit 0.** Draft spans (phrase-anchored, `spans_from_phrases`-style) → engine → resolve
+   FUSED → repair → re-run. A span set that never reaches exit 0 is not clean-approval media;
+   it is re-boundaried, redesigned, or made playable for explicit human review—not silently discarded.
+   Proven 21/21 clean boundaries on the 2026-07-31 CutTuringTest batch; ASR labels alone ran 1–5
+   frames early on consonant tails and sat mid-speech at seams — label+pad is NEVER sufficient.
+
+## Clean splices — SNAP every cut to inter-word silence (LOCKED 2026-06-12, Alex PeaceOrPower)
+The #1 audio complaint = cuts landing mid-word + clicks/pops at the joins. Root cause: **ASR word-label
+timing is NOT a safe cut point.** Per model the label sits a hair EARLY (shaves soft consonants) OR exactly
+at the NEXT word's start (so a span END on the label lands mid-speech → chopped word + pop).
+RULES (now enforced by `_shared/faded_trim_cut.py`):
+1. End a span at the word's TRUE ACOUSTIC end (energy scan, ≥0.14s sustained-quiet so internal phoneme
+   stops like re-PEAT-able don't trigger early), NOT the label.
+2. SNAP the actual cut to the quietest ~10ms window in the trailing/leading silence around the boundary —
+   every join becomes silence→silence. (`quietest()` / `snap_end()` / `snap_start()`.)
+3. ≥12ms afade at each splice (6ms was too short — left clicks).
+4. First word: snap to its ACOUSTIC ONSET so a fused preceding word ("So when…") isn't dragged in.
+5. **fps**: `_shared/precision_cut.py` forces 30fps → unusable on 23.976/other sources (drift, borked
+   audio). Use `_shared/faded_trim_cut.py` which PROBES & preserves the source fps.
+Cutter: `python3 __ACQ_SKILLS__/_shared/faded_trim_cut.py spans.json out.mp4 --source <src.mp4>
+   --words <transcript.words.json>` ; spans = `{"spans":[{"a":<startWordIdx>,"b":<endWordIdx>}, ...]}`.
+VERIFY before delivery: per-cut pre/post RMS both ≤ ~-28dB (in silence) + boundary sample-jump < 0.15.

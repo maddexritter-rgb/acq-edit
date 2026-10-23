@@ -1,0 +1,11 @@
+{
+  "name": "qa",
+  "description": "Single-cam Q&A / hotline from stage cam. Same stage chain as listicle; project manifest should set reframe.preset='alex-stage' (zoom 1.6, eye_y 0.18 — tight ROI excludes audience). Use multicam_qa pipeline (TODO) for host+guest split-screen.",
+  "stages": ["cut", "reframe", "grade", "captions", "mix", "leadfix"],
+  "notes": {
+    "reframe.preset": "alex-stage",
+    "captions": "host=white only (single cam = one speaker on screen); dual-color (host=white, guest=yellow) only if both speakers share the same camera frame.",
+    "leadfix.head_trim": "Keep ~0.063s — Q&A clips have the same SOP head-trim as listicles.",
+    "music": "NONE. Q&A clips ship VOICE-ONLY — no music bed, ever (Maddex 2026-06-22: client pulled music + copyright risk on >60s Shorts). Do not set a music path in the qa manifest; qa_assembly hard-ignores --music unless ACQ_QA_ALLOW_MUSIC=1."
+  }
+}

@@ -1,0 +1,1 @@
+{"name":"@acq/edit-motion","private":true,"type":"module","version":"0.1.0","scripts":{"render":"node render.mjs"},"dependencies":{"remotion":"4.0.538","@remotion/bundler":"4.0.538","@remotion/renderer":"4.0.538","react":"19.2.0","react-dom":"19.2.0"}}

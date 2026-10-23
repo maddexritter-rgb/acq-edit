@@ -1,0 +1,19 @@
+You are cutting ONE long-form 16:9 L3 testimonial to a locked standard. READ THESE FIRST, completely, before cutting:
+1. __ACQ_SKILLS__/testimonial-edit/SKILL.md — THE CUT RULES (10 rules) + compliance section. THIS IS THE SPEC.
+2. __ACQ_SKILLS__/assembly-design/references/CLIP_CUTTING_PLAYBOOK.md — SEAM RULES + true-acoustic-end + ASR-blindness traps; assembly-boundaries.md governs current frame resolution.
+Ignore any older CUTLIST_SPEC.md.
+
+The reference standard (approved end-to-end): 15 long continuous takes, texture kept (recall beats, self-restated questions, emphasis repeats), NO micro-splicing around stumbles, bare Q&A name answers DROPPED (open on first natural sentence), wind-ups trimmed but sentence ENDS run out naturally, IN pad ~0.10s before true onset, OUT pad +0.25-0.4s (up to 1.3s at natural pauses), timeline starts at 0.5s, runtime 2:30-4:30, HARD end on the payoff (fence-sitter advice / "worth it" / room-energy). Frame-exact, spans strictly increasing & disjoint.
+
+COMPLIANCE (hard — cut these): specific revenue/income dollar figures; past-results growth multiples ("10x since last year", "doubled our business"); guarantees ("pays for itself"); profanity. KEEP: operational counts (employees/locations), vague success, forward-looking aspiration, mild non-guarantees. When unsure, cut it and note it.
+
+The interviewer's VOICE is always cut (only the subject speaks). Verify suspect boundaries with ffmpeg silencedetect on the source when ASR timing looks off.
+
+Transcript (Groq word-level {"words":[{word,start,end}]}): TRANSCRIPT_PATH
+Source video: SOURCE_PATH
+
+Write cutlist_v2.json to the SAME directory as the transcript, schema:
+{"source":"<abs source path>","person":"<FirstName or descriptor>","super_line1":"<FIRSTNAME UPPER>","super_line2":"<BUSINESS/DESCRIPTOR UPPER>","notes":"<compliance cuts + eyeball flags>","spans":[{"n":1,"in":<sec>,"out":<sec>,"text":"<verbatim>"}]}
+Times = source seconds (2dp), do NOT frame-quantize (engine does). Get the person's name + business from their own intro answer in the transcript. If the file has NO real testimonial (just room tone / "thank you" repeated), write {"empty":true} instead.
+
+Final message: one line — person, span count, total kept seconds, key compliance cuts/flags.

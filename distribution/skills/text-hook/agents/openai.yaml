@@ -1,0 +1,4 @@
+interface:
+  display_name: "Text Hook"
+  short_description: "Turn a clip’s takeaway into a useful standalone text hook"
+  default_prompt: "Use $text-hook to write a useful standalone takeaway and place it below this clip’s captions."

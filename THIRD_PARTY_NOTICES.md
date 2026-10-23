@@ -1,0 +1,8 @@
+# Third-party notices
+
+- FilmCraft by Storytold: [source](https://github.com/storytold/filmcraft), pinned commit in the installer. Dual MIT / Apache-2.0. Engine source is fetched separately, including its original license files. Keep those files with any redistributed binary. Do not remove notices or represent the engine as original ACQ code.
+- Premiere Pro MCP / Premiere Agent Lab snapshot: original MIT license included at `integrations/premiere-agent/LICENSE`. Local production extensions and scoped canonical launchers are included as source. The dependency lockfile has been updated in this distribution for patched MCP SDK/transitive dependencies; the original source hashes remain in `integrations/premiere-source-manifest.json`.
+- Remotion: [license FAQ](https://www.remotion.dev/docs/license/faq). This toolkit does not grant a Remotion commercial/automation license. The organization must meet the applicable license terms before enabling its rendering integration. No license purchase is performed by setup.
+- Adobe Premiere Pro and Blackmagic DaVinci Resolve Studio are separately installed and licensed applications; their application binaries and SDK documentation are not redistributed here.
+- Canonical editing procedures are private team material. Brand fonts, footage, music, stock assets, database contents and private credentials are not included.
+- FFmpeg, yt-dlp, rclone, Python and Node are installed separately with their respective licenses. npm and Python dependency notices remain in their installed packages.

@@ -1,0 +1,28 @@
+Find the BUSINESS-INTRO OPENING for one L3 testimonial. Framework (approved "Stetson style"):
+the clip OPENS on the guest stating their BUSINESS (e.g. "I have a construction company called
+TCG Construction" / "I own a marketing agency"), name is NOT spoken (it lives in the on-screen
+super), then question cards follow. So span 0 must be a clean business intro.
+
+Inputs in the WORKDIR:
+- clip_00.json : {"words":[{word,start,end}]} full raw transcript (interviewer + guest).
+- cutlist_v2.json : {"spans":[{n,in,out,text}], "person","super_line1","super_line2",...} kept answer spans.
+
+The guest's business intro is near the START of the source — their answer to "what is your name
+and what is your business". Find it in the transcript. DROP the "my name is X" portion (name →
+super); KEEP the business sentence(s), tight.
+
+Decide the opening and write opening.json to the WORKDIR:
+- If cutlist_v2 span 0 is ALREADY a clean business intro (states the business, no "my name is"),
+  write {"mode":"keep"}.
+- If span 0 contains "my name is X" (with or without the business), write
+  {"mode":"replace","intro":{"in":<sec>,"out":<sec>,"text":"<business sentence, name dropped>"}}
+  — boundaries trimmed to EXCLUDE the name and land in inter-word silence.
+- If span 0 is a mid-answer with NO business intro, find the business-intro line near the source
+  start and write {"mode":"prepend","intro":{"in":<sec>,"out":<sec>,"text":"..."}}.
+
+For any intro in/out you output: VERIFY the boundaries sit in real inter-word silence using
+ffmpeg silencedetect on the source (mean-6dB floor) — in just before the first business word's
+onset, out just after the last word's true end. Keep it to the business descriptor only
+(1 sentence, ideally < 6s).
+
+FINAL MESSAGE: one line — person, mode, and the intro text (or "keep").

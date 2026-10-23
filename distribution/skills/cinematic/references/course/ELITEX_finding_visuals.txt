@@ -1,0 +1,49 @@
+# Sourcing & Execution — "Finding every visual"  (2:49)
+# Lesson description: "Link to the site: pinterest.com"
+# Pulled from the lesson's own English CC track, 2026-08-10. (ASR punctuation as-is.)
+
+Okay, the next thing I will show you is how to find every single image of visual you need. Most of
+the time we will work with Pinterest. Sometimes you can also find images on Google, Twitter or
+even Instagram, but most of the time Pinterest is the best option for every single visual you need.
+
+For example, let's say I take a random image from my profile. Let's just say this one of Michael
+Jordan. I take a screenshot of it. I think you can't see it the power right now, but I take a
+screenshot. Then I go to Google search and use the image search function. I upload the screenshot
+there and let Google scan it. Right, so as you can see here, after that you will see many results.
+Now I just scroll through the results until you find like the original image, and you will search
+for something that's from Pinterest — like for example here. You open the link in new tab and as
+you can see here, here's the exact image we wanted, and here now you can download the image easily.
+
+That's basically how you do it for all images. It's that simple. Sometimes you won't find the
+images on Pinterest right away, then you need to search a little bit longer. Maybe look on
+Instagram or go through different links if it's a harder image to find. But trust me, most of the
+time Pinterest works perfectly, because every single visual — like almost every single visual —
+is there.
+
+So that's how you do it. And one more thing to mention: if you search for images on Pinterest,
+more and more often the algorithm will start to understand what kind of pictures you like. For
+example, if you keep searching for cinematic or aesthetic images, the next time you open Pinterest
+it will automatically suggest more of those kinds of images to you, right? So after some time you
+won't even need to search that much anymore, because the right visuals will already show up on
+your home page, because the algorithm has updated your interests over and over again.
+
+
+## WHAT THIS IS ACTUALLY TEACHING
+
+**Reverse-image search is the retrieval tool, Pinterest is the store.**
+
+1. See a visual you want (in someone's reel, on a profile, anywhere) -> **screenshot it**.
+2. Google Images -> upload the screenshot -> reverse search.
+3. Scroll the results specifically hunting for **a Pinterest result** — that is the one that
+   carries the clean, full-resolution original. Open it and download from there.
+4. Fallbacks when Pinterest doesn't have it: Instagram, Twitter, plain Google.
+
+**The feed is a long-term asset.** He deliberately trains the Pinterest recommender by repeatedly
+searching cinematic/aesthetic, until the home feed becomes a curated visual library that needs no
+searching. Sourcing cost drops to near zero over time.
+
+🛑 RELEVANCE TO US: we already have his 503-visual pack, so this is not a blocker. What is
+transferable is the **screenshot -> reverse-image -> find the Pinterest original** loop for
+matching a specific look on request, and the idea that a trained feed beats per-clip searching.
+Note this is an IMAGE (stills) workflow — his moving b-roll comes from the separate
+"Finding B-Roll Clips and 4k Scenepacks" lesson (already extracted).

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Content Check"
+  short_description: "Check the hook, payoff, goodwill and earned length"
+  default_prompt: "Use $audit-script to check this piece against the content framework and give me a quick verdict with the most important fixes."
