@@ -6,7 +6,7 @@ A private, Mac-based editing toolkit for Codex and Claude Code. Give your agent 
 
 ## Start here
 
-Requirements: macOS, Node.js 24+, Python 3.11+, FFmpeg/ffprobe, and an authenticated Codex or Claude Code CLI. Install only the editor you choose. Resolve requires Studio 21.1; Premiere requires a supported Agent Lab host profile. FilmCraft runs headlessly.
+Requirements: macOS, Node.js 24+, Python 3.11, FFmpeg/ffprobe, and an authenticated Codex or Claude Code CLI. Install only the editor you choose. Resolve requires Studio 21.1; Premiere requires a supported Agent Lab host profile. FilmCraft runs headlessly.
 
 ```sh
 git clone git@github.com:maddexritter-rgb/acq-edit.git
@@ -19,6 +19,8 @@ node dist/cli.js setup
 node dist/cli.js credentials
 node dist/cli.js doctor
 ```
+
+See [installation verification and recovery](docs/INSTALLATION.md) for selected-engine prerequisite checks, repeat installs and retained partial installations.
 
 Setup stores configuration and API keys under `~/.config/acq-edit`, outside the checkout. API key entry is hidden. Supply your own AssemblyAI and Gemini keys. Maddex supplies the restricted editorial-brain reader configuration through a separate private channel. No database service-role key belongs on a teammate's machine.
 

@@ -19,4 +19,16 @@ if manifest.exists():
  for entry in json.loads(manifest.read_text())['files']:
   p=ROOT/'distribution/skills'/entry['path']
   if hashlib.sha256(p.read_bytes()).hexdigest()!=entry['distribution_sha256']:hits.append(entry['path']+': manifest mismatch')
+premiere_manifest=ROOT/'integrations/premiere-source-manifest.json'
+if premiere_manifest.exists():
+ overrides=json.loads((ROOT/'integrations/premiere-distribution-overrides.json').read_text())['files']
+ overrides={entry['path']:entry for entry in overrides}
+ source_entries=json.loads(premiere_manifest.read_text())['files']
+ for entry in source_entries:
+  override=overrides.get(entry['path'])
+  if override and override['originalSourceSha256']!=entry['sha256']:hits.append(entry['path']+': original Premiere source hash mismatch')
+  expected=override['distributionSha256'] if override else entry['sha256']
+  p=ROOT/'integrations/premiere-agent'/entry['path']
+  if not p.is_file() or hashlib.sha256(p.read_bytes()).hexdigest()!=expected:hits.append(entry['path']+': Premiere distribution hash mismatch')
+ if set(overrides)-{entry['path'] for entry in source_entries}:hits.append('Unknown Premiere distribution override')
 print(json.dumps({'files_scanned':len(files)-1,'findings':hits},indent=2));sys.exit(bool(hits))

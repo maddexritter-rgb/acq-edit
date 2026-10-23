@@ -4,7 +4,7 @@ A pilot release is blocked until every required row passes on actual media and e
 
 | Scenario | Current evidence | Remaining acceptance |
 |---|---|---|
-| Fresh clone, Codex, clean Mac | TypeScript builds; packaged sources audited; installed Codex start/resume and real FilmCraft synthetic build/review revision passed | Setup and full editorial job on clean Mac |
+| Fresh clone, Codex, clean Mac | Isolated-directory Resolve install and verified rerun pass; TypeScript builds; packaged sources audited; installed Codex start/resume and real FilmCraft synthetic build/review revision passed | Setup and full editorial job on clean Mac |
 | Fresh clone, Claude, clean Mac | Headless result/error handling tested; installed CLI returned explicit low-credit error | Real permitted editing job and exact-session recovery |
 | FilmCraft only | Native two-cut/text fixture, save/reopen, 50-frame H264/AAC render; actual Codex build and browser-submitted caption revision passed | Real source-word design, precision joins, all finishing, broader revisions |
 | Resolve only | Studio 21.1.1 native cuts/Fusion/render; actual Codex build and browser-submitted caption revision published two 50-frame versions, with an exact-audio check failure | Resolve audio qualification, real source-word design, complex finishing and independent clean installation |

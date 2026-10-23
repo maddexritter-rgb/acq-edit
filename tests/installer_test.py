@@ -1,0 +1,160 @@
+import hashlib
+import json
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
+import materialize
+import install_engine
+
+
+class MaterializationTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix='acq install spaces ')
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.assets = self.root / 'private assets'
+        self.source = self.root / 'distribution/skills'
+        self.entries = []
+        for name, content in [('edit/SKILL.md', 'Use __ACQ_SKILLS__ and __ACQ_ASSETS__'),
+                              ('helper/script.py', 'print("__ACQ_LEGACY_HOME__")')]:
+            p = self.source / name
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(content)
+            self.entries.append({'path': name, 'distribution_sha256': hashlib.sha256(p.read_bytes()).hexdigest()})
+        self.write_manifest()
+
+    def write_manifest(self):
+        (self.root / 'distribution/SOURCE_MANIFEST.json').write_text(json.dumps(
+            {'schema': 'acq-edit/source-manifest-v1', 'files': self.entries}))
+
+    def build(self):
+        return materialize.materialize(self.root, self.assets)
+
+    def test_repeat_is_verified_without_overwriting_and_records_provenance(self):
+        first = self.build()
+        target = self.root / '.local/skills/edit/SKILL.md'
+        before = target.stat().st_mtime_ns
+        second = self.build()
+        self.assertEqual(first, second)
+        self.assertEqual(before, target.stat().st_mtime_ns)
+        self.assertIn(str(self.assets), target.read_text())
+        receipt = json.loads(Path(first['receipt']).read_text())
+        self.assertEqual(receipt['blockedReferences'], ['helper/script.py'])
+        self.assertEqual(receipt['files']['edit/SKILL.md'], hashlib.sha256(target.read_bytes()).hexdigest())
+
+    def test_late_corrupt_source_writes_no_runtime(self):
+        (self.source / self.entries[-1]['path']).write_text('corrupt')
+        with self.assertRaisesRegex(RuntimeError, 'hash mismatch'):
+            self.build()
+        self.assertFalse((self.root / '.local').exists())
+
+    def test_path_traversal_and_duplicate_refused_before_writes(self):
+        for name in ['../outside', '/tmp/outside', 'edit/../outside', 'edit//SKILL.md', 'edit/SKILL.md']:
+            with self.subTest(name=name):
+                self.entries[-1]['path'] = name
+                self.write_manifest()
+                with self.assertRaisesRegex(RuntimeError, 'Invalid or duplicate'):
+                    self.build()
+                self.assertFalse((self.root / '.local').exists())
+
+    def test_edited_missing_or_extra_runtime_is_preserved(self):
+        self.build()
+        target = self.root / '.local/skills/edit/SKILL.md'
+        target.write_text('user work')
+        with self.assertRaisesRegex(RuntimeError, 'changed or extra'):
+            self.build()
+        self.assertEqual(target.read_text(), 'user work')
+        target.unlink()
+        with self.assertRaisesRegex(RuntimeError, 'incomplete'):
+            self.build()
+
+    def test_asset_change_or_unreceipted_runtime_is_preserved(self):
+        self.build()
+        with self.assertRaisesRegex(RuntimeError, 'different distribution'):
+            materialize.materialize(self.root, self.root / 'other assets')
+        (self.root / '.local/skills' / materialize.RECEIPT).unlink()
+        with self.assertRaisesRegex(RuntimeError, 'no installation receipt'):
+            self.build()
+
+    def test_source_and_destination_symlinks_refused(self):
+        target = self.source / self.entries[-1]['path']
+        other = self.root / 'outside.py'
+        target.rename(other)
+        target.symlink_to(other)
+        with self.assertRaisesRegex(RuntimeError, 'Symlink'):
+            self.build()
+        target.unlink()
+        other.rename(target)
+        (self.root / '.local').symlink_to(self.root / 'outside')
+        with self.assertRaisesRegex(RuntimeError, 'Symlink'):
+            self.build()
+
+    def test_reservation_refuses_parallel_or_interrupted_install(self):
+        local = self.root / '.local'
+        local.mkdir()
+        lock = local / 'materialize.lock'
+        lock.write_text('{"pid": 123}')
+        with self.assertRaisesRegex(RuntimeError, 'reservation exists'):
+            self.build()
+        self.assertTrue(lock.exists())
+        self.assertFalse((local / 'skills').exists())
+
+    def test_failed_staging_never_exposes_partial_live_runtime(self):
+        original = Path.write_bytes
+        def fail(p, data):
+            if p.name == 'script.py':
+                raise OSError('simulated full disk')
+            return original(p, data)
+        with patch.object(Path, 'write_bytes', fail):
+            with self.assertRaisesRegex(OSError, 'full disk'):
+                self.build()
+        self.assertFalse((self.root / '.local/skills').exists())
+        self.assertTrue(list((self.root / '.local').glob('skills-stage-*')))
+        self.build()
+
+
+class EnginePreflightTests(unittest.TestCase):
+    def test_dirty_filmcraft_never_rechecks_out_or_materializes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / '.local/filmcraft/.git').mkdir(parents=True)
+            changed = root / '.local/filmcraft/user-work.txt'
+            changed.write_text('keep this')
+            with patch.object(install_engine, 'ROOT', root), patch.object(install_engine, 'preflight', return_value={'errors': []}), patch.object(install_engine, 'output', return_value=' M Cargo.toml'), patch.object(install_engine, 'materialize') as build, patch.object(install_engine, 'run') as run:
+                with self.assertRaisesRegex(RuntimeError, 'local changes'):
+                    install_engine.install('filmcraft', root / 'assets')
+                build.assert_not_called()
+                run.assert_not_called()
+            self.assertEqual(changed.read_text(), 'keep this')
+            self.assertFalse((root / 'assets').exists())
+
+    def test_resolve_requires_no_other_editor_build_tools(self):
+        requested = []
+        def which(name):
+            requested.append(name)
+            return '/tools/' + name
+        with patch.object(install_engine.shutil, 'which', which), patch.object(install_engine, 'output', return_value='v24.0.0'), patch.object(Path, 'is_file', return_value=True):
+            result = install_engine.preflight('resolve')
+        self.assertTrue(result['prerequisitesPresent'])
+        self.assertEqual(requested, ['node', 'ffmpeg', 'ffprobe'])
+        self.assertFalse(result['nativeWorkflowQualified'])
+
+    def test_missing_selected_prerequisite_prevents_install_writes(self):
+        with tempfile.TemporaryDirectory() as tmp, patch.object(install_engine, 'ROOT', Path(tmp)), patch.object(install_engine.shutil, 'which', return_value=None):
+            with self.assertRaisesRegex(RuntimeError, 'Missing executable'):
+                install_engine.install('premiere', Path(tmp) / 'assets')
+            self.assertEqual(list(Path(tmp).iterdir()), [])
+
+    def test_old_node_and_rust_are_specific_failures(self):
+        with patch.object(install_engine.shutil, 'which', side_effect=lambda name: name), patch.object(install_engine, 'output', side_effect=lambda args: 'v22.0.0' if args[0] == 'node' else 'rustc 1.94.0'):
+            result = install_engine.preflight('filmcraft')
+        self.assertFalse(result['prerequisitesPresent'])
+        self.assertEqual(len(result['errors']), 2)
+
+
+if __name__ == '__main__':
+    unittest.main()
