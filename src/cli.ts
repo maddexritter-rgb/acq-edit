@@ -33,7 +33,7 @@ async function main(){
   }finally{rl.close()}return;
  }
  if(command==='credentials'){const {spawn}=await import('node:child_process');await new Promise<void>((resolve,reject)=>{const child=spawn('python3',[path.join(ROOT,'scripts','credentials.py'),HOME],{stdio:'inherit'});child.on('error',reject);child.on('close',code=>code===0?resolve():reject(new Error('Credential entry failed')))});return}
- if(command==='help'||!command){console.log(`ACQ Edit\nsetup [backend] [agent]\ncredentials\ndoctor\nproject <title>\nprojects\nopen <project-id>\nsource <project-id> <file>\nyoutube <project-id> <url>\ndrive <project-id> <url> [rclone-remote]\nintakes <project-id>\nintake-abandon <intake-id> <evidence.json>\nintake-recover <intake-id>\nbuild <project-id> <request>\nclip <project-id> <title>\npublish <project-id> <render-receipt.json>\nserve [--no-worker]\nworker\nreconcile <job-id> <ready|failed> <evidence-path>\nnative <project-id> <compile|inspect|build|revise|render> <packet.json>\n`);return}
+ if(command==='help'||!command){console.log(`ACQ Edit\nsetup [backend] [agent]\ncredentials\ndoctor\nproject <title>\nprojects\nopen <project-id>\nsource <project-id> <file>\nyoutube <project-id> <url>\ndrive <project-id> <url> [rclone-remote]\nintakes <project-id>\nintake-abandon <intake-id> <evidence.json>\nintake-recover <intake-id>\nbrain <project-id> <request.json>\nbuild <project-id> <request>\nclip <project-id> <title>\npublish <project-id> <render-receipt.json>\nserve [--no-worker]\nworker\nreconcile <job-id> <ready|failed> <evidence-path>\nnative <project-id> <compile|inspect|build|revise|render> <packet.json>\n`);return}
  const c=await config();const store=new Store(path.join(HOME,'state.sqlite'));
  if(command==='doctor'){
   const checks:Record<string,unknown>={node:process.version,platform:process.platform,backend:c.backend,agent:c.agent};
@@ -58,6 +58,12 @@ async function main(){
  case 'project':invariant(args[0],'Project title required');output(await createProject(store,c.storageRoot,args.join(' '),c.backend,c.agent));break;
  case 'projects':output(store.projects());break;
  case 'open':output(await exportState(store,args[0]!));console.log('Run acq-edit serve to reopen the review room.');break;
+ case 'brain':{
+  const p=store.project(args[0]!);invariant(args[1],'Brain request JSON required');const request=await containedFile(p.root,path.resolve(args[1]!));
+  const jobId=process.env.ACQ_EDIT_JOB_ID;if(jobId){const j=store.job(jobId);invariant(j.projectId===p.id&&['editing','rendering'].includes(j.state),'Brain request belongs to another or inactive job');}
+  const result=JSON.parse(await run(c.python,[path.join(ROOT,'python','brain_receipts.py'),'--project',path.join(p.root,'project.json'),'--config',path.join(HOME,'config.json'),'--request',request],{timeout:60000,env:{...process.env,...await secretEnv()}}));
+  store.event(p.id,{type:'brain.retrieved',...(jobId?{jobId}:{}),receiptPath:result.receiptPath,sha256:result.sha256,responseSha256:result.responseSha256,versionsPath:result.versionsPath,versionsSha256:result.versionsSha256});await exportState(store,p.id);output(result);break;
+ }
  case 'intakes':output(store.intakes(args[0]!));break;
  case 'intake-abandon':invariant(args[1],'Process-inspection evidence path required');output(await abandonIntake(store,args[0]!,path.resolve(args[1])));break;
  case 'intake-recover':await intakeCommand(tools=>recoverIntake(store,args[0]!,tools));break;

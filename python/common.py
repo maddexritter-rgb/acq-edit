@@ -25,6 +25,11 @@ def plan(project,packet):
  if selection.get('testFixture'):
   require(os.environ.get('ACQ_EDIT_TEST_FIXTURE')=='1','Synthetic plans require explicit ACQ_EDIT_TEST_FIXTURE=1 and cannot certify editorial acceptance')
  else:
+  from brain_receipts import verify_saved
+  guidance=verify_saved(p['brain']['receiptPath'])
+  if p['brain'].get('versionsPath'):
+   versions=inside(project['root'],p['brain']['versionsPath']);require(sha(versions)==p['brain'].get('versionsSha256'),'Brain version index changed');index=read(versions)
+   require(index.get('projectId')==project['id'] and index.get('sha256')==p['brain']['sha256'] and index.get('versions')==guidance['versions'],'Brain version index does not describe this project/context')
   from assembly_plan import verify_bound_plan
   verify_bound_plan(project,p)
 
@@ -63,6 +68,9 @@ def result_receipt(project,packet,p,native,media,inspection,*,verification=None,
  if verification is None:verification=verify_native_render(media,p)
  if expected_native_hash is not None:require(sha(native)==expected_native_hash,'Saved native project changed during render verification')
  receipt={'schema':'acq-edit/render-v1','projectId':project['id'],'backend':project['backend'],'clipId':p['clipId'],'parentId':packet.get('parentId'),'media':str(media),'nativeProject':str(native),'nativeFingerprint':sha(native),'planPath':packet['plan'],'expected':{'frames':sum(c['frames'] for c in p['cuts']),'width':p['width'],'height':p['height'],'fps':str(p['fps']['numerator'])+'/'+str(p['fps']['denominator'])},'nativeInspectionPath':str(inspection),**({'jobId':os.environ['ACQ_EDIT_JOB_ID']} if os.environ.get('ACQ_EDIT_JOB_ID') else {}),'nativeRendered':True,'mediaVerification':verification,'qualification':'mechanical-fixture' if read(p['editorial']['selectionPath']).get('testFixture') else 'editorial-workflow'}
+ if receipt['qualification']=='editorial-workflow':
+  from brain_receipts import verify_saved
+  receipt['brainEvidence']=verify_saved(p['brain']['receiptPath'])
  if packet.get('recutVerification'):
   proof_path=inside(project['root'],packet['recutVerification']);proof=read(proof_path)
   require(proof.get('schema')=='acq-edit/recut-execution-v1' and proof['backend']==project['backend'] and proof['parentVersionId']==packet.get('parentId') and proof['parentPreserved'] is True,'Recut verification identity differs')

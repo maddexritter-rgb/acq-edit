@@ -48,7 +48,7 @@ export interface FramingPlan {schema:'acq-edit/framing-v1';receiptPath:string;re
 export interface EditPlan {
   schema:'acq-edit/plan-v1'; projectId:string; backend:Backend; clipId:string; title:string;
   fps:{numerator:number;denominator:number}; width:number;height:number; sampleRate:number;
-  brain:{receiptPath:string;sha256:string}; editorial:{selectionPath:string;sha256:string;compiledPath?:string;compiledSha256?:string;execution?:{decisionsPath:string;decisionsSha256:string;routingPath:string;routingSha256:string;phonemesPath?:string;phonemesSha256?:string};reviewed:boolean};
+  brain:{receiptPath:string;sha256:string;versionsPath?:string;versionsSha256?:string}; editorial:{selectionPath:string;sha256:string;compiledPath?:string;compiledSha256?:string;execution?:{decisionsPath:string;decisionsSha256:string;routingPath:string;routingSha256:string;phonemesPath?:string;phonemesSha256?:string};reviewed:boolean};
   sources:Source[]; cuts:{id:string;sourceId:string;audioSourceId?:string;audioRecordSample?:number;sourceInFrame:number;frames:number;recordFrame:number;audioInSample:number;audioSamples:number;wordIds:string[];boundaryEvidence:string}[];
   captions:{startFrame:number;endFrame:number;text:string;style:Record<string,unknown>}[];
   graphics:{path:string;startFrame:number;frames:number;sha256:string}[];

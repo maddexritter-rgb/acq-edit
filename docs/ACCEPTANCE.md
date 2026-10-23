@@ -22,7 +22,7 @@ A pilot release is blocked until every required row passes on actual media and e
 | Completion integrity | Rejects unrelated/omitted versions and modified media/checkpoints | Native interrupted-batch reconciliation |
 | Restart/disconnect/render failure | Reconciliation state and shutdown/process termination tested; Resolve audio-only export-state recovery reproduced, and false success receipt prevented | Kill native exports/agent sessions and recover on each host |
 | Version history/timecodes | Passing persistence/API tests | Browser fixture verified V2/history/timecode behavior; real editorial review pending |
-| Brain updates | Existing restricted reader packaged | New guidance affects new design only; no approval rewrite |
+| Brain updates | Live restricted reader request; immutable context/version receipts, offline saved-plan validation, controlled two-revision isolation tests | Maddex-published update applied in real new design with existing human-approved clips unchanged |
 | Reference fidelity | Recipe contract + dense-frame utility + motion integration | Supplied benchmark, complete viewing/listening, human assessment |
 
 No automatic check grants human approval. Record acceptance artifacts under project work folders and summarize non-sensitive results here; never commit private footage or tokens.
