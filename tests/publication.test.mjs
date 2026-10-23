@@ -1,0 +1,34 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtemp,writeFile,rm} from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import {Store} from '../dist/store.js';
+import {sha256} from '../dist/files.js';
+import {verifyPublishedVersions} from '../dist/publish.js';
+
+test('completion verifies job ownership and archived bytes even when the live native project changes',async t=>{
+ const root=await mkdtemp(path.join(os.tmpdir(),'acq-publish-'));
+ const s=new Store(path.join(root,'state.sqlite'));
+ t.after(async()=>{s.close();await rm(root,{recursive:true,force:true})});
+ s.addProject({id:'p',title:'Integrity fixture',root,backend:'resolve',agent:'codex',createdAt:''});
+ s.addClip({id:'c',projectId:'p',number:1,title:'Fixture',currentVersionId:null});
+ const files=Object.fromEntries(['media','native','live','plan','receipt'].map(k=>[k,path.join(root,k)]));
+ for(const [k,f] of Object.entries(files))await writeFile(f,k);
+ const base={clipId:'c',media:files.media,sha256:await sha256(files.media),nativeProject:files.live,nativeCheckpoint:files.native,nativeFingerprint:await sha256(files.native),planPath:files.plan,receiptPath:files.receipt,createdAt:''};
+ s.publish({...base,id:'v1',number:1,parentId:null});
+ s.saveFeedback('v1',{decision:'revise',notes:'Change caption color',comments:[]},0);
+ const j=s.enqueue('p',['v1']);s.claim();
+ const nextMedia=path.join(root,'media-v2');await writeFile(nextMedia,'media');
+ s.publish({...base,id:'v2',number:2,parentId:'v1',jobId:j.id,media:nextMedia});
+ await writeFile(files.live,'Intervening manual edits');
+ await verifyPublishedVersions(s,j.id,['v2']);
+ await assert.rejects(verifyPublishedVersions(s,j.id,['v1']),/another job/);
+ await writeFile(nextMedia,'damaged');
+ await assert.rejects(verifyPublishedVersions(s,j.id,['v2']),/media.*changed/);
+ await writeFile(nextMedia,'media');await writeFile(files.native,'changed checkpoint');
+ await assert.rejects(verifyPublishedVersions(s,j.id,['v2']),/checkpoint changed/);
+ await writeFile(files.native,'native');await rm(files.plan);
+ await assert.rejects(verifyPublishedVersions(s,j.id,['v2']));
+ assert.equal(s.job(j.id).state,'editing');
+});

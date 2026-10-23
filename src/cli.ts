@@ -8,9 +8,9 @@ import { Store } from './store.js';
 import { config,saveConfig,HOME,ROOT,secretEnv,type Config } from './config.js';
 import { backend,invariant } from './contracts.js';
 import { createProject,importLocal,importUrl,exportState } from './projects.js';
-import { atomicJson } from './files.js';
+import { atomicJson,readJson,containedFile } from './files.js';
 import { serve } from './server.js';
-import { publish } from './publish.js';
+import { publish,verifyPublishedVersions } from './publish.js';
 import { run } from './process.js';
 import { serviceLock } from './lock.js';
 import { workOne } from './worker.js';
@@ -55,8 +55,12 @@ async function main(){
  case 'clip':{store.project(args[0]!);const clip={id:randomUUID(),projectId:args[0]!,number:store.clips(args[0]!).length+1,title:args.slice(1).join(' '),currentVersionId:null};invariant(clip.title,'Title required');store.addClip(clip);output(clip);break}
  case 'publish':output(await publish(store,args[0]!,path.resolve(args[1]!)));break;
  case 'worker':output({worked:await workOne(store,c)});break;
- case 'reconcile':{const j=store.job(args[0]!);invariant(j.state==='reconciliation_required','Job does not need reconciliation');invariant(args[1]==='failed'||args[1]==='ready','Choose ready or failed after native inspection');invariant(args[2],'Evidence path required');await access(args[2]);store.event(j.projectId,{type:'job.reconciled',jobId:j.id,evidence:path.resolve(args[2])});output(store.setJob(j.id,args[1]));break}
- case 'native':{const p=store.project(args[0]!);invariant(['inspect','build','revise','render'].includes(args[1]!),'Unknown native operation');const packet=path.resolve(args[2]!);output(await run(p.backend==='resolve'?c.resolvePython!:c.python,[path.join(ROOT,'python','native.py'),args[1]!,'--backend',p.backend,'--config',path.join(HOME,'config.json'),'--project',path.join(p.root,'project.json'),'--packet',packet],{timeout:4*3600_000,env:{...process.env,...await secretEnv(),ACQ_EDIT_ROOT:ROOT}}));break}
+ case 'reconcile':{const j=store.job(args[0]!);invariant(j.state==='reconciliation_required','Job does not need reconciliation');invariant(args[1]==='failed'||args[1]==='ready','Choose ready or failed after native inspection');invariant(args[2],'Evidence path required');const evidence=await containedFile(store.project(j.projectId).root,path.resolve(args[2]!));
+  if(args[1]==='ready'){const result=await readJson<{jobId:string;versionIds:string[]}>(evidence);invariant(result.jobId===j.id,'Reconciliation result belongs to another job');await verifyPublishedVersions(store,j.id,result.versionIds);output(store.finishJob(j.id,result.versionIds));}
+  else output(store.setJob(j.id,'failed','Operator reconciled the native outcome; see evidence.'));
+  store.event(j.projectId,{type:'job.reconciled',jobId:j.id,evidence});await exportState(store,j.projectId);break}
+
+ case 'native':{const p=store.project(args[0]!);invariant(['inspect','build','revise','render'].includes(args[1]!),'Unknown native operation');const packet=path.resolve(args[2]!);const jobId=process.env.ACQ_EDIT_JOB_ID;if(jobId){const j=store.job(jobId);invariant(j.projectId===p.id&&['editing','rendering'].includes(j.state),'Native operation belongs to another or inactive job');if(args[1]==='render'){store.setJob(jobId,'rendering');await exportState(store,p.id)}}output(await run(p.backend==='resolve'?c.resolvePython!:c.python,[path.join(ROOT,'python','native.py'),args[1]!,'--backend',p.backend,'--config',path.join(HOME,'config.json'),'--project',path.join(p.root,'project.json'),'--packet',packet],{timeout:4*3600_000,env:{...process.env,...await secretEnv(),ACQ_EDIT_ROOT:ROOT}}));break}
  default:throw Error('Unknown command. Run acq-edit help');
  }
  }finally{store.close()}

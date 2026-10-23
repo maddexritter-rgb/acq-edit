@@ -6,11 +6,16 @@ export type Decision = 'yes'|'revise'|'no'|null;
 export type JobState = 'queued'|'editing'|'rendering'|'ready'|'failed'|'reconciliation_required';
 export interface Project { id:string; title:string; root:string; backend:Backend; agent:Agent; createdAt:string }
 export interface Source { id:string; projectId:string; path:string; sha256:string; bytes:number; origin:string; probe:unknown }
-export interface Version { id:string; clipId:string; number:number; media:string; sha256:string; nativeProject:string; nativeCheckpoint?:string; nativeFingerprint:string; planPath:string; receiptPath:string; createdAt:string; parentId:string|null }
+export interface Version { id:string; clipId:string; number:number; media:string; sha256:string; nativeProject:string; nativeCheckpoint?:string; nativeFingerprint:string; planPath:string; receiptPath:string; createdAt:string; parentId:string|null; jobId?:string }
 export interface Clip { id:string; projectId:string; number:number; title:string; currentVersionId:string|null }
 export interface Feedback { versionId:string; revision:number; decision:Decision; notes:string; comments:Comment[]; updatedAt:string }
 export interface Comment { id:string; seconds:number; text:string }
-export interface Submission { clipId:string; version:Version; feedback:Feedback; owners:string[] }
+/** Edits made after a job's snapshot. All timestamps still address sourceVersion. */
+export interface DeferredFeedback {
+  id:string; clipId:string; sourceVersion:Version; submitted:Feedback; latest:Feedback;
+  originatingJobId:string; createdAt:string;
+}
+export interface Submission { clipId:string; version:Version; feedback:Feedback; owners:string[]; deferred?:DeferredFeedback[] }
 export interface Job { id:string; projectId:string; state:JobState; kind:'revision'|'build'; snapshot:Submission[]; request:string; dedupe:string; createdAt:string; updatedAt:string; error:string|null; agentSession:string|null }
 export const now=()=>new Date().toISOString();
 export const hash=(value:unknown)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');

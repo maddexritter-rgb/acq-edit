@@ -31,6 +31,10 @@ SQLite uses WAL, foreign keys, immediate transactions, a unique submission finge
 
 Applying a revision stores the exact old version and feedback as the job snapshot. Job execution never rereads a mutable text field as the original request. A later submission against an obsolete version fails before execution. An uncertain agent/native operation blocks further project mutations until reconciliation. Old media is never overwritten.
 
+Publication records the exact job ID. In the same SQLite transaction it compares the submitted feedback with the latest saved feedback and preserves any changes as pending feedback tied to the source version. The next submission includes both the original request and the updated notes, so edits and withdrawals are explicit. Pending entries are consumed only when a version for that exact submission is published. Decisions do not carry forward.
+
+Completion requires every selected clip and parent version, exact job attribution, and verified immutable media/native-checkpoint hashes. A partial batch remains in reconciliation; successful clips and pending notes remain available. Reconciliation to ready requires an actual project-owned result JSON containing the job ID and all published version IDs, followed by the same artifact verification.
+
 Media endpoints resolve only database-registered files inside the associated project and support byte ranges. The server binds to 127.0.0.1, validates Host and Origin, and requires a random per-session HttpOnly SameSite cookie. It serves no arbitrary filesystem paths. It is not a remotely hosted collaborative service.
 
 Contracts are in `src/contracts.ts`. Native plans use integer picture frames and audio samples with rational frame rates. The current production path still requires canonical source-word selection, paired-cut evidence and brain receipts. See engine limitations before passing a plan to an adapter.

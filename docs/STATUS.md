@@ -6,12 +6,14 @@ Implemented:
 - Fresh standalone repository, local TypeScript service/CLI, SQLite durable state, atomic JSON exports.
 - Verified local source copying, YouTube downloader and authenticated rclone Drive route.
 - Review room with queue, player, versions/comparison, decisions, autosaved notes, timecoded comments, downloads and Apply revisions.
-- Snapshot/idempotent revision queue, per-project serialization, stale version protection, restart reconciliation, Codex/Claude dispatch.
+- Snapshot/idempotent revision queue, per-project serialization, stale version protection, restart reconciliation, Codex/Claude dispatch. Late or withdrawn feedback is carried to the next submission with its original version and timestamps.
+- Job-attributed publication and completion: exact submitted clips/parents, complete batches, immutable media/native-checkpoint hash verification, and evidence-checked reconciliation.
 - 37 canonical skill owners and shared helpers, provenance manifest, isolated runtime materialization, credential entry and doctor.
 - Native FilmCraft and Resolve adapters, current Premiere Agent Lab source/panel package and scoped adapter, optional Remotion asset renderer.
 
 Verified in this checkout:
-- 8 service/state/API tests pass. Browser fixture verified autosave, duplicate submission (one job), V2 with previous feedback, fresh unreviewed state, and historical timecode navigation to read-only V1.
+- 13 service/state/API/artifact-integrity tests pass. Browser fixture verified autosave, duplicate submission (one job), V2 with previous feedback, fresh unreviewed state, and historical timecode navigation to read-only V1.
+- Browser pending-feedback fixture: V2 retained the original submitted request separately from later notes; a late timestamp opened V1 at 1.25 seconds; two Apply clicks created one queued V2 job containing the V1 carryover. This used identical synthetic footage for V1/V2 and does not prove an actual agent revision.
 - FilmCraft pinned binary built/reopened a native two-cut project and exported H264/AAC: 640×360, 25 fps, exactly 50 decoded frames. Full decode passed. First visual inspection exposed text alignment; the adapter was corrected to center its text.
 - Resolve Studio 21.1.1 connected and built source-native linked cuts and Fusion Text+. Native H264/AAC export and caption-color revision: 640×360, 25 fps, exactly 50 decoded frames. Full decode and sampled visible-text inspection passed. Testing corrected the Fusion render clock for trimmed sources and switched input validation to native readback. Fusion graph exports are now included in state fingerprints.
 - Packaged Premiere integration installs dependencies and compiles. Runtime dependency audit is clean after lockfile-only SDK/transitive updates. Installed live host responded to read-only snapshot; its production project was left untouched.

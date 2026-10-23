@@ -14,7 +14,9 @@ A pilot release is blocked until every required row passes on actual media and e
 | Difficult speech joins | Canonical paired-boundary helpers packaged | Played-audio proof, identity, endings and AV sync |
 | Caption-only changes | Owner routing tested | Resolve native caption-color revision passed; other engines and real footage still pending |
 | Spoken recuts/hook replacement | Dependent owners routed | Full layer recomputation in each engine |
-| Duplicate/stale submission | Passing SQLite tests | Browser + actual agent race test |
+| Duplicate/stale submission | SQLite tests and browser duplicate-click fixture pass | Actual agent race test |
+| Notes added during rendering | Pending feedback, withdrawals, exact old timestamps, next submission and partial batches tested; browser verified | Actual long-running native revision with concurrent feedback |
+| Completion integrity | Rejects unrelated/omitted versions and modified media/checkpoints | Native interrupted-batch reconciliation |
 | Restart/disconnect/render failure | Reconciliation state tested | Kill native exports/agent sessions and recover on each host |
 | Version history/timecodes | Passing persistence/API tests | Browser fixture verified V2/history/timecode behavior; real editorial review pending |
 | Brain updates | Existing restricted reader packaged | New guidance affects new design only; no approval rewrite |
