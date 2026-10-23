@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import { open } from 'node:fs/promises';
-import { type Config,ROOT,secretEnv } from './config.js';
+import { type Config,ROOT,HOME,secretEnv } from './config.js';
 import { type Project,type Job,invariant } from './contracts.js';
 import { atomicJson } from './files.js';
 import path from 'node:path';
@@ -37,7 +37,7 @@ export async function executeAgent(config:Config,p:Project,j:Job,onSession:(id:s
    (async()=>{await send('initialize',{clientInfo:{name:'acq-edit',version:'0.1.0'},capabilities:{}});child.stdin.write(JSON.stringify({method:'initialized'})+'\n');
     const settings={cwd:p.root,approvalPolicy:'on-request',sandbox:'workspace-write'};
     const response=j.agentSession?await send('thread/resume',{threadId:j.agentSession,...settings}):await send('thread/start',settings);thread=response.thread.id;onSession(thread);
-    await send('turn/start',{threadId:thread,input:[{type:'text',text:prompt,text_elements:[]}]});
+    await send('turn/start',{threadId:thread,cwd:p.root,sandboxPolicy:{type:'workspaceWrite',writableRoots:[p.root,HOME,path.join(ROOT,'.local')],networkAccess:true},input:[{type:'text',text:prompt,text_elements:[]}]});
    })().catch(fail);
   });
  }

@@ -19,6 +19,7 @@ export async function publish(store:Store,projectId:string,receiptFile:string):P
  await run('ffmpeg',['-v','error','-xerror','-i',r.media,'-f','null','-'],{timeout:3600_000});
  const id=randomUUID(),number=store.versions(c.id).length+1;const folder=path.join(p.root,'20_DELIVER',c.id,`v${number}-${id}`);await mkdir(folder,{recursive:true});
  const media=path.join(folder,'clip'+path.extname(r.media));await copyFile(r.media,media,constants.COPYFILE_EXCL);const sum=await sha256(media);invariant(sum===await sha256(r.media),'Delivery copy mismatch');await chmod(media,0o444);
- const v:Version={id,clipId:c.id,number,media,sha256:sum,nativeProject:r.nativeProject,nativeFingerprint:r.nativeFingerprint,planPath:r.planPath,receiptPath:receiptFile,createdAt:now(),parentId:r.parentId};
+ const archive:Record<string,string>={};for(const [label,source] of Object.entries({native:r.nativeProject,plan:r.planPath,receipt:receiptFile,inspection:r.nativeInspectionPath})){const target=path.join(folder,label+path.extname(source));await copyFile(source,target,constants.COPYFILE_EXCL);await chmod(target,0o444);archive[label]=target;}
+ const v:Version={id,clipId:c.id,number,media,sha256:sum,nativeProject:r.nativeProject,nativeCheckpoint:archive.native,nativeFingerprint:r.nativeFingerprint,planPath:archive.plan!,receiptPath:archive.receipt!,createdAt:now(),parentId:r.parentId};
  await atomicJson(path.join(folder,'version.json'),v);store.publish(v);await exportState(store,p.id);return v;
 }

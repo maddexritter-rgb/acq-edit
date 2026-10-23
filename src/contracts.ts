@@ -6,7 +6,7 @@ export type Decision = 'yes'|'revise'|'no'|null;
 export type JobState = 'queued'|'editing'|'rendering'|'ready'|'failed'|'reconciliation_required';
 export interface Project { id:string; title:string; root:string; backend:Backend; agent:Agent; createdAt:string }
 export interface Source { id:string; projectId:string; path:string; sha256:string; bytes:number; origin:string; probe:unknown }
-export interface Version { id:string; clipId:string; number:number; media:string; sha256:string; nativeProject:string; nativeFingerprint:string; planPath:string; receiptPath:string; createdAt:string; parentId:string|null }
+export interface Version { id:string; clipId:string; number:number; media:string; sha256:string; nativeProject:string; nativeCheckpoint?:string; nativeFingerprint:string; planPath:string; receiptPath:string; createdAt:string; parentId:string|null }
 export interface Clip { id:string; projectId:string; number:number; title:string; currentVersionId:string|null }
 export interface Feedback { versionId:string; revision:number; decision:Decision; notes:string; comments:Comment[]; updatedAt:string }
 export interface Comment { id:string; seconds:number; text:string }
@@ -30,7 +30,7 @@ export function routeRevision(text:string):string[] {
 export interface EditPlan {
   schema:'acq-edit/plan-v1'; projectId:string; backend:Backend; clipId:string; title:string;
   fps:{numerator:number;denominator:number}; width:number;height:number; sampleRate:number;
-  brain:{receiptPath:string;sha256:string}; editorial:{selectionPath:string;sha256:string;reviewed:boolean};
+  brain:{receiptPath:string;sha256:string}; editorial:{selectionPath:string;sha256:string;compiledPath?:string;compiledSha256?:string;reviewed:boolean};
   sources:Source[]; cuts:{id:string;sourceId:string;sourceInFrame:number;frames:number;recordFrame:number;audioInSample:number;audioSamples:number;wordIds:string[];boundaryEvidence:string}[];
   captions:{startFrame:number;endFrame:number;text:string;style:Record<string,unknown>}[];
   graphics:{path:string;startFrame:number;frames:number;sha256:string}[];
