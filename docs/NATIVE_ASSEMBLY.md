@@ -41,7 +41,7 @@ This command uses the configured shared Python interpreter. Canonical `compile_a
 
 The resulting cuts contain exact picture frames, `audioSourceId`, `audioInSample`, `audioSamples`, and `audioRecordSample`, plus the original word IDs. Production native builds rederive these fields and reject any mismatch, including a different picture source or timing range with unchanged word IDs. Resolve's bundled Python delegates this analysis to the configured shared Python; it does not need FilmCraft or Premiere installed.
 
-Apply the existing finishing owners to the compiled plan, then build and render using the selected native adapter. Recompiling a spoken recut starts with empty dependent layers so old captions, framing and music cannot silently remain attached to changed timing. Revisions still require fresh native state inspection and preservation of intervening user edits; this compile command is not an automatic merge tool.
+Apply the existing finishing owners to the compiled plan, then build and render using the selected native adapter. Recompiling a spoken recut starts with empty dependent layers so old captions, framing and music cannot silently remain attached to changed timing. Use the guarded revision and publication route in `NATIVE_RECUTS.md` after preparing fresh dependent layers. Revisions still require fresh native state inspection and preservation of intervening user edits; this compile command is not an automatic merge tool.
 
 ## Native execution evidence and limits
 

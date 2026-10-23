@@ -35,6 +35,9 @@ def plan(project,packet):
   require(c['wordIds'] and c['boundaryEvidence'],'Source-word and speech-boundary evidence required')
   require(c['recordFrame']==end and c['frames']>0,'Noncontiguous cut plan');end+=c['frames']
  require(end>0,'No cuts')
+ for card in p.get('captions',[]):
+  require(type(card.get('startFrame'))==int and type(card.get('endFrame'))==int and 0<=card['startFrame']<card['endFrame']<=end,'Caption timing lies outside the current cut plan')
+  require(isinstance(card.get('text'),str) and card['text'].strip() and isinstance(card.get('style'),dict),'Caption text and native style required')
  from audio_plan import validate_audio
  validate_audio(project,p,end)
  from framing_plan import validate_framing
@@ -60,4 +63,9 @@ def result_receipt(project,packet,p,native,media,inspection,*,verification=None,
  if verification is None:verification=verify_native_render(media,p)
  if expected_native_hash is not None:require(sha(native)==expected_native_hash,'Saved native project changed during render verification')
  receipt={'schema':'acq-edit/render-v1','projectId':project['id'],'backend':project['backend'],'clipId':p['clipId'],'parentId':packet.get('parentId'),'media':str(media),'nativeProject':str(native),'nativeFingerprint':sha(native),'planPath':packet['plan'],'expected':{'frames':sum(c['frames'] for c in p['cuts']),'width':p['width'],'height':p['height'],'fps':str(p['fps']['numerator'])+'/'+str(p['fps']['denominator'])},'nativeInspectionPath':str(inspection),**({'jobId':os.environ['ACQ_EDIT_JOB_ID']} if os.environ.get('ACQ_EDIT_JOB_ID') else {}),'nativeRendered':True,'mediaVerification':verification,'qualification':'mechanical-fixture' if read(p['editorial']['selectionPath']).get('testFixture') else 'editorial-workflow'}
+ if packet.get('recutVerification'):
+  proof_path=inside(project['root'],packet['recutVerification']);proof=read(proof_path)
+  require(proof.get('schema')=='acq-edit/recut-execution-v1' and proof['backend']==project['backend'] and proof['parentVersionId']==packet.get('parentId') and proof['parentPreserved'] is True,'Recut verification identity differs')
+  require(proof['planSha256']==sha(packet['plan']) and proof['newNativeSha256']==sha(native) and proof['construction']['fingerprint']==packet['expectedFingerprint'],'Recut plan/native evidence changed before rendering')
+  receipt.update(recutVerificationPath=str(proof_path),recutVerificationSha256=sha(proof_path))
  save(inside(project['root'],packet['receipt']),receipt);return receipt

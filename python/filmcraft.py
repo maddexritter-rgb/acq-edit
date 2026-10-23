@@ -90,6 +90,15 @@ class Adapter:
    placed=c.tool('sequence_inspect')['video'][index+2]['items'];require(len(placed)==1,'Unexpected native graphic coverage');graphic=placed[0]
    require(graphic['item']==item and graphic['start']==asset['startFrame']*ft and graphic['duration']==asset['frames']*ft and graphic['sourceIn']==0,'Native graphic source/timing readback mismatch')
  def revise(self,project,packet):
+  if packet.get('kind')=='spoken-recut':
+   from recut_execution import prepare,record
+   prepared=prepare(project,packet);parent=prepared['version'];native=inside(project['root'],parent['nativeProject'])
+   before=self.inspect(project,{'nativeProject':str(native),'session':packet['inspectSession']})
+   require(before['fingerprint']==prepared['expected'],'Published parent native state changed; reconcile user edits before recutting')
+   built=self.build(project,packet['construction'])
+   after=self.inspect(project,{'nativeProject':str(native),'session':packet['verifySession']})
+   require(after['fingerprint']==prepared['expected'],'Parent changed during recut; preserve new work for reconciliation')
+   return record(project,packet,prepared,built)
   # Work from an inspected copy so manual effects survive caption-only revisions.
   before=self.inspect(project,{'nativeProject':packet['nativeProject'],'session':packet['inspectSession']})
   require(before['fingerprint']==packet['expectedFingerprint'],'Native state changed; merge intervening edits before revising')

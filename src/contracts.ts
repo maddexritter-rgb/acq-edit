@@ -12,7 +12,7 @@ export interface Intake {
  directory:string;candidate?:string;target?:string;expectedSha256?:string;bytes?:number;sourceId?:string;
  ownerPid:number|null;childPid:number|null;childPending?:boolean;createdAt:string;updatedAt:string;error:string|null;
 }
-export interface Version { id:string; clipId:string; number:number; media:string; sha256:string; nativeProject:string; nativeCheckpoint?:string; nativeFingerprint:string; planPath:string; receiptPath:string; createdAt:string; parentId:string|null; jobId?:string }
+export interface Version { id:string; clipId:string; number:number; media:string; sha256:string; nativeProject:string; nativeCheckpoint?:string; nativeFingerprint:string; planPath:string; planSha256?:string; inspectionPath?:string; inspectionSha256?:string; receiptPath:string; receiptSha256?:string; recutVerificationPath?:string; recutVerificationSha256?:string; createdAt:string; parentId:string|null; jobId?:string }
 export interface Clip { id:string; projectId:string; number:number; title:string; currentVersionId:string|null }
 export interface Feedback { versionId:string; revision:number; decision:Decision; notes:string; comments:Comment[]; updatedAt:string }
 export interface Comment { id:string; seconds:number; text:string }
@@ -30,7 +30,7 @@ export function backend(value:unknown):Backend {invariant(BACKENDS.includes(valu
 export function routeRevision(text:string):string[] {
   // Conservative dependency routing; the agent reads the full request and confirms scope.
   const owners=new Set<string>(['edit']);
-  if(/\b(cut|remove|passage|spoken|sentence|word ending|reorder|hook replacement)\b/i.test(text)) ['assembly-design','horizontal-to-vertical','caption-clips','text-hook','music'].forEach(x=>owners.add(x));
+  if(/\b(cuts?|recut|trim|shorten|remove|passages?|spoken|sentences?|word ending|reorder|hook replacement)\b/i.test(text)) ['assembly-design','horizontal-to-vertical','caption-clips','text-hook','music','promo'].forEach(x=>owners.add(x));
   if(/caption|subtitle|font/i.test(text)) owners.add('caption-clips');
   if(/fram|crop|zoom|camera/i.test(text)) owners.add('horizontal-to-vertical');
   if(/music|audio|volume|sound/i.test(text)) owners.add('music');

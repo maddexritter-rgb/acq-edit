@@ -40,15 +40,19 @@ class Adapter:
  def inspect(self,project,packet):
   r,p=self.selected(project);state=self.snapshot(p);return {'state':state,'fingerprint':fingerprint(state),'version':r.GetVersionString()}
  def build(self,project,packet):
-  self.project_root=Path(project['root']);spec=plan(project,packet);r=self.connect();pm=r.GetProjectManager();current=pm.GetCurrentProject();name='ACQ_'+project['id']
+  self.project_root=Path(project['root']);spec=plan(project,packet)
+  for key in ['nativeProject','inspection']:require(not inside(project['root'],packet[key]).exists(),'Native build checkpoint/inspection exists; reconcile before retrying')
+  r=self.connect();pm=r.GetProjectManager();current=pm.GetCurrentProject();name='ACQ_'+project['id']
   precise=any(value*spec['fps']['numerator']%(spec['sampleRate']*spec['fps']['denominator']) for cut in spec['cuts'] for value in [cut['audioInSample'],cut['audioSamples']])
   if precise:require(r.GetVersion()[:4]==[21,1,1,10],'Native sample geometry is qualified only for Resolve Studio 21.1.1 build 10; review the installed archive/API before changing this gate')
   if precise:require(all(c.get('audioSourceId') and 'audioRecordSample' in c for c in spec['cuts']),'Native precision needs compiled paired-source cuts')
   require(not current or current.GetName()==name,'Another Resolve project is open. Close it before creating this isolated project.');p=current or pm.CreateProject(name);require(p,'Could not create native Resolve project')
+  timeline_name=spec['title']+'_'+packet['versionId'];names={p.GetTimelineByIndex(i).GetName() for i in range(1,p.GetTimelineCount()+1)}
+  require(timeline_name not in names and timeline_name+'_precise' not in names,'Native timeline name exists; use a fresh version identity after inspecting the prior operation')
   for bed in spec.get('audio',{}).get('music',[]):resolve_music_frames(spec,bed)
   require(spec['width']>=256 and spec['height']>=256,'Resolve clamps timeline dimensions below 256 pixels; choose a supported output size')
   fps=spec['fps']['numerator']/spec['fps']['denominator'];require(p.SetSettings({'timelineFrameRate':str(fps),'timelineResolutionWidth':str(spec['width']),'timelineResolutionHeight':str(spec['height'])}),'Could not configure native project')
-  pool=p.GetMediaPool();timeline=pool.CreateEmptyTimeline(spec['title']+'_'+packet['versionId']);require(timeline and p.SetCurrentTimeline(timeline),'Could not create selected timeline');require(timeline.SetStartTimecode('00:00:00:00'),'Could not set timeline clock')
+  pool=p.GetMediaPool();timeline=pool.CreateEmptyTimeline(timeline_name);require(timeline and p.SetCurrentTimeline(timeline),'Could not create selected timeline');require(timeline.SetStartTimecode('00:00:00:00'),'Could not set timeline clock')
   timeline.SetSettings({'useCustomSettings':'1'});timeline.SetSettings({'timelineResolutionWidth':str(spec['width']),'timelineResolutionHeight':str(spec['height'])});settings=timeline.GetSettings();require(int(settings['timelineResolutionWidth'])==spec['width'] and int(settings['timelineResolutionHeight'])==spec['height'] and abs(float(settings['timelineFrameRate'])-fps)<1e-6,'Native timeline geometry readback mismatch')
   sources={}
   for s in spec['sources']:
@@ -124,6 +128,20 @@ class Adapter:
    merge.Blend.SetExpression(f'iif(time >= {start} and time < {end}, 1, 0)');source=merge
   output.ConnectInput('Input',source)
  def revise(self,project,packet):
+  if packet.get('kind')=='spoken-recut':
+   from recut_execution import prepare,record
+   prepared=prepare(project,packet);r,p=self.selected(project)
+   require(not p.IsRenderingInProgress(),'Resolve is rendering; recut must wait')
+   before=self.snapshot(p);require(fingerprint(before)==prepared['expected'],'Published parent native state changed; reconcile user edits before recutting')
+   original=p.GetCurrentTimeline();built=self.build(project,packet['construction']);current=p.GetCurrentTimeline()
+   require(current and current.GetUniqueId()==built['timelineId'],'Current timeline changed during recut; reconcile before switching')
+   require(p.SetCurrentTimeline(original),'Cannot inspect preserved parent timeline')
+   try:require(fingerprint(self.snapshot(p))==prepared['expected'],'Parent changed during recut; preserve new work for reconciliation')
+   finally:
+    require(p.GetCurrentTimeline().GetUniqueId()==original.GetUniqueId(),'Timeline changed during parent inspection; reconcile before switching')
+    require(p.SetCurrentTimeline(current),'Cannot restore newly constructed timeline')
+   require(fingerprint(self.snapshot(p))==built['fingerprint'],'New recut changed during parent verification')
+   return record(project,packet,prepared,built)
   r,p=self.selected(project);before=self.snapshot(p);require(fingerprint(before)==packet['expectedFingerprint'],'Native state changed; inspect and merge user edits')
   require(packet['kind'] in ['caption-style','music-gain','fixed-framing'],'Spoken recuts require a new reviewed Assembly Design plan and new timeline; no partial dependent-layer edits')
   spec=plan(project,packet) if packet['kind']=='fixed-framing' else None
