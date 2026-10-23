@@ -28,7 +28,7 @@ The synthetic 48 kHz / 25 fps source used the same two spans as the FilmCraft fi
 | 1 | 11–48017 | 11–48017 |
 | 2 | 96017–143989 | 48017–95989 |
 
-Readback preserved both spans, continuous internal audio, the intended outer picture-only samples, unchanged 25-frame picture cuts and linked video/audio. Closing and reopening the dedicated project preserved ranges, sources, links, properties and inspected caption inputs. Raw Fusion export hashes changed across reopen; a fresh inspection and checkpoint were used without disabling stale-state guards. Stable semantic Fusion inspection remains separate work.
+Readback preserved both spans, continuous internal audio, the intended outer picture-only samples, unchanged 25-frame picture cuts and linked video/audio. Closing and reopening the dedicated project preserved ranges, sources, links, properties and inspected caption inputs. Raw Fusion export hashes initially changed across reopen; a fresh inspection and checkpoint were used without disabling stale-state guards. The adapter now parses and fingerprints the graph with narrowly qualified metadata normalization; save/reopen and deliberate-edit detection passed separately. See `RESOLVE_STATE.md` for evidence, migration and remaining coverage limits.
 
 Resolve exported 50 H264/AAC frames at 640×360; full decoding passed. Decoded audio correlated 0.99949827 with the exact-sample reference. A caption-only revision changed the first caption to green while preserving the native sample ranges and link groups. Its successful video export contained 50 frames, the second caption stayed unchanged, and decoded audio was identical to the prior native render.
 

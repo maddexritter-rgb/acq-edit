@@ -39,7 +39,7 @@ Media endpoints resolve only database-registered files inside the associated pro
 
 Contracts are in `src/contracts.ts`. Native plans use integer picture frames and audio samples with rational frame rates. The current production path still requires canonical source-word selection, paired-cut evidence and brain receipts. See engine limitations before passing a plan to an adapter.
 
-Native state fingerprints are preconditions, not proof that every unexposed effect is captured. Resolve's snapshot records timing, properties and exported Fusion-graph hashes; stable save/reopen behavior still requires broader qualification. A project DRP or fcproj checkpoint does not by itself prove a rendered effect.
+Native state fingerprints are preconditions, not proof that every unexposed effect is captured. Resolve's snapshot records timing, properties, source paths, enabled/locked states, markers and parsed Fusion-graph hashes. Same-timeline save/reopen and deliberate-edit detection passed on the qualified host; see `RESOLVE_STATE.md` for the narrow normalization and remaining coverage. A project DRP or fcproj checkpoint does not by itself prove a rendered effect.
 
 Agent execution uses Codex app-server stdio JSON-RPC and Claude Code headless stream JSON. Sessions are recorded by exact ID, and completion is matched to the exact Codex turn or Claude result. Process termination and log flushing finish before the worker releases ownership. The HTTP service and standalone worker share the same service lock. Interactive requests are surfaced as reconciliation rather than granting broad unattended permissions. Agent CLI policies must be configured by the operator for approved toolkit commands.
 

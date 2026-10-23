@@ -9,6 +9,7 @@ from common import *
 from audio_plan import resolve_music_frames
 from framing_plan import fusion_crop,require_static_fusion_crop
 from resolve_precision import patch_checkpoint
+from fusion_state import fusion_hash,SCHEMA as FUSION_STATE_SCHEMA
 class Adapter:
  def __init__(self,config):self.config=config
  def connect(self):
@@ -25,13 +26,17 @@ class Adapter:
   root=self.project_root/'10_WORK';root.mkdir(parents=True,exist_ok=True)
   with tempfile.TemporaryDirectory(prefix='fusion-inspect-',dir=root) as folder:
    for index in range(1,item.GetFusionCompCount()+1):
-    comp=item.GetFusionCompByIndex(index);require(comp,'Fusion comp missing');comp.GetAttrs();output=Path(folder)/f'{index}.comp';require(item.ExportFusionComp(str(output),index),'Cannot inspect native Fusion graph');results.append(sha(output))
+    comp=item.GetFusionCompByIndex(index);require(comp,'Fusion comp missing');comp.GetAttrs();output=Path(folder)/f'{index}.comp';require(item.ExportFusionComp(str(output),index),'Cannot inspect native Fusion graph');results.append(fusion_hash(output.read_text()))
   return results
  def snapshot(self,p):
-  t=p.GetCurrentTimeline();require(t,'No current timeline');tracks={}
+  t=p.GetCurrentTimeline();require(t,'No current timeline');tracks={};track_state={}
+  def item_state(item):
+   source=item.GetMediaPoolItem()
+   return {'id':item.GetUniqueId(),'name':item.GetName(),'start':item.GetStart(True),'end':item.GetEnd(True),'left':item.GetLeftOffset(True),'duration':item.GetDuration(True),'properties':item.GetProperties(),'enabled':item.GetClipEnabled(),'source':source.GetUniqueId() if source else None,'sourcePath':source.GetClipProperty('File Path') if source else None,'fusion':self.fusion_fingerprints(item),'fades':item.GetFades(),'linkedIds':sorted(j.GetUniqueId() for j in (item.GetLinkedItems() or []))}
   for kind in ['video','audio']:
-   tracks[kind]=[[{'id':i.GetUniqueId(),'name':i.GetName(),'start':i.GetStart(True),'end':i.GetEnd(True),'left':i.GetLeftOffset(True),'duration':i.GetDuration(True),'properties':i.GetProperties(),'source':i.GetMediaPoolItem().GetUniqueId() if i.GetMediaPoolItem() else None,'fusion':self.fusion_fingerprints(i),'fades':i.GetFades(),'linkedIds':sorted(j.GetUniqueId() for j in (i.GetLinkedItems() or []))} for i in t.GetItemListInTrack(kind,n) or []] for n in range(1,t.GetTrackCount(kind)+1)]
-  return {'project':p.GetName(),'timeline':t.GetUniqueId(),'name':t.GetName(),'settings':t.GetSettings(),'tracks':tracks}
+   tracks[kind]=[[item_state(i) for i in t.GetItemListInTrack(kind,n) or []] for n in range(1,t.GetTrackCount(kind)+1)]
+   track_state[kind]=[{'enabled':t.GetIsTrackEnabled(kind,n),'locked':t.GetIsTrackLocked(kind,n)} for n in range(1,t.GetTrackCount(kind)+1)]
+  return {'project':p.GetName(),'timeline':t.GetUniqueId(),'name':t.GetName(),'settings':t.GetSettings(),'fusionFingerprintSchema':FUSION_STATE_SCHEMA,'tracks':tracks,'trackState':track_state,'markers':t.GetMarkers()}
  def inspect(self,project,packet):
   r,p=self.selected(project);state=self.snapshot(p);return {'state':state,'fingerprint':fingerprint(state),'version':r.GetVersionString()}
  def build(self,project,packet):
