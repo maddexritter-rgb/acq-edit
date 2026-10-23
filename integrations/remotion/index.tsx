@@ -1,6 +1,6 @@
 import React from 'react';
 import {AbsoluteFill,Composition,interpolate,registerRoot,useCurrentFrame,useVideoConfig,Easing} from 'remotion';
+import {defaults} from './props.mjs';
 type Props={text:string;accent:string;font:string;size:number;enterFrames:number;exitFrames:number;transparent:boolean;frames:number;width:number;height:number;fps:number};
-const defaults:Props={text:'A clear idea.',accent:'#b4caff',font:'Arial',size:96,enterFrames:12,exitFrames:8,transparent:true,frames:90,width:1080,height:1920,fps:30};
 function Title(p:Props){const frame=useCurrentFrame(),{durationInFrames}=useVideoConfig();const enter=interpolate(frame,[0,p.enterFrames],[0,1],{extrapolateLeft:'clamp',extrapolateRight:'clamp',easing:Easing.out(Easing.cubic)});const leave=interpolate(frame,[durationInFrames-p.exitFrames,durationInFrames-1],[1,0],{extrapolateLeft:'clamp',extrapolateRight:'clamp'});return <AbsoluteFill style={{backgroundColor:p.transparent?'transparent':'#11141a',justifyContent:'center',alignItems:'center',padding:90}}><div style={{opacity:enter*leave,transform:`translateY(${(1-enter)*46}px)`,fontFamily:p.font,fontSize:p.size,fontWeight:700,color:'#fff',textAlign:'center',lineHeight:1.08}}><div style={{width:80,height:7,background:p.accent,margin:'0 auto 36px'}}/>{p.text}</div></AbsoluteFill>}
 registerRoot(()=> <Composition id="TitleCard" component={Title} durationInFrames={90} fps={30} width={1080} height={1920} defaultProps={defaults} calculateMetadata={({props})=>({durationInFrames:props.frames,fps:props.fps,width:props.width,height:props.height})}/>);

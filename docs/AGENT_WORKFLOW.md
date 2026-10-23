@@ -20,7 +20,7 @@ New clips are registered with `clip PROJECT_ID "Source-supported short title"`. 
 
 Use `watch` to study the complete reference with audio. Use `scripts/reference_frames.py` for dense inspection around fast transitions; extracted frames alone are not viewed evidence. Record the timestamped recipe using `REFERENCE_RECIPE.schema.json`, distinguish observation from inference, and cover cuts, pacing, captions, framing, graphics, color, music and sound effects. Compare actual rendered results against those observations. Do not claim reference fidelity from a video-model summary alone.
 
-`integrations/remotion` is an optional pinned motion renderer. It produces transparent ProRes graphic assets with a content hash and parameters. Import those assets into the chosen native editor; do not use Remotion to replace the final editor. Advanced reusable effects are future benchmarks, not claimed support.
+`integrations/remotion` is an optional pinned motion renderer. It produces transparent ProRes graphic assets with a content hash, resolved parameters and source/dependency hashes. Follow `NATIVE_MOTION.md` for the validated asset contract, native track ordering and failed-render reconciliation. Import those assets into the chosen native editor; do not use Remotion to replace the final editor. Advanced reusable effects are future benchmarks, not claimed support.
 
 ## Scope of optional capabilities
 

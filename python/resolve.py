@@ -88,10 +88,11 @@ class Adapter:
     for key,value in audio_props.items():require(actual.get(key)==value,'Native audio treatment readback mismatch: '+key)
    cards=[c for c in spec.get('captions',[]) if c['startFrame']<cut['recordFrame']+cut['frames'] and c['endFrame']>cut['recordFrame']]
    if cards or shot:self.compose(vi,cut,cards,spec,shot)
-  for graphic in spec.get('graphics',[]):
+  for index,graphic in enumerate(spec.get('graphics',[])):
    require(sha(graphic['path'])==graphic['sha256'],'Graphic hash mismatch');media=pool.ImportMedia([graphic['path']]);require(media,'Graphic import failed')
-   while timeline.GetTrackCount('video')<2:require(timeline.AddTrack('video'),'Cannot add graphics track')
-   require(pool.AppendToTimeline([{'mediaPoolItem':media[0],'startFrame':0,'endFrame':graphic['frames'],'recordFrame':graphic['startFrame'],'mediaType':1,'trackIndex':2}]),'Graphics placement failed')
+   while timeline.GetTrackCount('video')<index+2:require(timeline.AddTrack('video'),'Cannot add graphics track')
+   placed=pool.AppendToTimeline([{'mediaPoolItem':media[0],'startFrame':0,'endFrame':graphic['frames'],'recordFrame':graphic['startFrame'],'mediaType':1,'trackIndex':index+2}]);require(placed and len(placed)==1,'Graphics placement failed');item=placed[0]
+   require(item.GetStart(True)==graphic['startFrame'] and item.GetDuration(True)==graphic['frames'] and item.GetLeftOffset(True)==0 and Path(item.GetMediaPoolItem().GetClipProperty('File Path')).resolve()==Path(graphic['path']).resolve(),'Native graphic source/timing readback mismatch')
   self.music(timeline,pool,sources,spec)
   require(pm.SaveProject(),'Native save failed');state=self.snapshot(p);save(inside(project['root'],packet['inspection']),state);native=inside(project['root'],packet['nativeProject']);require(not native.exists(),'Native checkpoint exists');require(pm.ExportProject(name,str(native),False),'Native DRP checkpoint failed')
   return {'nativeProject':str(native),'fingerprint':fingerprint(state),'timelineId':timeline.GetUniqueId(),'status':'native-built-awaiting-render'}

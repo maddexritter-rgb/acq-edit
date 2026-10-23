@@ -24,7 +24,7 @@ class Adapter:
   try:
    sources={}
    for s in p['sources']:sources[s['id']]=c.tool('media_import',{'paths':[s['path']]})['items'][0]
-   c.run('file.newSequence',{'name':p['title'],'width':p['width'],'height':p['height'],'fps':p['fps']['numerator']/p['fps']['denominator'],'sampleRate':sr,'video':3,'audio':2})
+   c.run('file.newSequence',{'name':p['title'],'width':p['width'],'height':p['height'],'fps':p['fps']['numerator']/p['fps']['denominator'],'sampleRate':sr,'video':max(3,2+len(p.get('graphics',[]))),'audio':2})
    for cut in p['cuts']:
     if cut.get('audioSourceId'):
      before=c.tool('sequence_inspect');ids={i['clip'] for kind in ['video','audio'] for track in before[kind] for i in track['items']}
@@ -84,9 +84,11 @@ class Adapter:
     for param,value in filmcraft_motion(p,shots[cut['id']]).items():c.run('effects.setParam',{'clip':item['clip'],'effect':'motion','param':param,'value':value})
   for card in p.get('captions',[]):
    style=card['style'];graphic=c.run('graphics.newText',{'newClip':True,'text':card['text'],'position':style.get('position',[p['width']/2,p['height']*.78]),'font':style.get('font','Arial'),'fontStyle':style.get('fontStyle','Bold'),'size':style.get('size',64),'time':card['startFrame']*ft,'seconds':(card['endFrame']-card['startFrame'])*p['fps']['denominator']/p['fps']['numerator'],'track':1});c.run('graphics.set',{'clip':graphic['clip'],'layer':graphic['layer'],'props':{'align':'center'}})
-  for asset in p.get('graphics',[]):
+  for index,asset in enumerate(p.get('graphics',[])):
    require(sha(asset['path'])==asset['sha256'],'Graphic asset changed');item=c.tool('media_import',{'paths':[asset['path']]})['items'][0]
-   c.run('timeline.place',{'item':item,'track':'V3','video':True,'audio':False,'time':asset['startFrame']*ft,'sourceIn':0,'duration':asset['frames']*ft,'insert':False})
+   c.run('timeline.place',{'item':item,'track':f'V{index+3}','video':True,'audio':False,'time':asset['startFrame']*ft,'sourceIn':0,'duration':asset['frames']*ft,'insert':False})
+   placed=c.tool('sequence_inspect')['video'][index+2]['items'];require(len(placed)==1,'Unexpected native graphic coverage');graphic=placed[0]
+   require(graphic['item']==item and graphic['start']==asset['startFrame']*ft and graphic['duration']==asset['frames']*ft and graphic['sourceIn']==0,'Native graphic source/timing readback mismatch')
  def revise(self,project,packet):
   # Work from an inspected copy so manual effects survive caption-only revisions.
   before=self.inspect(project,{'nativeProject':packet['nativeProject'],'session':packet['inspectSession']})

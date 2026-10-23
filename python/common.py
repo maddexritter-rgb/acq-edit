@@ -39,6 +39,8 @@ def plan(project,packet):
  validate_audio(project,p,end)
  from framing_plan import validate_framing
  validate_framing(project,p)
+ from graphics_plan import validate_graphics
+ validate_graphics(project,p,end)
  return p
 def fingerprint(value):return hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest()
 def verify_native_render(media,spec):

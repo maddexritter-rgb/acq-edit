@@ -10,6 +10,8 @@ Source-linked music, dialogue/bed gain and fades are available through the expli
 
 Caption-only revision operates on an inspected copy and changes explicit graphic properties. Native media/render checkpoints are always new files.
 
+Transparent Remotion assets use the shared media preflight and separate ordered video tracks with exact native placement readback. Basic overlapping-asset construction and final native rendering were exercised in FilmCraft and Resolve; see `NATIVE_MOTION.md` for the format contract and Resolve reopen limitation.
+
 ## Premiere Pro
 
 `integrations/premiere-agent` snapshots the current Agent Lab implementation, CEP/UXP panels and source, with original MIT notice. `install_engine.py premiere` builds a separate ignored toolkit installation, generates a new local runtime/token, and prepares the panel. It does not overwrite an installed panel or global connector configuration.
