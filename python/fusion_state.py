@@ -1,13 +1,13 @@
 """Parse declarative Fusion exports without executing Lua or trusting graph scripts.
 
-Retain every field except two qualified serialization/display fields. Ordinary
+Retain every field except qualified serialization/display/cache fields. Ordinary
 table keys are unordered; ordered() tables retain their explicit order. Unknown
 syntax fails closed instead of silently omitting a node, expression or input.
 """
 import hashlib,json,re
 from decimal import Decimal
 
-SCHEMA='acq-edit/fusion-state-v1'
+SCHEMA='acq-edit/fusion-state-v2'
 TOKEN=re.compile(r'\s+|--[^\n]*|"(?:\\.|[^"\\])*"|[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?|[A-Za-z_][A-Za-z_0-9]*|[{}\[\]=,();]')
 IDENT=re.compile(r'[A-Za-z_][A-Za-z_0-9]*\Z')
 NUMBER=re.compile(r'[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?\Z')
@@ -75,6 +75,9 @@ def field(table,name):
 def remove_field(table,name):
  table['entries']=[entry for entry in table['entries'] if entry[0]!={'tag':'string','value':name}]
 
+def empty_table(value):
+ return value=={'tag':'table','constructor':None,'entries':[]}
+
 def canonical_fusion(text):
  root=Parser(text).parse()
  counter=field(root,'CurrentID')
@@ -83,11 +86,21 @@ def canonical_fusion(text):
   # Resolve reallocates this composition-wide ID counter on reopen. Actual node
   # identities, named graph edges and all tool-local IDs remain represented.
   remove_field(root,'CurrentID')
+ prefs=field(root,'Prefs');preferences=field(prefs,'Comp')
+ if prefs and prefs.get('constructor') is None and preferences and preferences.get('tag')=='table' and preferences.get('constructor') is None:
+  # Resolve drops these exact empty UI preference placeholders after reopening.
+  # Nonempty values and other views remain represented, including future fields.
+  if empty_table(field(preferences,'SpellCheck')):remove_field(preferences,'SpellCheck')
+  views=field(preferences,'Views')
+  if views and views.get('tag')=='table' and views.get('constructor') is None and len(views['entries'])==1 and empty_table(field(views,'View1')):remove_field(preferences,'Views')
  tools=field(root,'Tools')
  if tools is None or tools.get('tag')!='table':raise FusionFormatError('Fusion Tools table absent')
  for _,tool in tools['entries']:
   if tool.get('constructor') not in ['Loader','MediaIn']:continue
-  metadata=field(field(tool,'CustomData'),'MediaProps')
+  custom=field(tool,'CustomData');metadata=field(custom,'MediaProps')
+  # The successful media-query marker is transient. Preserve other values and
+  # identically named fields outside this exact source-metadata location.
+  if custom and custom.get('constructor') is None and metadata and metadata.get('constructor') is None and field(metadata,'__Queried')=={'tag':'true'}:remove_field(metadata,'__Queried')
   tracks=field(metadata,'MEDIA_AUDIO_TRACKS_DESC')
   if tracks and tracks.get('tag')=='table':
    for _,track in tracks['entries']:

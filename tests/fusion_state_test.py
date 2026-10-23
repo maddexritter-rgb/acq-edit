@@ -48,5 +48,22 @@ class FusionStateTests(unittest.TestCase):
  def test_unknown_tool_fields_are_retained(self):
   a='Composition { Tools = { Custom = Plugin { UnrecognizedFutureInput = { A = 1 } } } }'
   self.assertNotEqual(fusion_hash(a),fusion_hash(a.replace('A = 1','A = 2')))
+ def test_exact_empty_preferences_and_successful_media_query_cache_normalize(self):
+  before=graph().replace('MediaProps = {','MediaProps = { __Queried = true,').replace('RenderRange =','Prefs = { Comp = { SpellCheck = {}, Views = { View1 = {} }, Width = 640 } }, RenderRange =')
+  after=before.replace('__Queried = true,','').replace('SpellCheck = {}, Views = { View1 = {} },','')
+  self.assertEqual(fusion_hash(before),fusion_hash(after))
+  for old,new in [('SpellCheck = {}','SpellCheck = { Enabled = true }'),('View1 = {}','View1 = { Zoom = 2 }'),('View1 = {}','View1 = {}, View2 = {}'),('Width = 640','Width = 641'),('__Queried = true','__Queried = false'),('__Queried = true','__Queried = "future"')]:
+   with self.subTest(change=(old,new)):self.assertNotEqual(fusion_hash(before),fusion_hash(before.replace(old,new)))
+ def test_lookalike_cache_and_preference_fields_are_not_stripped(self):
+  for location in ['Tools = { Text = TextPlus { CustomData = { MediaProps = { __Queried = true } } } }',
+   'Tools = { Source = Loader { __Queried = true } }',
+   'Tools = { Source = Loader { CustomData = { MediaProps = FutureMetadata { __Queried = true } } } }',
+   'Tools = { Source = Loader { CustomData = FutureMetadata { MediaProps = { __Queried = true } } } }',
+   'Tools = {}, Prefs = FuturePrefs { Comp = { SpellCheck = {}, Views = { View1 = {} } } }',
+   'Tools = {}, Prefs = { SpellCheck = {}, Views = { View1 = {} } }',
+   'Tools = { Text = TextPlus { SpellCheck = {}, Views = { View1 = {} } } }']:
+   source='Composition { '+location+' }'
+   changed=source.replace('__Queried = true','').replace('SpellCheck = {}, Views = { View1 = {} }','')
+   self.assertNotEqual(fusion_hash(source),fusion_hash(changed))
 
 if __name__=='__main__':unittest.main()

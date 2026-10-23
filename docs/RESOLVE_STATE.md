@@ -4,10 +4,13 @@ The adapter now fingerprints a parsed Fusion graph rather than the raw `.comp` b
 
 `python/fusion_state.py` parses the exported declarative tables without executing Lua, evaluating expressions or loading graph scripts. Ordinary table keys are sorted; array indices and explicitly `ordered()` tables preserve their ordering. Constructor types, tool names, graph connections, source paths, input values, expressions, keyframes, ranges, preferences and unknown fields remain represented.
 
-Only two fields are omitted:
+Only these qualified serialization/cache forms are omitted:
 
 - The top-level composition `CurrentID` numeric allocation counter. Tool-local IDs remain represented.
 - `MEDIA_AUDIO_TRACK_NAME` in a Loader/MediaIn's `CustomData.MediaProps.MEDIA_AUDIO_TRACKS_DESC` entry whose `MEDIA_AUDIO_TRACK_ID` is exactly `Timeline Audio`. The ID, audio properties and all source-track names remain represented. This cached label changes from the old timeline name to the duplicate's name when reopened.
+- `__Queried = true` inside a Loader/MediaIn's `CustomData.MediaProps`. This successful media-query cache marker disappears on reopen. False, other values and identically named fields elsewhere remain represented.
+- The exact plain empty `Prefs.Comp.SpellCheck = {}` placeholder. Nonempty settings and identically named tables elsewhere remain represented.
+- The exact plain `Prefs.Comp.Views = { View1 = {} }` placeholder. Additional views, nonempty view contents and other constructors remain represented.
 
 The parser rejects duplicate keys, executable expressions outside quoted strings, unsupported syntax, malformed strings and oversized/deeply nested exports. It never drops an unrecognized effect to make a fingerprint match. This initial parser supports the declarative exports observed in the toolkit fixtures; custom macros or long-string/script forms may require a specific parser extension and qualification. Existing expressions are retained as strings, not evaluated by the inspector.
 
@@ -15,7 +18,7 @@ Resolve snapshots also include item enabled state, media-pool source paths, nati
 
 ## Existing projects and receipts
 
-New snapshots declare `fusionFingerprintSchema: acq-edit/fusion-state-v1` and include the additional state fields. Old fingerprints will differ. Do not rewrite historical inspection files or change a queued operation's expected fingerprint automatically. Inspect the current native timeline, compare it with the saved plan/version and reconcile any differences before preparing a new operation. Published versions and their review decisions remain unchanged.
+New snapshots declare `fusionFingerprintSchema: acq-edit/fusion-state-v2`. Version 1 introduced parsed graphs and the additional native state fields; version 2 narrowly normalizes the three cache/empty-preference forms above. Fingerprints from either an earlier schema or raw exports will differ. Do not rewrite historical inspection files or change a queued operation's expected fingerprint automatically. Inspect the current native timeline, compare it with the saved plan/version and reconcile any differences before preparing a new operation. Published versions and their review decisions remain unchanged.
 
 Cache paths and other metadata are not broadly excluded. A duplicated timeline is a different native object with different IDs and may have different cache paths; its complete snapshot is expected to differ. Revision code still verifies that the allowed finishing change preserves source cut timing.
 
@@ -26,6 +29,10 @@ On 2026-10-23, a dedicated synthetic paired-source project passed a real save, c
 On a separate duplicated test timeline, native caption text, expression and graph-connection changes each changed the Fusion fingerprint. A revision using the pre-edit fingerprint was rejected before further mutation. Native clip-disable, track-mute and track-lock changes also appeared in the expanded snapshot. The original test timeline was reselected and verified unchanged.
 
 The unchanged original timeline then rendered through the updated adapter after reopening: 50 frames at 640×360/25 fps, with full decode passing. All decoded RGB video frames and decoded float PCM audio were byte-identical to the prior valid native render. This is same-timeline reopen evidence; it does not erase the separate picture-difference limitation observed when duplicating a timeline for a music revision.
+
+A later motion fixture exposed additional cache drift. A fresh controlled build retained raw `.comp` exports before render, after render and after actual save/close/reopen. The before/after-render graphs were stable. On reopen, both caption graphs lost only `__Queried = true`, empty `SpellCheck`, and `Views = { View1 = {} }`. These were direct export-to-export comparisons; embedded DRP graph serialization was not treated as an equivalent format. Version 2 fingerprints made the complete pre/post native snapshots identical, and fresh native readback matched the reconciled snapshot.
+
+That reopened motion timeline rendered through Resolve again: all 50 decoded RGB frames were byte-identical to its pre-reopen render. Decoded audio differed at −74.61 dB RMS relative to signal; the separate exact-audio qualification remains open. An intentional native caption mutation on a duplicated test timeline still changed the version 2 fingerprint, and a revision with its stale fingerprint was rejected before another timeline or edit was created. The existing review timeline was restored and verified against its original schema's snapshot. Regression tests preserve nonempty preferences, additional views, unknown values and fields outside the exact normalization locations. No historical receipt was rewritten.
 
 Host page context mattered for the track mutation probe: `SetTrackEnable` and `SetTrackLock` returned success on the Deliver page without changing readback. The same API changes on the Edit page changed readback as expected. Read-only retrieval of those changed states subsequently worked on Deliver. The adapter does not add a track-mutation workflow on this evidence; any future writer must establish its context and verify native readback rather than trusting a boolean return.
 
