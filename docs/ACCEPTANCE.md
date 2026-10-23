@@ -8,7 +8,7 @@ A pilot release is blocked until every required row passes on actual media and e
 | Fresh clone, Claude, clean Mac | Headless result/error handling tested; installed CLI returned explicit low-credit error | Real permitted editing job and exact-session recovery |
 | FilmCraft only | Native two-cut/text fixture, save/reopen, 50-frame H264/AAC render; actual Codex build and browser-submitted caption revision passed | Real source-word design, precision joins, all finishing, broader revisions |
 | Resolve only | Studio 21.1.1 native cuts/Fusion/render fixture, 50 frames | Complex framing/music, sample edges, unattended agent revision round trip |
-| Premiere only | Packaged Lab builds; read-only installed-host response | Fresh isolated toolkit scope, native complete render/revision |
+| Premiere only | Packaged Lab builds; read-only installed-host response; guarded render/publication adapter and failure-boundary tests | Fresh isolated toolkit scope, actual native complete render/revision, save/reopen and human review |
 | Intake | Local/YouTube/Drive implementations | Real authenticated Drive checksum and restart scenarios |
 | Monologue/Q&A/multicamera | Canonical design/ingest skills packaged | Blind review of real examples in every engine |
 | Difficult speech joins | Canonical compiled-word/paired-range binding added; FilmCraft exact-sample synthetic native render verified; Resolve version-gated native sample checkpoint/import, save/reopen, render and caption revision verified | Real played-audio proof, identity, endings and AV sync in every engine; broader host/source qualification |

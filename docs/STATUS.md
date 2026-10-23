@@ -13,6 +13,7 @@ Implemented:
 - Shared compiler binding canonical source-word selections, paired audio decisions and played-source routing to exact native ranges; production builds revalidate the binding.
 - Shared source-pixel fixed-crop plans, native FilmCraft Motion / Resolve Fusion framing, and fixed-crop revisions that preserve existing layers.
 - Native FilmCraft and Resolve adapters, current Premiere Agent Lab source/panel package and scoped adapter, optional Remotion asset renderer.
+- Premiere render-to-publication adapter: guarded save and typed exact export, whole-packet project preflight, restored-mark and native-state checks, saved project hash, actual media decode and shared render receipt. Its live toolkit fixture is still pending; see `PREMIERE_RENDER.md`.
 
 Verified in this checkout:
 - 32 service/state/API/artifact-integrity/process tests pass. Browser fixture verified autosave, duplicate submission (one job), V2 with previous feedback, fresh unreviewed state, and historical timecode navigation to read-only V1.
@@ -27,7 +28,7 @@ Verified in this checkout:
 - Native vertical framing fixtures in FilmCraft and Resolve rendered 50 frames at 360×640. A one-shot crop revision moved its source label exactly 40 pixels while preserving the other shot and caption bounds. FilmCraft audio was identical; Resolve audio differed by 79.05 dB relative to signal. See `NATIVE_FRAMING.md` for scope and limitations.
 - FilmCraft paired-sample fixture preserved 11/17-sample offsets, independent audio durations, native links and source sync across save/reopen/render; decoded audio correlated 0.99999878 with the exact-sample reference. Resolve now preserves the same sample geometry through its own native DRT checkpoint/import route, qualified on Studio 21.1.1 build 10. Native save/reopen, render and caption revision passed; real speech acceptance remains open. See `NATIVE_ASSEMBLY.md`.
 - Resolve export-state recovery reproduced and fixed a completed-but-audio-only output after an audio-only diagnostic. A built-in preset reset restores native video/audio export; all adapters now verify actual streams, geometry, frame count and full decode before issuing a success receipt. See `RESOLVE_PRECISION.md`.
-- Canonical exported Python files parse. Distribution secret-pattern/hash scan passes.
+- Thirty-two Python tests pass, including nine Premiere adapter tests for publication and failure boundaries using explicit fake-host responses. Missing toolkit profiles cannot fall back to a global production connector. These tests do not certify a Premiere native render. Canonical exported Python files parse. Distribution secret-pattern/hash scan passes.
 
 Remaining before pilot:
 - Prove full native editorial jobs through both agent runners and all engines. Codex/FilmCraft synthetic build and caption revision passed; real editorial execution and Resolve/Premiere agent loops remain unproven. Claude live success needs usable account credentials/credit. Interactive permission requests stop for reconciliation.

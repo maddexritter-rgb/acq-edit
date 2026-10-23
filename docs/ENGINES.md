@@ -26,6 +26,8 @@ python3 .local/skills/edit/scripts/premiere_agent.py --profile .local/premiere-p
 
 Before mutation, use the canonical exact-project scope command with explicit inputs, write root, owner and stages. Verify the open project and coordinate the exclusive lease. Stage runners remain the owners of native assembly, reframe, Graphics captions, music and exact-range export. `python/premiere.py` executes only scoped stage packets; it cannot widen privileges or switch projects.
 
+The native `render` action now accepts a guarded save plus typed exact-range export, checks restored marks and unchanged native state, verifies the actual rendered file and emits the shared publication receipt. See `PREMIERE_RENDER.md` for the packet and current full-clip sequence contract. Adapter failure-boundary tests pass; live toolkit export qualification remains pending.
+
 A live production project was open during development. Read-only connectivity was checked; no toolkit mutation was submitted to it. A dedicated new-toolkit Premiere native fixture remains required.
 
 ## DaVinci Resolve Studio
