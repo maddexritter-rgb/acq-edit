@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Opt-in live FilmCraft/agent qualification. Never part of the mock test suite.
+// Opt-in live native/agent qualification. Never part of the mock test suite.
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { mkdir, readFile } from 'node:fs/promises';
@@ -23,10 +23,11 @@ function run(command, args) {
 if (mode === 'prepare') {
   assert(configFile, 'An existing toolkit config JSON is required; credentials are not copied');
   const existing = await json(path.resolve(configFile));
-  assert(existing.backend === 'filmcraft' && existing.filmcraft,
-    'This fixture currently qualifies FilmCraft only; it never switches an existing project backend');
+  assert(['filmcraft', 'resolve'].includes(existing.backend),
+    'This fixture supports FilmCraft or Resolve; it never switches an existing project backend');
   assert(['codex', 'claude'].includes(existing.agent), 'Unknown configured agent');
-  run(existing.filmcraft, ['--help']);
+  if (existing.backend === 'filmcraft') run(existing.filmcraft, ['--help']);
+  else { assert(existing.resolvePython, 'Configured ResolvePython required'); run(existing.resolvePython, ['-c', 'print("ResolvePython available")']); }
   run('ffmpeg', ['-version']);
   // Exclusive creation prevents overwriting or replaying an earlier acceptance run.
   await mkdir(base, { mode: 0o700 });
@@ -36,15 +37,16 @@ if (mode === 'prepare') {
   const { saveConfig } = await import('../dist/config.js');
   const { atomicJson, sha256 } = await import('../dist/files.js');
   const config = {
-    storageRoot: path.join(base, 'projects'), backend: 'filmcraft', agent: existing.agent,
-    python: existing.python, filmcraft: existing.filmcraft,
+    storageRoot: path.join(base, 'projects'), backend: existing.backend, agent: existing.agent,
+    python: existing.python,
+    ...(existing.backend === 'filmcraft' ? {filmcraft: existing.filmcraft} : {resolvePython: existing.resolvePython}),
     ...(existing.agentCommand ? { agentCommand: existing.agentCommand } : {}),
     agentTimeoutMs: existing.agentTimeoutMs || 600000, port: existing.port || 4317,
   };
   await saveConfig(config);
   const store = new Store(path.join(process.env.ACQ_EDIT_HOME, 'state.sqlite'));
   try {
-    const project = await createProject(store, config.storageRoot, 'Synthetic native agent loop', 'filmcraft', config.agent);
+    const project = await createProject(store, config.storageRoot, 'Synthetic native agent loop', config.backend, config.agent);
     const seed = path.join(base, 'synthetic.mp4');
     run('ffmpeg', ['-v', 'error', '-n', '-f', 'lavfi', '-i', 'testsrc2=size=640x360:rate=25:duration=4',
       '-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=48000:duration=4', '-c:v', 'libx264',
@@ -71,7 +73,7 @@ if (mode === 'prepare') {
     await atomicJson(planPath, plan);
     const request = `Mechanical integration fixture: build exactly one existing clip ${clip.id} from the frozen synthetic plan ${planPath}.
 This is not editorial design, speech content, or human approval. Do not fetch brain guidance, transcribe, choose words, change the plan, or call other agents.
-ACQ_EDIT_TEST_FIXTURE=1 must be supplied by the operator. Read the native FilmCraft adapter and packet documentation.
+ACQ_EDIT_TEST_FIXTURE=1 must be supplied by the operator. Read the native ${config.backend} adapter and packet documentation.
 Use the toolkit native build/render commands, new packets and operation folders under this job directory. Do not substitute a shell-made final or copy an old render.
 Capture the native fingerprint, inspect the exported geometry, publish the native receipt through the toolkit, and write result.json with the returned version ID.
 Expected output: 50 frames, 640x360, 25 fps, NATIVE AGENT LOOP text. No optional audits, real projects, credentials, global skills or editor installation changes.`;
@@ -80,7 +82,9 @@ Expected output: 50 frames, 640x360, 25 fps, NATIVE AGENT LOOP text. No optional
     const fixture = { project, clip, jobId: job.id, home: process.env.ACQ_EDIT_HOME, config, planPath };
     await atomicJson(path.join(base, 'fixture.json'), fixture);
     console.log(JSON.stringify({ fixture: path.join(base, 'fixture.json'), projectId: project.id,
-      home: fixture.home, queuedJob: job.id, next: 'Run worker with this ACQ_EDIT_HOME and ACQ_EDIT_TEST_FIXTURE=1; see docs/LIVE_AGENT_LOOP.md' }, null, 2));
+      home: fixture.home, queuedJob: job.id,
+      ...(config.backend === 'resolve' ? {requiredNativeProject: `ACQ_${project.id}`, hostPreparation: 'Create/open this exact empty Resolve project before dispatch. Do not close unrelated work. A blank Untitled Project is not this project.'} : {}),
+      next: 'After host preparation, run worker with this ACQ_EDIT_HOME and ACQ_EDIT_TEST_FIXTURE=1; see docs/LIVE_AGENT_LOOP.md' }, null, 2));
   } finally { store.close(); }
 } else {
   const f = await json(path.join(base, 'fixture.json'));
@@ -97,12 +101,12 @@ Expected output: 50 frames, 640x360, 25 fps, NATIVE AGENT LOOP text. No optional
     assert.equal(jobs[1].snapshot[0].version.id, v1.id);
     const feedback = rows('SELECT data FROM feedback WHERE version_id=?', v2.id)[0];
     assert.equal(feedback.decision, null, 'Changed version must require fresh review');
-    const inspections = [], plans = [], pcm = [], pictures = [];
+    const inspections = [], plans = [], pcm = [], audioData = [], pictures = [];
     for (const v of versions) {
       assert.equal(digest(await readFile(v.media)), v.sha256, 'Published media changed');
       assert.equal(digest(await readFile(v.nativeCheckpoint)), v.nativeFingerprint, 'Native checkpoint changed');
       const receipt = await json(v.receiptPath);
-      assert.equal(receipt.backend, 'filmcraft'); assert.equal(receipt.jobId, v.jobId);
+      assert.equal(receipt.backend, f.project.backend); assert.equal(receipt.jobId, v.jobId);
       assert.equal(receipt.nativeRendered, true);
       assert.deepEqual(receipt.expected, { frames: 50, width: 640, height: 360, fps: '25/1' });
       const result = await json(path.join(f.project.root, '10_WORK', 'jobs', v.jobId, 'result.json'));
@@ -112,21 +116,49 @@ Expected output: 50 frames, 640x360, 25 fps, NATIVE AGENT LOOP text. No optional
       assert.equal(video.length, 1); assert.equal(video[0].nb_read_frames, '50');
       assert.equal(video[0].width, 640); assert.equal(video[0].height, 360); assert.equal(video[0].r_frame_rate, '25/1');
       assert.equal(probe.streams.filter(s => s.codec_type === 'audio').length, 1);
-      pcm.push(digest(run('ffmpeg', ['-v', 'error', '-i', v.media, '-map', '0:a:0', '-f', 'f32le', '-'])));
+      const decodedAudio = run('ffmpeg', ['-v', 'error', '-i', v.media, '-map', '0:a:0', '-f', 'f32le', '-']);
+      audioData.push(decodedAudio); pcm.push(digest(decodedAudio));
       pictures.push(digest(run('ffmpeg', ['-v', 'error', '-i', v.media, '-map', '0:v:0', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'])));
       inspections.push(await json(path.join(path.dirname(v.receiptPath), 'inspection.json')));
       plans.push(await json(v.planPath));
     }
-    assert.equal(pcm[0], pcm[1], 'Caption-only revision changed decoded audio');
+    const failures = [];
+    if (pcm[0] !== pcm[1]) failures.push('Caption-only revision changed decoded audio; exact-audio qualification failed');
+    assert.equal(audioData[0].length, audioData[1].length, 'Decoded audio length changed');
+    let signalEnergy = 0, differenceEnergy = 0, maxDifference = 0;
+    for (let i = 0; i < audioData[0].length; i += 4) {
+      const a = audioData[0].readFloatLE(i), b = audioData[1].readFloatLE(i), difference = b - a;
+      assert(Number.isFinite(a) && Number.isFinite(b), 'Nonfinite audio sample');
+      signalEnergy += a * a; differenceEnergy += difference * difference;
+      maxDifference = Math.max(maxDifference, Math.abs(difference));
+    }
     assert.notEqual(pictures[0], pictures[1], 'Caption revision produced identical pictures');
     assert.equal(plans[0].captions[0].text, 'NATIVE AGENT LOOP');
     assert.equal(plans[1].captions[0].text, 'REVISED AGENT LOOP');
     plans[1].captions[0].text = plans[0].captions[0].text;
     assert.deepEqual(plans[1], plans[0], 'Caption wording revision changed other plan fields');
-    const native1 = JSON.stringify(inspections[0]), native2 = JSON.stringify(inspections[1]);
-    assert(native1.includes('NATIVE AGENT LOOP') && native2.includes('REVISED AGENT LOOP'));
-    assert.equal(native2.replaceAll('REVISED AGENT LOOP', 'NATIVE AGENT LOOP'), native1,
-      'Native state changed beyond caption wording');
+    if (f.project.backend === 'filmcraft') {
+      const native1 = JSON.stringify(inspections[0]), native2 = JSON.stringify(inspections[1]);
+      assert(native1.includes('NATIVE AGENT LOOP') && native2.includes('REVISED AGENT LOOP'));
+      assert.equal(native2.replaceAll('REVISED AGENT LOOP', 'NATIVE AGENT LOOP'), native1,
+        'Native state changed beyond caption wording');
+    } else {
+      // Resolve duplicates native timelines for revisions. IDs/names and Fusion
+      // graph hashes legitimately change; do not misreport full graph equivalence.
+      const normalize = input => {
+        const state = structuredClone(input), locations = new Map();
+        for (const [kind, tracks] of Object.entries(state.tracks)) tracks.forEach((track,t) =>
+          track.forEach((item,i) => locations.set(item.id, `${kind}/${t}/${i}`)));
+        delete state.timeline; delete state.name;
+        for (const tracks of Object.values(state.tracks)) for (const track of tracks) for (const item of track) {
+          delete item.id;
+          item.fusionCount = item.fusion.length; delete item.fusion;
+          item.linkedIds = item.linkedIds.map(id => { assert(locations.has(id), 'Unknown native link'); return locations.get(id); }).sort();
+        }
+        return state;
+      };
+      assert.deepEqual(normalize(inspections[1]), normalize(inspections[0]), 'Resolve revision changed cuts, sources, properties, links or track state');
+    }
     for (const source of rows('SELECT data FROM sources WHERE project_id=?', f.project.id)) {
       assert.equal(digest(await readFile(source.path)), source.sha256, 'Project-owned source changed');
     }
@@ -136,9 +168,12 @@ Expected output: 50 frames, 640x360, 25 fps, NATIVE AGENT LOOP text. No optional
     assert.equal(pending[0].submitted.comments.length, 1);
     assert.equal(pending[0].latest.comments.length, 2);
     assert.equal(jobs[1].snapshot[0].feedback.comments.length, 1, 'Late feedback leaked into submitted snapshot');
-    console.log(JSON.stringify({ passed: true, scope: 'synthetic FilmCraft agent/review integration, not editorial approval',
+    console.log(JSON.stringify({ passed: failures.length === 0, failures, scope: `synthetic ${f.project.backend} agent/review integration, not editorial approval`,
       agent: f.project.agent, nativeJobs: jobs.length, versions: versions.map(v => v.id),
-      sourceAndPublishedHashesPreserved: true, nativeChange: 'caption text only',
-      decodedAudioIdentical: true, renderedPicturesChanged: true, lateCommentPreserved: true }, null, 2));
+      sourceAndPublishedHashesPreserved: true, nativeChange: f.project.backend === 'filmcraft' ? 'caption text only' : 'caption plan changed; native cuts/sources/properties/links preserved; Fusion appearance requires inspection',
+      decodedAudioIdentical: pcm[0] === pcm[1],
+      audioDifference: {maxSampleDifference: maxDifference, rmsRelativeDb: differenceEnergy && signalEnergy ? 10 * Math.log10(differenceEnergy / signalEnergy) : null},
+      renderedPicturesChanged: true, lateCommentPreserved: true }, null, 2));
+    if (failures.length) process.exitCode = 1;
   } finally { db.close(); }
 }
