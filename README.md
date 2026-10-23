@@ -43,6 +43,7 @@ Use `serve --no-worker` to review without dispatching jobs. `projects` lists per
 - `00_SOURCE` contains verified, project-owned copies. Work goes into `10_WORK`; published immutable renders go into `20_DELIVER`.
 - Feedback is bound to an exact version. Applying revisions captures that version and its notes. Later notes stay separate. Changed clips return unreviewed.
 - The shared brain is read-only here. New design fetches current guidance and records its versions; approved edits do not change when guidance changes.
+- [Source intake and recovery](docs/INTAKE.md) retains verified footage and tracks interrupted transfers.
 - Remotion produces graphic assets. Final composition and export happen in the chosen editor.
 
 ## Development

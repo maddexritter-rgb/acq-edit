@@ -14,3 +14,8 @@ test('native runner bounds output and handles spawn failure',async()=>{
  await assert.rejects(run(process.execPath,['-e',"process.stdout.write('x'.repeat(10000));setInterval(()=>{},1000)"],{outputLimit:1000,shutdownGraceMs:50}),/output limit/);
  await assert.rejects(run('/missing-acq-executable',[]),/ENOENT/);
 });
+test('owned child identity is recorded and persistence failure stops it before returning',async()=>{
+ let pid;
+ await assert.rejects(run(process.execPath,['-e','setInterval(()=>{},1000)'],{onSpawn:value=>{pid=value;throw Error('identity write failed')},shutdownGraceMs:50}),/identity write failed/);
+ assert(Number.isSafeInteger(pid));assert.throws(()=>process.kill(pid,0),{code:'ESRCH'});
+});

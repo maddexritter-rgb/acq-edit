@@ -12,9 +12,11 @@ import { atomicJson,readJson,containedFile } from './files.js';
 import { serve } from './server.js';
 import { publish,verifyPublishedVersions } from './publish.js';
 import { run } from './process.js';
+import {recoverIntake,abandonIntake,type IntakeTools} from './intake.js';
 import { serviceLock } from './lock.js';
 import { workOne } from './worker.js';
 const [command,...args]=process.argv.slice(2);const output=(x:unknown)=>console.log(JSON.stringify(x,null,2));
+async function intakeCommand(work:(tools:IntakeTools)=>Promise<unknown>){const controller=new AbortController();const stop=()=>controller.abort();process.on('SIGINT',stop);process.on('SIGTERM',stop);try{output(await work({signal:controller.signal}))}finally{process.off('SIGINT',stop);process.off('SIGTERM',stop)}}
 async function main(){
  if(command==='setup'){
   const rl=createInterface({input:process.stdin,output:process.stdout});try{
@@ -31,11 +33,11 @@ async function main(){
   }finally{rl.close()}return;
  }
  if(command==='credentials'){const {spawn}=await import('node:child_process');await new Promise<void>((resolve,reject)=>{const child=spawn('python3',[path.join(ROOT,'scripts','credentials.py'),HOME],{stdio:'inherit'});child.on('error',reject);child.on('close',code=>code===0?resolve():reject(new Error('Credential entry failed')))});return}
- if(command==='help'||!command){console.log(`ACQ Edit\nsetup [backend] [agent]\ncredentials\ndoctor\nproject <title>\nprojects\nopen <project-id>\nsource <project-id> <file>\nyoutube <project-id> <url>\ndrive <project-id> <url> [rclone-remote]\nbuild <project-id> <request>\nclip <project-id> <title>\npublish <project-id> <render-receipt.json>\nserve [--no-worker]\nworker\nreconcile <job-id> <ready|failed> <evidence-path>\nnative <project-id> <compile|inspect|build|revise|render> <packet.json>\n`);return}
+ if(command==='help'||!command){console.log(`ACQ Edit\nsetup [backend] [agent]\ncredentials\ndoctor\nproject <title>\nprojects\nopen <project-id>\nsource <project-id> <file>\nyoutube <project-id> <url>\ndrive <project-id> <url> [rclone-remote]\nintakes <project-id>\nintake-abandon <intake-id> <evidence.json>\nintake-recover <intake-id>\nbuild <project-id> <request>\nclip <project-id> <title>\npublish <project-id> <render-receipt.json>\nserve [--no-worker]\nworker\nreconcile <job-id> <ready|failed> <evidence-path>\nnative <project-id> <compile|inspect|build|revise|render> <packet.json>\n`);return}
  const c=await config();const store=new Store(path.join(HOME,'state.sqlite'));
  if(command==='doctor'){
   const checks:Record<string,unknown>={node:process.version,platform:process.platform,backend:c.backend,agent:c.agent};
-  for(const binary of ['ffmpeg','ffprobe',c.python,c.agentCommand||c.agent]){try{checks[binary]={available:true,version:(await run(binary,[binary.includes('python')?'--version':binary==='ffmpeg'||binary==='ffprobe'?'-version':'--version'])).split('\n')[0]}}catch{checks[binary]={available:false}}}
+  for(const binary of ['ffmpeg','ffprobe','yt-dlp','rclone',c.python,c.agentCommand||c.agent]){try{checks[binary]={available:true,version:(await run(binary,[binary.includes('python')?'--version':binary==='ffmpeg'||binary==='ffprobe'?'-version':'--version'])).split('\n')[0]}}catch{checks[binary]={available:false}}}
   const secrets=await secretEnv();checks.credentials={assemblyAI:!!(secrets.ASSEMBLYAI_API_KEY||process.env.ASSEMBLYAI_API_KEY),gemini:!!(secrets.GEMINI_API_KEY||process.env.GEMINI_API_KEY)};
   try{checks.native=JSON.parse(await run(c.backend==='resolve'?c.resolvePython!:c.python,[path.join(ROOT,'python','native.py'),'doctor','--backend',c.backend,'--config',path.join(HOME,'config.json')]))}catch(e){checks.native={ready:false,error:(e as Error).message}}
   output(checks);store.close();return;
@@ -56,8 +58,11 @@ async function main(){
  case 'project':invariant(args[0],'Project title required');output(await createProject(store,c.storageRoot,args.join(' '),c.backend,c.agent));break;
  case 'projects':output(store.projects());break;
  case 'open':output(await exportState(store,args[0]!));console.log('Run acq-edit serve to reopen the review room.');break;
- case 'source':output(await importLocal(store,args[0]!,args[1]!));break;
- case 'youtube':case 'drive':output(await importUrl(store,args[0]!,args[1]!,command,args[2]));break;
+ case 'intakes':output(store.intakes(args[0]!));break;
+ case 'intake-abandon':invariant(args[1],'Process-inspection evidence path required');output(await abandonIntake(store,args[0]!,path.resolve(args[1])));break;
+ case 'intake-recover':await intakeCommand(tools=>recoverIntake(store,args[0]!,tools));break;
+ case 'source':await intakeCommand(tools=>importLocal(store,args[0]!,args[1]!,'local',tools));break;
+ case 'youtube':case 'drive':await intakeCommand(tools=>importUrl(store,args[0]!,args[1]!,command,args[2],tools));break;
  case 'build':output(store.enqueueBuild(args[0]!,args.slice(1).join(' ')));break;
  case 'clip':{store.project(args[0]!);const clip={id:randomUUID(),projectId:args[0]!,number:store.clips(args[0]!).length+1,title:args.slice(1).join(' '),currentVersionId:null};invariant(clip.title,'Title required');store.addClip(clip);output(clip);break}
  case 'publish':output(await publish(store,args[0]!,path.resolve(args[1]!)));break;

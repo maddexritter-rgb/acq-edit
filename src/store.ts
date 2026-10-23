@@ -4,7 +4,7 @@ import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import {
   type Project, type Source, type Clip, type Version, type Feedback,
-  type Job, type Submission, type JobState, type DeferredFeedback,
+  type Job, type Submission, type JobState, type DeferredFeedback, type Intake,
   now, hash, invariant, routeRevision,
 } from './contracts.js';
 
@@ -26,6 +26,8 @@ export class Store {
       CREATE TABLE IF NOT EXISTS feedback(version_id TEXT PRIMARY KEY REFERENCES versions(id),data TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS jobs(id TEXT PRIMARY KEY,project_id TEXT NOT NULL REFERENCES projects(id),state TEXT NOT NULL,dedupe TEXT NOT NULL UNIQUE,data TEXT NOT NULL);
       CREATE UNIQUE INDEX IF NOT EXISTS one_mutator ON jobs(project_id) WHERE state IN ('editing','rendering','reconciliation_required');
+      CREATE TABLE IF NOT EXISTS intakes(id TEXT PRIMARY KEY,project_id TEXT NOT NULL REFERENCES projects(id),state TEXT NOT NULL,data TEXT NOT NULL);
+      CREATE UNIQUE INDEX IF NOT EXISTS one_intake ON intakes(project_id) WHERE state IN ('downloading','verifying','copying','reconciliation_required');
       CREATE TABLE IF NOT EXISTS deferred_feedback(
         id TEXT PRIMARY KEY, clip_id TEXT NOT NULL REFERENCES clips(id),
         consumed_by TEXT REFERENCES versions(id), data TEXT NOT NULL);
@@ -53,6 +55,26 @@ export class Store {
   addSource(s: Source) {
     this.project(s.projectId);
     this.db.prepare('INSERT INTO sources VALUES (?,?,?)').run(s.id, s.projectId, JSON.stringify(s));
+  }
+  intake(id:string) {const value=parse<Intake>(this.db.prepare('SELECT data FROM intakes WHERE id=?').get(id));invariant(value,'Intake not found');return value}
+  intakes(projectId:string) {this.project(projectId);return this.db.prepare('SELECT data FROM intakes WHERE project_id=? ORDER BY rowid DESC').all(projectId).map(r=>parse<Intake>(r)!)}
+  addIntake(value:Intake) {
+    return this.transaction(()=>{
+      this.project(value.projectId);
+      const active=this.jobs(value.projectId).find(j=>activeStates.includes(j.state));
+      invariant(!active||(active.id===process.env.ACQ_EDIT_JOB_ID&&active.state!=='reconciliation_required'),'An editing job owns this project; intake must belong to that job');
+      invariant(!this.intakes(value.projectId).some(i=>!['ready','failed'].includes(i.state)),'Another intake is active or needs recovery');
+      this.db.prepare('INSERT INTO intakes VALUES (?,?,?,?)').run(value.id,value.projectId,value.state,JSON.stringify(value));
+      this.event(value.projectId,{type:'intake.created',intakeId:value.id});return value;
+    });
+  }
+  updateIntake(id:string,patch:Partial<Intake>) {
+    const old=this.intake(id);const value={...old,...patch,id:old.id,projectId:old.projectId,updatedAt:now()};
+    this.db.prepare('UPDATE intakes SET state=?,data=? WHERE id=?').run(value.state,JSON.stringify(value),id);return value;
+  }
+  finishIntake(id:string,source:Source) {
+    return this.transaction(()=>{const intake=this.intake(id);invariant(source.id===id&&source.projectId===intake.projectId,'Intake source identity differs');
+      this.addSource(source);return this.updateIntake(id,{state:'ready',sourceId:source.id,ownerPid:null,childPid:null,error:null});});
   }
   clips(id: string) { return this.db.prepare('SELECT data FROM clips WHERE project_id=? ORDER BY rowid').all(id).map(r => parse<Clip>(r)!); }
   clip(id: string) {
@@ -177,6 +199,7 @@ export class Store {
     return this.transaction(() => {
       const row = this.db.prepare(`SELECT data FROM jobs j WHERE state='queued' AND NOT EXISTS
         (SELECT 1 FROM jobs b WHERE b.project_id=j.project_id AND b.state IN ('editing','rendering','reconciliation_required'))
+        AND NOT EXISTS (SELECT 1 FROM intakes i WHERE i.project_id=j.project_id AND i.state NOT IN ('ready','failed'))
         ORDER BY rowid LIMIT 1`).get();
       const j = parse<Job>(row); if (!j) return;
       if (j.snapshot.some(s => this.clip(s.clipId).currentVersionId !== s.version.id)) {
@@ -218,7 +241,7 @@ export class Store {
     return {
       project: this.project(id), sources: this.sources(id),
       clips: this.clips(id).map(c => ({ ...c, pendingFeedback: this.pendingFeedback(c.id), versions: this.versions(c.id).map(v => ({ ...v, feedback: this.feedback(v.id) })) })),
-      jobs: this.jobs(id),
+      jobs: this.jobs(id),intakes:this.intakes(id),
     };
   }
 }

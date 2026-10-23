@@ -5,7 +5,13 @@ export type Agent = 'codex' | 'claude';
 export type Decision = 'yes'|'revise'|'no'|null;
 export type JobState = 'queued'|'editing'|'rendering'|'ready'|'failed'|'reconciliation_required';
 export interface Project { id:string; title:string; root:string; backend:Backend; agent:Agent; createdAt:string }
-export interface Source { id:string; projectId:string; path:string; sha256:string; bytes:number; origin:string; probe:unknown }
+export interface Source { id:string; projectId:string; path:string; sha256:string; bytes:number; origin:string; probe:unknown; intakeId?:string; verificationPath?:string; verificationSha256?:string }
+export interface Intake {
+ id:string;projectId:string;kind:'local'|'youtube'|'drive';input:string;origin:string;remote?:string;fileId?:string;
+ state:'downloading'|'verifying'|'copying'|'ready'|'failed'|'reconciliation_required';
+ directory:string;candidate?:string;target?:string;expectedSha256?:string;bytes?:number;sourceId?:string;
+ ownerPid:number|null;childPid:number|null;childPending?:boolean;createdAt:string;updatedAt:string;error:string|null;
+}
 export interface Version { id:string; clipId:string; number:number; media:string; sha256:string; nativeProject:string; nativeCheckpoint?:string; nativeFingerprint:string; planPath:string; receiptPath:string; createdAt:string; parentId:string|null; jobId?:string }
 export interface Clip { id:string; projectId:string; number:number; title:string; currentVersionId:string|null }
 export interface Feedback { versionId:string; revision:number; decision:Decision; notes:string; comments:Comment[]; updatedAt:string }

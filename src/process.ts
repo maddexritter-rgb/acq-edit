@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-export interface RunOptions {cwd?:string;env?:NodeJS.ProcessEnv;timeout?:number;signal?:AbortSignal;outputLimit?:number;shutdownGraceMs?:number}
+export interface RunOptions {cwd?:string;env?:NodeJS.ProcessEnv;timeout?:number;signal?:AbortSignal;outputLimit?:number;shutdownGraceMs?:number;onSpawn?:(pid:number)=>void}
 /** Do not release a native-operation caller while its owned process is still running. */
 export async function run(command:string,args:string[],options:RunOptions={}):Promise<string>{
  options.signal?.throwIfAborted();
@@ -14,6 +14,7 @@ export async function run(command:string,args:string[],options:RunOptions={}):Pr
   p.stdout.on('data',b=>{if(stopping)return;out+=b;if(Buffer.byteLength(out)>(options.outputLimit??32_000_000))stop(new Error('Process output limit exceeded'))});
   p.stderr.on('data',b=>{err=(err+b).slice(-16000)});
   p.on('error',stop);
+  p.on('spawn',()=>{try{if(p.pid)options.onSpawn?.(p.pid)}catch(e){stop(e as Error)}});
   p.on('close',code=>{clearTimeout(timer);if(killTimer)clearTimeout(killTimer);options.signal?.removeEventListener('abort',abort);
    if(failure)reject(failure);else if(code===0)resolve(out);else reject(new Error(`${command} exited ${code}: ${err}`));
   });
