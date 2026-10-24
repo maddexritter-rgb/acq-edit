@@ -8,7 +8,7 @@ import { type Backend,type Version,type Project,type EditPlan,invariant,now } fr
 import { sha256,containedFile,readJson,atomicJson } from './files.js';
 import { run } from './process.js';
 import { exportState } from './projects.js';
-export interface RenderReceipt {schema:'acq-edit/render-v1';projectId:string;backend:Backend;clipId:string;parentId:string|null;jobId?:string;media:string;nativeProject:string;nativeFingerprint:string;planPath:string;expected:{frames:number;width:number;height:number;fps:string};nativeInspectionPath:string;nativeRendered:true;recutVerificationPath?:string;recutVerificationSha256?:string}
+export interface RenderReceipt {schema:'acq-edit/render-v1';projectId:string;backend:Backend;clipId:string;parentId:string|null;jobId?:string;media:string;nativeProject:string;nativeFingerprint:string;planPath:string;expected:{frames:number;width:number;height:number;fps:string};nativeInspectionPath:string;nativeRendered:true;inputMediaVerification?:{phase:'after-render-verification';files:Array<{role:'source'|'graphic';id:string;path:string;expectedSha256:string;actualSha256:string}>};recutVerificationPath?:string;recutVerificationSha256?:string}
 export async function verifyRecutReceipt(store:Store,p:Project,r:RenderReceipt){
  const next=await readJson<EditPlan>(await containedFile(p.root,r.planPath));
  invariant(next.projectId===p.id&&next.backend===p.backend&&next.clipId===r.clipId,'Published plan identity/backend mismatch');

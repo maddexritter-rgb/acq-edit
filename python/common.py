@@ -16,8 +16,26 @@ def save(path,value):
  with p.open('x',encoding='utf-8') as f:json.dump(value,f,indent=2)
 def inside(root,p):
  p=Path(p).resolve();require(p.is_relative_to(Path(root).resolve()),'Path outside selected project');return p
+def verify_plan_media(project,spec):
+ """Hash the exact source/overlay bytes without touching an editor or repairing files."""
+ results=[];failures=[]
+ for role,folder,items in [('source','00_SOURCE',spec.get('sources',[])),('graphic','10_WORK',spec.get('graphics',[]))]:
+  for index,item in enumerate(items):
+   entry={'role':role,'id':item.get('id',str(index)),'path':item.get('path'),'expectedSha256':item.get('sha256')}
+   try:
+    target=inside(Path(project['root'])/folder,item['path'])
+    require(target.is_file(),'Media is missing or is not a regular file')
+    entry['actualSha256']=sha(target)
+    require(entry['actualSha256']==item['sha256'],'Media bytes changed')
+    results.append(entry)
+   except (OSError,RuntimeError,KeyError,TypeError) as error:
+    failures.append({**entry,'error':str(error)})
+ if failures:
+  raise RuntimeError('Input media verification failed. Preserve the existing files and versions; restore the exact expected bytes or import a new source and redesign. '+json.dumps(failures,ensure_ascii=False))
+ return results
 def plan(project,packet):
  p=read(inside(project['root'],packet['plan']));require(p['schema']=='acq-edit/plan-v1','Unsupported plan');require(p['projectId']==project['id'] and p['backend']==project['backend'],'Plan identity/backend mismatch')
+ verify_plan_media(project,p)
  for evidence in [p['brain'],p['editorial']]:
   file=evidence.get('receiptPath') or evidence.get('selectionPath');inside(project['root'],file);require(sha(file)==evidence['sha256'],'Pinned evidence changed')
  require(p['editorial']['reviewed'],'Reviewed source-word selection required')
@@ -34,8 +52,6 @@ def plan(project,packet):
   from assembly_plan import verify_bound_plan
   verify_bound_plan(project,p)
 
- for s in p['sources']:
-  inside(Path(project['root'])/'00_SOURCE',s['path']);require(sha(s['path'])==s['sha256'],'Source changed')
  end=0
  for c in p['cuts']:
   require(c['wordIds'] and c['boundaryEvidence'],'Source-word and speech-boundary evidence required')
@@ -84,4 +100,6 @@ def result_receipt(project,packet,p,native,media,inspection,*,verification=None,
   require(proof.get('schema')=='acq-edit/recut-execution-v1' and proof['backend']==project['backend'] and proof['parentVersionId']==packet.get('parentId') and proof['parentPreserved'] is True,'Recut verification identity differs')
   require(proof['planSha256']==sha(packet['plan']) and proof['newNativeSha256']==sha(native) and proof['construction']['fingerprint']==packet['expectedFingerprint'],'Recut plan/native evidence changed before rendering')
   receipt.update(recutVerificationPath=str(proof_path),recutVerificationSha256=sha(proof_path))
+ require(read(inside(project['root'],packet['plan']))==p,'Plan changed during native execution; preserve output and reconcile before publication')
+ receipt['inputMediaVerification']={'phase':'after-render-verification','files':verify_plan_media(project,p)}
  save(inside(project['root'],packet['receipt']),receipt);return receipt

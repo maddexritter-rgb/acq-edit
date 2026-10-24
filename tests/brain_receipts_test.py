@@ -74,6 +74,7 @@ class BrainReceiptTests(unittest.TestCase):
   project={**self.project,'backend':'filmcraft'}
   spec={'clipId':'clip','cuts':[{'frames':25}],'width':640,'height':360,'fps':{'numerator':25,'denominator':1},'brain':first,'editorial':{'selectionPath':str(selection)}}
   packet={'plan':str(work/'plan.json'),'receipt':str(work/'render-receipt.json')}
+  Path(packet['plan']).write_text(json.dumps(spec))
   # Explicit mocked native verification: this test proves guidance provenance only.
   with patch('urllib.request.urlopen',side_effect=AssertionError('No refresh at render time')):
    receipt=common.result_receipt(project,packet,spec,native,media,work/'inspection.json',verification={'fixture':True})

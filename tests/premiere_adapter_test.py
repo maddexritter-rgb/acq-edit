@@ -24,6 +24,7 @@ class PremiereAdapterTests(unittest.TestCase):
   self.packet={'nativeProject':str(self.native),'expectedFingerprint':fingerprint(self.state),'plan':str(self.root/'plan.json'),'output':export['output_path'],'inspection':str(self.root/'inspection.json'),'receipt':str(self.root/'receipt.json'),'receiptDirectory':str(self.root/'operations'),'operations':[operation('save_project',{},1),operation('lab_export_exact_range',export,2)]}
   selection=self.root/'selection.json';selection.write_text(json.dumps({'testFixture':True}))
   self.plan={'clipId':'clip-1','fps':{'numerator':25,'denominator':1},'width':640,'height':360,'sampleRate':48000,'cuts':[{'frames':25},{'frames':25}],'editorial':{'selectionPath':str(selection)}}
+  Path(self.packet['plan']).write_text(json.dumps(self.plan))
   self.result={'path':export['output_path'],'start_ticks':export['start_ticks'],'end_ticks':export['end_ticks'],'expected_frames':50,'preserved_bounded_state':True,'restored_in':'0','restored_out':export['end_ticks']}
   self.mutations=[];self.observed_baseline=copy.deepcopy(self.baseline);self.verification={'frames':50,'width':640,'height':360,'fullDecode':True}
   owner=self
