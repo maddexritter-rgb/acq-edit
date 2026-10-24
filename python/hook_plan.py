@@ -24,6 +24,24 @@ def base_fingerprint(spec):
     return fingerprint({k: v for k, v in spec.items() if k != 'hookContract'})
 
 
+def opening_end(spec):
+    return min(math.ceil(5*Fraction(spec['fps']['numerator'],spec['fps']['denominator']))+1,
+               sum(c['frames'] for c in spec['cuts']))
+
+
+def validate_strategy(project, spec, recipe):
+    strategy = recipe.get('caption_strategy', 'preserve')
+    require(strategy in ['preserve','replace'], 'Unsupported caption treatment')
+    if strategy == 'replace':
+        from caption_visibility import ranges
+        require(ranges(spec) == [{'startFrame':0,'endFrame':opening_end(spec)}],
+                'Native replacement requires the caption owner to hide exactly the hook opening first')
+        clean = inside(project['root'], recipe.get('clean_opening_source', ''))
+        source = inside(project['root'], recipe['source'])
+        require(clean == source and sha(clean) == recipe.get('clean_opening_sha256'),
+                'Use the exact natively rendered caption-hidden base as the verified clean opening')
+
+
 def prepare_plan(project, packet):
     from common import plan, verify_native_render
     spec = plan(project, packet)
@@ -33,7 +51,7 @@ def prepare_plan(project, packet):
     require(sha(recipe_path) == packet['recipeSha256'], 'Hook recipe changed')
     recipe = read(recipe_path)
     require(recipe.get('clip_id') == spec['clipId'], 'Hook recipe belongs to another clip')
-    require(recipe.get('caption_strategy', 'preserve') == 'preserve', 'Native caption hiding is not yet supported; use a measured preserve layout or report the conflict')
+    validate_strategy(project, spec, recipe)
     require(recipe.get('existing_hook') == 'none', 'Existing hook requires explicit identified replacement')
     source = inside(project['root'], recipe['source'])
     inside(project['root'], recipe['transcript'])
@@ -85,11 +103,12 @@ def validate(project, spec):
         require(contract.get('baseInspectionSha256')==sha(inside(project['root'],receipt['nativeInspectionPath'])), 'Base Resolve inspection changed')
     require(receipt['projectId'] == project['id'] and receipt['backend'] == project['backend'] and receipt['clipId'] == spec['clipId'], 'Base hook receipt identity differs')
     require(Path(receipt['media']).resolve() == Path(m['source']).resolve(), 'Hook source differs from base render')
-    require(m['schema'] == 'text-hook/v1' and m['clip_id'] == spec['clipId'] and m.get('caption_strategy', 'preserve') == 'preserve' and m['existing_hook'] == 'none', 'Unsupported native hook recipe')
+    require(m['schema'] == 'text-hook/v1' and m['clip_id'] == spec['clipId'] and m['existing_hook'] == 'none', 'Unsupported native hook recipe')
+    validate_strategy(project, spec, m)
     require(m['animation'] == 'none', 'Hook animation requires a separately supported native operation')
     require(m['canvas'] == [spec['width'], spec['height']] and Fraction(m['frame_rate']) == Fraction(spec['fps']['numerator'],spec['fps']['denominator']), 'Hook canvas or frame clock differs')
     fps = Fraction(spec['fps']['numerator'], spec['fps']['denominator'])
-    end = min(math.ceil(5*fps)+1, sum(c['frames'] for c in spec['cuts']))
+    end = opening_end(spec)
     require(abs(m['end_seconds']*float(fps)-end) < 1e-6, 'Hook must include the first frame at or after five seconds')
     cursor = 0; intervals = []
     for interval in m['placement_intervals']:

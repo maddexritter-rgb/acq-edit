@@ -27,13 +27,13 @@ The finishing receipt has schema `acq-edit/recut-finishing-v1`, `parentVersionId
 
 | Component | Owner | Fingerprinted value |
 |---|---|---|
-| captions | caption-clips | Complete new `captions` array |
+| captions | caption-clips | Complete new `captions` array; if visibility is present, object containing `captions` and `captionVisibility` |
 | framing | horizontal-to-vertical | Complete new `framing` object |
 | audio | music | Complete new `audio` object |
 | graphics | promo | Complete new `graphics` array |
-| textHook | text-hook | Object containing new `captions` and `graphics` |
+| textHook | text-hook | Object containing new `captions` and `graphics`, plus `captionVisibility` when present |
 
-Use `common.fingerprint` for these canonical JSON fingerprints. A graphics decision may reference the specific configured graphics owner's supporting recipe in its reason; `promo` is the current shared native motion route. A `not-used` component must be empty, except `textHook`: ordinary captions may exist without an opening headline. The receipt pins decisions; it is not machine evidence of editorial quality, listening, reference fidelity or human approval.
+Use `recut_execution.component(plan, name)` and `common.fingerprint` for these canonical JSON fingerprints. Reconsider hidden caption ranges against the new cut clock; retaining, changing or removing them is an explicit caption-owner decision. A present visibility handoff requires `recomputed`, never `not-used`; stale array-only fingerprints are refused. Absence retains the existing receipt format. A graphics decision may reference the specific configured graphics owner's supporting recipe in its reason; `promo` is the current shared native motion route. A `not-used` component must be empty, except `textHook`: ordinary captions may exist without an opening headline. The receipt pins decisions; it is not machine evidence of editorial quality, listening, reference fidelity or human approval.
 
 ## Parent preservation and publication
 

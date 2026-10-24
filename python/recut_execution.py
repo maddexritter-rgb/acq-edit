@@ -7,6 +7,9 @@ OWNERS = {'captions': 'caption-clips', 'framing': 'horizontal-to-vertical',
 
 
 def component(spec, name):
+    if name in ['captions', 'textHook'] and spec.get('captionVisibility'):
+        keys = ['captions', 'captionVisibility'] + (['graphics'] if name == 'textHook' else [])
+        return {key: spec[key] for key in keys}
     return {key: spec[key] for key in ['captions', 'graphics']} if name == 'textHook' else spec[name]
 
 

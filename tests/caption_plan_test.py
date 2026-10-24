@@ -118,4 +118,109 @@ class CaptionPlanTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'Animated graphic properties'): self.verify()
 
 
+    def visibility(self, rows=None):
+        prepared, reference = self.derive()
+        self.spec.update(captions=prepared['captions'], captionContract={**reference, 'helperHashes':prepared['helperHashes']})
+        previous = copy.deepcopy(self.spec)
+        self.spec['captionVisibility'] = {'schema':'acq-edit/caption-visibility-v1','owner':'caption-clips',
+            'reason':'Synthetic hook overlap','evidence':'Native caption fixture; not human review',
+            'hiddenRanges': rows or [{'startFrame':0,'endFrame':30}]}
+        return previous, prepared
+
+    def test_visibility_checks_foreground_and_both_shadows_and_preserves_native_context(self):
+        from caption_visibility import targets, verify_protected
+        previous, prepared = self.visibility()
+        self.native['project'].update(name='fixture',root={'name':'fixture'})
+        before = copy.deepcopy(self.native); ft = 254016000000//25
+        changes = targets(before, previous, self.spec, prepared, ft)
+        for change in changes:
+            self.params(change['track'],change['index'],'opacity')['opacity'] = copy.deepcopy(change['new'])
+        self.assertEqual(self.verify()['status'],'NATIVE_CAPTION_CONTRACT_VALID')
+        verify_protected(before,self.native,changes,before['project']['name'])
+        self.native['project']['items']['1']['kind']['Sequence']['manualAudioChange'] = True
+        with self.assertRaisesRegex(RuntimeError,'protected native'): verify_protected(before,self.native,changes,before['project']['name'])
+        self.params(2,0,'opacity')['opacity']['value']['Float'] = 20
+        with self.assertRaisesRegex(RuntimeError,'visibility curve'): self.verify()
+
+    def test_visibility_refuses_unowned_other_backend_invalid_ranges_and_locked_targets(self):
+        from caption_visibility import ranges, targets
+        previous, prepared = self.visibility()
+        original = copy.deepcopy(self.spec['captionVisibility'])
+        for invalid in [None, {}, [], False]:
+            self.spec['captionVisibility'] = invalid
+            with self.assertRaisesRegex(RuntimeError,'handoff required'): ranges(self.spec)
+        self.spec['captionVisibility'] = original
+        for rows in [[{'startFrame':-1,'endFrame':1}],[{'startFrame':0,'endFrame':76}],
+                     [{'startFrame':0,'endFrame':30},{'startFrame':29,'endFrame':40}],
+                     [{'startFrame':True,'endFrame':5}],[]]:
+            self.spec['captionVisibility']['hiddenRanges'] = rows
+            with self.assertRaises(RuntimeError): ranges(self.spec)
+        self.spec['captionVisibility']['hiddenRanges'] = [{'startFrame':0,'endFrame':30}]
+        self.spec['backend']='resolve'
+        with self.assertRaisesRegex(RuntimeError,'FilmCraft-only'): ranges(self.spec)
+        self.spec['backend']='filmcraft'
+        self.native['project']['items']['1']['kind']['Sequence']['video_tracks'][2]['locked'] = True
+        with self.assertRaisesRegex(RuntimeError,'locked'): targets(self.native,previous,self.spec,prepared,254016000000//25)
+        del self.spec['captionContract']
+        with self.assertRaisesRegex(RuntimeError,'ownership contract'): ranges(self.spec)
+
+    def test_visibility_keeps_fractional_arrival_values_after_a_hidden_window(self):
+        from caption_visibility import masked_opacity
+        from filmcraft_caption_contract import profile_caption_motion
+        ft=254016000000//25
+        _, original=profile_caption_motion({'filmcraft_caption_motion':'measured_fast_settle'},ft,10)
+        masked=masked_opacity(original,{'start_frame':20,'end_frame':30},[{'startFrame':20,'endFrame':21}],ft)
+        self.assertEqual(masked['value'],{'Float':0.})
+        self.assertEqual(masked['keyframes'][0]['interp'],'Hold')
+        boundary=next(k for k in masked['keyframes'] if k['time']==ft)
+        expected=90+10*ft/original['keyframes'][-1]['time']
+        self.assertAlmostEqual(boundary['value']['Float'],expected)
+        self.assertEqual(masked['keyframes'][-1],original['keyframes'][-1])
+        untouched=masked_opacity(original,{'start_frame':40,'end_frame':50},[{'startFrame':0,'endFrame':30}],ft)
+        self.assertEqual(untouched,original)
+
+    def test_visibility_prepare_pins_previous_plan_and_forbids_unrelated_or_hook_changes(self):
+        from caption_visibility import prepare
+        previous, _ = self.visibility()
+        prior = self.root/'previous.json'; prior.write_text(json.dumps(previous))
+        packet = {'previousPlan':str(prior),'previousPlanSha256':sha(prior),'plan':'new'}
+        def check(old, new):
+            with patch('caption_visibility.plan',side_effect=[old,new]):
+                return prepare(self.project,packet)
+        check(previous,self.spec)
+        check(self.spec,previous)  # restoration uses the same guarded operation
+        with self.assertRaisesRegex(RuntimeError,'makes no change'): check(previous,previous)
+        changed=copy.deepcopy(self.spec);changed['width']=720
+        with self.assertRaisesRegex(RuntimeError,'cannot change'):check(previous,changed)
+        changed=copy.deepcopy(self.spec);changed['hookContract']={'fixture':True}
+        with self.assertRaisesRegex(RuntimeError,'Remove the owned hook'):check(previous,changed)
+        prior.write_text('changed')
+        with self.assertRaisesRegex(RuntimeError,'Previous caption plan changed'):check(previous,self.spec)
+
+    def test_visibility_gates_midcard_without_fading_before_the_hidden_frame(self):
+        from caption_visibility import masked_opacity
+        ft=254016000000//25
+        original={'value':{'Float':100.}}
+        masked=masked_opacity(original,{'start_frame':0,'end_frame':75},[{'startFrame':10,'endFrame':20},{'startFrame':30,'endFrame':40}],ft)
+        values={k['time']:(k['value']['Float'],k['interp']) for k in masked['keyframes']}
+        self.assertEqual(values[10*ft-1],(100.,'Linear'))
+        self.assertEqual(values[10*ft],(0.,'Hold'))
+        self.assertEqual(values[20*ft],(100.,'Linear'))
+        self.assertEqual(values[30*ft],(0.,'Hold'))
+        self.assertEqual(values[40*ft],(100.,'Linear'))
+
+    def test_visibility_is_not_mistaken_for_forbidden_arrival_on_a_static_profile(self):
+        from filmcraft_caption_contract import profile_caption_motion
+        profile=json.loads(self.profile.read_text());profile['filmcraft_caption_motion']='none';self.profile.write_text(json.dumps(profile))
+        self.handoff['profile']['sha256']=sha(self.profile)
+        previous,prepared=self.visibility()
+        ft=254016000000//25
+        for i,card in enumerate(prepared['cards']):
+            motion,opacity=profile_caption_motion(profile,ft,card['end_frame']-card['start_frame'],center=(320,180),canvas_height=360)
+            for track in [1,2,3]:
+                self.params(track,i,'motion')['position']=motion
+                self.params(track,i,'opacity')['opacity']=caption_plan.opacity_for(self.spec,prepared,card,ft)
+        self.assertEqual(self.verify()['status'],'NATIVE_CAPTION_CONTRACT_VALID')
+
+
 if __name__ == '__main__': unittest.main()

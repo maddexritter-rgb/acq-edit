@@ -110,3 +110,46 @@ A subsequent native caption-only revision changed wording and foreground color a
 On the same date, Resolve Studio 21.1.1 build 10 built and natively rendered the shared caption-owner handoff: three cards, a real italic quotation spanning a picture cut, two shadow copies, and the measured fast-settle arrival. Both the original and subsequent wording/yellow-color revision exported 75 frames at 640×360/25 fps with full decode passing. Sampled original and revised frames were viewed. The parent timeline, parent DRP hash and pre-existing review timeline were verified unchanged. This fixture used Resolve directly throughout; no FilmCraft engine or Premiere operation ran.
 
 Decoded audio differed between Resolve versions at −72.31 dB difference RMS relative to the signal. This is retained as an open qualification, not rounded to equality or labeled inaudible. No real speech, complete agent-driven caption-owner workflow, reference recreation or human approval is established by this synthetic fixture. Unicode JSON and Fusion exports now read explicitly as UTF-8, including under ResolvePython's ASCII locale.
+
+
+## Native caption visibility (FilmCraft)
+
+The caption owner can hide editable speech captions for explicit frame ranges while retaining the words, timing, arrival motion and both native shadow duplicates. This is currently FilmCraft-only and requires `captionContract`. It never covers burned captions, changes cuts or invokes another engine.
+
+Add this field to an otherwise identical plan:
+
+```json
+"captionVisibility": {
+  "schema": "acq-edit/caption-visibility-v1",
+  "owner": "caption-clips",
+  "hiddenRanges": [{"startFrame": 0, "endFrame": 126}],
+  "reason": "The opening headline replaces speech captions in this interval",
+  "evidence": "Measured opening caption bounds and protected picture regions"
+}
+```
+
+Ranges are ordered, nonoverlapping, half-open integer frames within the clip. The example hides frames 0 through 125. Remove the field in a new plan to restore the original caption visibility. The owner must reconsider these ranges after a spoken recut; see `NATIVE_RECUTS.md`.
+
+Run `native PROJECT_ID revise PACKET.json` with:
+
+```json
+{
+  "kind": "caption-visibility",
+  "previousPlan": "<project>/10_WORK/current-plan.json",
+  "previousPlanSha256": "<exact previous plan SHA-256>",
+  "plan": "<project>/10_WORK/visibility-plan.json",
+  "nativeProject": "<project>/10_WORK/current/edit.fcproj",
+  "expectedFingerprint": "<current native inspect fingerprint>",
+  "inspectSession": "<project>/10_WORK/visibility-01/inspect",
+  "session": "<project>/10_WORK/visibility-01/session",
+  "reopenSession": "<project>/10_WORK/visibility-01/reopen",
+  "outputProject": "<project>/10_WORK/visibility-01/edit.fcproj",
+  "inspection": "<project>/10_WORK/visibility-01/reopened.json"
+}
+```
+
+Create the new work directory first. All output/session paths must be fresh. The adapter verifies the old owning contract and inspected fingerprint, changes only opacity on affected caption-owned layers in a native copy, saves/reopens, verifies exact new curves and compares all protected project state. Locked caption tracks, manual opacity changes, unrelated plan changes and no-op ranges are refused. Failed work remains for reconciliation; the original checkpoint stays unchanged.
+
+An active `hookContract` must be removed through `text-hook-remove` before changing its caption context. After hiding captions, render the native result with its new plan. To add an opening hook, use that exact native export as the clean source in `NATIVE_HOOKS.md`. Removing a hook does not restore hidden captions automatically; a separate caption-visibility revision restores them when requested.
+
+A seven-second synthetic fixture completed base construction, hiding, restoration and replacement-hook rendering: four native 175-frame exports with identical decoded audio. Restored decoded video matched the base exactly. All 49 native lossless frames after the opening matched the base, including a caption spanning the cutoff. Sampled opening frames had no speech-caption or shadow remnants; inspected boundary frames showed the hook at 125 and the original caption at 126. Parent/source/checkpoint hashes stayed unchanged. This proves the tested direct adapter path; agent/review-room execution, real footage, other engines and human approval remain open.

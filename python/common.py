@@ -60,6 +60,9 @@ def plan(project,packet):
  for card in p.get('captions',[]):
   require(type(card.get('startFrame'))==int and type(card.get('endFrame'))==int and 0<=card['startFrame']<card['endFrame']<=end,'Caption timing lies outside the current cut plan')
   require(isinstance(card.get('text'),str) and card['text'].strip() and isinstance(card.get('style'),dict),'Caption text and native style required')
+ if 'captionVisibility' in p:
+  from caption_visibility import ranges
+  ranges(p)
  if p.get('captionContract'):
   from caption_plan import validate
   validate(project,p)
@@ -107,6 +110,7 @@ def result_receipt(project,packet,p,native,media,inspection,*,verification=None,
   from caption_plan import validate
   captions=validate(project,p)
   receipt['captionEvidence']={'owner':'caption-clips','handoffSha256':p['captionContract']['sha256'],'helperHashes':captions['helperHashes'],'shadowProfile':captions['shadowProfile'],'cards':len(captions['cards'])}
+  if p.get('captionVisibility'):receipt['captionEvidence']['visibility']=p['captionVisibility']
  if p.get('hookContract'):
   from hook_plan import validate as validate_hook
   hook=validate_hook(project,p)

@@ -114,6 +114,7 @@ class Adapter:
    placed=c.tool('sequence_inspect')['video'][track]['items'];require(len(placed)==1,'Unexpected native graphic coverage');graphic=placed[0]
    require(graphic['item']==item and graphic['start']==asset['startFrame']*ft and graphic['duration']==asset['frames']*ft and graphic['sourceIn']==0,'Native graphic source/timing readback mismatch')
  def revise(self,project,packet):
+  if packet.get('kind')=='caption-visibility':return self.revise_caption_visibility(project,packet)
   if packet.get('kind')=='text-hook-remove':return self.remove_hook(project,packet)
   if packet.get('kind')=='text-hook':return self.revise_hook(project,packet)
   if packet.get('kind')=='music-replacement':return self.revise_music(project,packet)
@@ -267,6 +268,28 @@ class Adapter:
   reopened=self.inspect(project,{'nativeProject':str(target),'session':packet['reopenSession']})
   verify_filmcraft_replacement(before,read(target),previous,spec,indices,target.stem)
   require(sha(native)==parent_hash,'Parent changed during music reopen');save(inspection,reopened)
+  return {'nativeProject':str(target),'fingerprint':reopened['fingerprint'],'status':'revised-native-render-pending'}
+ def revise_caption_visibility(self,project,packet):
+  from caption_visibility import prepare,targets,apply,verify_protected
+  from caption_plan import validate,verify_native
+  previous,spec=prepare(project,packet);old_prepared,new_prepared=validate(project,previous),validate(project,spec)
+  native=inside(project['root'],packet['nativeProject']);parent_hash=sha(native)
+  observed=self.inspect(project,{'nativeProject':str(native),'session':packet['inspectSession']})
+  require(observed['fingerprint']==packet['expectedFingerprint'],'Native state changed; reconcile before caption visibility revision')
+  before=read(native);require(sha(native)==parent_hash,'Caption parent changed during inspection')
+  require(TICKS*spec['fps']['denominator']%spec['fps']['numerator']==0,'Unsupported frame tick grid')
+  ft=TICKS*spec['fps']['denominator']//spec['fps']['numerator'];verify_native(native,previous,old_prepared,ft)
+  changes=targets(before,previous,spec,new_prepared,ft)
+  target=inside(project['root'],packet['outputProject']);inspection=inside(project['root'],packet['inspection'])
+  require(not target.exists() and not inspection.exists(),'Caption visibility outputs exist; reconcile before retrying')
+  shutil.copy2(native,target);c=Filmcraft(self.config['filmcraft'],inside(project['root'],packet['session']),str(target))
+  try:
+   apply(c,changes);c.run('file.save');verify_native(target,spec,new_prepared,ft)
+   verify_protected(before,read(target),changes,target.stem);require(sha(native)==parent_hash,'Caption visibility changed parent')
+  finally:c.close()
+  reopened=self.inspect(project,{'nativeProject':str(target),'session':packet['reopenSession']})
+  verify_native(target,spec,new_prepared,ft);verify_protected(before,read(target),changes,target.stem)
+  require(sha(native)==parent_hash,'Caption visibility reopen changed parent');save(inspection,reopened)
   return {'nativeProject':str(target),'fingerprint':reopened['fingerprint'],'status':'revised-native-render-pending'}
  def remove_hook(self,project,packet):
   from hook_removal import prepare,filmcraft_target,verify_filmcraft

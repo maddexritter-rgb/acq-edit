@@ -78,6 +78,7 @@ export interface EditPlan {
   fps:{numerator:number;denominator:number}; width:number;height:number; sampleRate:number;
   brain:{receiptPath:string;sha256:string;versionsPath?:string;versionsSha256?:string}; editorial:{selectionPath:string;sha256:string;compiledPath?:string;compiledSha256?:string;execution?:{decisionsPath:string;decisionsSha256:string;routingPath:string;routingSha256:string;phonemesPath?:string;phonemesSha256?:string};reviewed:boolean};
   sources:Source[]; cuts:{id:string;sourceId:string;audioSourceId?:string;audioRecordSample?:number;sourceInFrame:number;frames:number;recordFrame:number;audioInSample:number;audioSamples:number;wordIds:string[];boundaryEvidence:string}[];
+  captionVisibility?:{schema:'acq-edit/caption-visibility-v1';owner:'caption-clips';hiddenRanges:{startFrame:number;endFrame:number}[];reason:string;evidence:string};
   captionContract?:{path:string;sha256:string;helperHashes:Record<string,string>};
   hookContract?:{path:string;sha256:string;helperSha256:string;basePlanFingerprint:string;baseReceipt:string;baseReceiptSha256:string;baseInspectionSha256?:string};
   captions:{startFrame:number;endFrame:number;text:string;style:Record<string,unknown>}[];
@@ -98,4 +99,15 @@ export function validatePlan(p:EditPlan,project:Project):void {
     end+=cut.frames;
   }
   for(const c of p.captions) invariant(c.startFrame>=0&&c.endFrame>c.startFrame&&c.endFrame<=end&&c.text.trim(),'Invalid caption range');
+  if(p.captionVisibility!==undefined){
+    const v=p.captionVisibility;
+    invariant(p.backend==='filmcraft'&&p.captionContract,'Native caption visibility requires FilmCraft caption ownership');
+    invariant(v&&v.schema==='acq-edit/caption-visibility-v1'&&v.owner==='caption-clips'&&typeof v.reason==='string'&&v.reason.trim()&&typeof v.evidence==='string'&&v.evidence.trim(),'Invalid caption visibility handoff');
+    invariant(Array.isArray(v.hiddenRanges)&&v.hiddenRanges.length>0,'Nonempty hidden caption ranges required');
+    let previous=0;
+    for(const r of v.hiddenRanges){
+      invariant(r&&Number.isSafeInteger(r.startFrame)&&Number.isSafeInteger(r.endFrame)&&previous<=r.startFrame&&r.startFrame<r.endFrame&&r.endFrame<=end,'Invalid hidden caption range');
+      previous=r.endFrame;
+    }
+  }
 }

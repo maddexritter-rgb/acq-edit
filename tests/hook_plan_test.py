@@ -84,12 +84,28 @@ class HookPlanTests(unittest.TestCase):
         self.spec=copy.deepcopy(original);self.source.write_bytes(b'changed')
         with self.assertRaisesRegex(RuntimeError,'source changed'):hooks.validate(self.project,self.spec)
 
-    def test_other_engine_and_caption_hiding_refuse(self):
+    def test_other_engine_and_unprepared_caption_replacement_refuse(self):
         self.resolved(); self.spec['backend']='premiere'
         with self.assertRaisesRegex(RuntimeError,'no qualified'):hooks.validate(self.project,self.spec)
         self.spec['backend']='filmcraft'
         file=Path(self.spec['hookContract']['path']);m=json.loads(file.read_text());m['caption_strategy']='replace';file.write_text(json.dumps(m));self.spec['hookContract']['sha256']=sha(file)
-        with self.assertRaisesRegex(RuntimeError,'Unsupported native hook'):hooks.validate(self.project,self.spec)
+        with self.assertRaisesRegex(RuntimeError,'caption owner to hide'):hooks.validate(self.project,self.spec)
+
+    def test_caption_replacement_requires_exact_native_hidden_range_and_clean_render_identity(self):
+        self.spec['captionContract']={'fixtureOwnership':True}
+        self.spec['captionVisibility']={'schema':'acq-edit/caption-visibility-v1','owner':'caption-clips',
+            'reason':'Synthetic crowded opening','evidence':'Fixture geometry',
+            'hiddenRanges':[{'startFrame':0,'endFrame':hooks.opening_end(self.spec)}]}
+        recipe={**self.recipe,'caption_strategy':'replace','replacement_hook_top_px':100,
+            'clean_opening_source':str(self.source),'clean_opening_sha256':sha(self.source)}
+        self.resolved(recipe)
+        self.assertEqual(hooks.validate(self.project,self.spec)['recipe']['caption_strategy'],'replace')
+        self.spec['captionVisibility']['hiddenRanges'][0]['endFrame']-=1
+        with self.assertRaisesRegex(RuntimeError,'exactly the hook opening'):hooks.validate_strategy(self.project,self.spec,recipe)
+        self.spec['captionVisibility']['hiddenRanges'][0]['endFrame']+=1
+        other=self.root/'unrelated.mp4';other.write_bytes(self.source.read_bytes())
+        recipe['clean_opening_source']=str(other)
+        with self.assertRaisesRegex(RuntimeError,'exact natively rendered'):hooks.validate_strategy(self.project,self.spec,recipe)
 
     def test_resolve_base_inspection_is_pinned_before_native_editing(self):
         self.resolved();self.project['backend']=self.spec['backend']='resolve'

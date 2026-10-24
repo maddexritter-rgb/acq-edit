@@ -40,6 +40,19 @@ class RecutTests(unittest.TestCase):
    if kind=='parent':self.proof['parentVersionId']='other'
    self.refresh_proof()
    with self.assertRaises(RuntimeError):recut.prepare(self.project,self.packet)
+ def test_visibility_requires_new_caption_and_hook_context_decisions(self):
+  self.spec['captionVisibility']={'hiddenRanges':[{'startFrame':0,'endFrame':10}]}
+  self.write(Path(self.packet['plan']),self.spec);self.proof['planSha256']=sha(self.packet['plan']);self.refresh_proof()
+  with self.assertRaisesRegex(RuntimeError,'Dependent layer differs.*captions'):recut.prepare(self.project,self.packet)
+  caption=self.proof['components']['captions'];caption['valueFingerprint']=fingerprint(recut.component(self.spec,'captions'));self.refresh_proof()
+  with self.assertRaisesRegex(RuntimeError,'Nonempty layer'):recut.prepare(self.project,self.packet)
+  caption['action']='recomputed';self.refresh_proof()
+  with self.assertRaisesRegex(RuntimeError,'Dependent layer differs.*textHook'):recut.prepare(self.project,self.packet)
+  hook=self.proof['components']['textHook'];hook['valueFingerprint']=fingerprint(recut.component(self.spec,'textHook'));hook['action']='recomputed';self.refresh_proof()
+  recut.prepare(self.project,self.packet)
+  # Removing the mask changes both owner fingerprints too.
+  del self.spec['captionVisibility'];self.write(Path(self.packet['plan']),self.spec);self.proof['planSha256']=sha(self.packet['plan']);self.refresh_proof()
+  with self.assertRaisesRegex(RuntimeError,'Dependent layer differs.*captions'):recut.prepare(self.project,self.packet)
  def test_old_publications_need_explicit_reconciliation(self):
   del self.version['inspectionSha256'];self.write(Path(self.packet['parentVersion']),self.version)
   with self.assertRaisesRegex(RuntimeError,'lacks pinned'):recut.prepare(self.project,self.packet)

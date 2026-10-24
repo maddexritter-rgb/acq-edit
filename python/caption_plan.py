@@ -13,6 +13,8 @@ HELPERS = ('filmcraft_caption_contract.py', 'filmcraft_shadow.py', 'caption_prof
 
 
 def derive(project, spec, reference):
+    from caption_visibility import ranges
+    ranges(spec)
     require(spec['backend'] in ['filmcraft', 'resolve'], 'This caption contract needs FilmCraft or Resolve; Premiere must use its owning native Graphics route')
     file = inside(project['root'], reference['path'])
     require(sha(file) == reference['sha256'], 'Caption handoff changed')
@@ -118,6 +120,25 @@ def prepare_plan(project, packet):
             'shadowProfile': result['shadowProfile'], 'status': 'prepared-awaiting-native-construction'}
 
 
+def opacity_for(spec, prepared, card, frame_ticks):
+    from caption_visibility import ranges, masked_opacity
+    _, original = profile_caption_motion(prepared['profile'], frame_ticks,
+        card['end_frame'] - card['start_frame'], elapsed_frames=card.get('elapsed_frames', 0),
+        center=(spec['width'] / 2, spec['height'] / 2), canvas_height=spec['height'])
+    return masked_opacity(original, card, ranges(spec), frame_ticks)
+
+
+def write_parameter(client, clip, effect, parameter, value, start_ticks):
+    def unpack(v):
+        return [v['Vec2']['x'], v['Vec2']['y']] if 'Vec2' in v else v['Float']
+    client.run('effects.setParam', {'clip': clip, 'effect': effect, 'param': parameter, 'value': unpack(value['value'])})
+    for key in value.get('keyframes', []):
+        client.run('effects.setParam', {'clip': clip, 'effect': effect, 'param': parameter,
+            'value': unpack(key['value']), 'time': start_ticks + key['time'], 'keyframe': True})
+        client.run('effects.setInterpolation', {'clip': clip, 'effect': effect, 'param': parameter,
+            'mediaTime': key['time'], 'interpolation': {'Linear':'linear','Hold':'hold'}[key['interp']]})
+
+
 def build_native(client, spec, prepared, frame_ticks):
     fonts = {entry['family']: set(entry['styles']) for entry in client.run('fonts.list')}
     for card in prepared['cards']:
@@ -140,15 +161,9 @@ def build_native(client, spec, prepared, frame_ticks):
             motion, opacity = profile_caption_motion(prepared['profile'], frame_ticks,
                 card['end_frame'] - card['start_frame'], elapsed_frames=card.get('elapsed_frames', 0),
                 center=(spec['width'] / 2, spec['height'] / 2), canvas_height=spec['height'])
+            opacity = opacity_for(spec, prepared, card, frame_ticks)
             for effect, parameter, value in [('motion', 'position', motion), ('opacity', 'opacity', opacity)]:
-                def unpack(v):
-                    return [v['Vec2']['x'], v['Vec2']['y']] if 'Vec2' in v else v['Float']
-                client.run('effects.setParam', {'clip': graphic['clip'], 'effect': effect, 'param': parameter, 'value': unpack(value['value'])})
-                for key in value.get('keyframes', []):
-                    client.run('effects.setParam', {'clip': graphic['clip'], 'effect': effect, 'param': parameter,
-                        'value': unpack(key['value']), 'time': card['start_frame'] * frame_ticks + key['time'], 'keyframe': True})
-                    client.run('effects.setInterpolation', {'clip': graphic['clip'], 'effect': effect, 'param': parameter,
-                        'mediaTime': key['time'], 'interpolation': 'linear'})
+                write_parameter(client, graphic['clip'], effect, parameter, value, card['start_frame'] * frame_ticks)
     return {'status': 'constructed-awaiting-saved-native-verification'}
 
 
@@ -160,7 +175,21 @@ def verify_native(native_path, spec, prepared, frame_ticks):
     layers = sequence['video_tracks'][1:4]
     require(all(layer['enabled'] and not layer['muted'] and not layer['effects'] and not layer['transitions'] for layer in layers), 'Caption lane visibility/effects differ from the handoff')
     require(not any(layer['solo'] for layer in sequence['video_tracks']), 'Solo video lanes require reconciliation before caption verification')
-    result = verify_native_layers(layers, prepared['cards'], frame_ticks)
+    owner_layers = copy.deepcopy(layers)
+    if spec.get('captionVisibility'):
+        # First prove the actual visibility curve, then let the unchanged owner
+        # validate its original arrival policy on a read-only normalized copy.
+        for layer in owner_layers:
+            for item, card in zip(layer['items'], prepared['cards']):
+                params = next(e['params'] for e in item['effects'] if e['effect'] == 'opacity')
+                actual = params['opacity']
+                expected = opacity_for(spec, prepared, card, frame_ticks)
+                keys = [{'time':k['time'],'value':k['value'],'interp':k['interp']} for k in actual.get('keyframes', [])]
+                require(actual['value'] == expected['value'] and keys == expected.get('keyframes', []), 'Caption visibility curve differs')
+                _, params['opacity'] = profile_caption_motion(prepared['profile'], frame_ticks,
+                    card['end_frame']-card['start_frame'], elapsed_frames=card.get('elapsed_frames', 0),
+                    center=(spec['width']/2,spec['height']/2), canvas_height=spec['height'])
+    result = verify_native_layers(owner_layers, prepared['cards'], frame_ticks)
     # Comparing actual foreground/shadow typography and motion catches detached duplicates.
     for index, card in enumerate(prepared['cards']):
         native = [layer['items'][index] for layer in layers]
@@ -202,6 +231,7 @@ def verify_native(native_path, spec, prepared, frame_ticks):
         motion, opacity = profile_caption_motion(prepared['profile'], frame_ticks,
             card['end_frame'] - card['start_frame'], elapsed_frames=card.get('elapsed_frames', 0),
             center=(spec['width'] / 2, spec['height'] / 2), canvas_height=spec['height'])
+        opacity = opacity_for(spec, prepared, card, frame_ticks)
         for actual, expected in [(effects[0]['motion']['position'], motion), (effects[0]['opacity']['opacity'], opacity)]:
             require(actual['value'] == expected['value'], 'Caption arrival value differs')
             keys = [{'time': k['time'], 'value': k['value'], 'interp': k['interp']} for k in actual.get('keyframes', [])]
