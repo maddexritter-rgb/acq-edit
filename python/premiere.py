@@ -5,7 +5,7 @@ from pathlib import Path
 from common import *
 from premiere_plan import verify_source_cuts
 from premiere_installation import verify as verify_installation
-from premiere_session import inspect_result, open_project
+from premiere_session import inspect_result, open_project, reconcile_project
 Profile=PremiereBridge=execute_operation=None
 class Adapter:
  def __init__(self,config):
@@ -43,6 +43,7 @@ class Adapter:
    return result
   finally:client.close()
  def open(self,project,packet):return open_project(self,project,packet,PremiereBridge)
+ def reconcile(self,project,packet):return reconcile_project(self,project,packet,PremiereBridge)
  def execute(self,project,packet):
   require(self.profile.mode=='scoped-edit','Production stages require scoped-edit profile');state=self.inspect(project,packet);require(state['fingerprint']==packet['expectedFingerprint'],'Native state changed; reconcile user edits')
   # Each operation was compiled by its owning canonical skill. The bridge checks exact

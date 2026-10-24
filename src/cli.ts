@@ -81,7 +81,7 @@ async function main(){
  case 'publish':output(await publish(store,args[0]!,path.resolve(args[1]!)));break;
  case 'reconcile':invariant(args[1]==='failed'||args[1]==='ready','Choose ready or failed after native inspection');invariant(args[2],'Evidence path required');output(await reconcileJob(store,args[0]!,args[1],path.resolve(args[2]!)));break;
  case 'native-operations':output(store.nativeOperations(args[0]!));break;
- case 'native-reconcile':invariant(args[1],'Process and native inspection evidence required');output(await reconcileNative(store,args[0]!,path.resolve(args[1]!)));break;
+ case 'native-reconcile':invariant(args[1],'Process and native inspection evidence required');output(await reconcileNative(store,args[0]!,path.resolve(args[1]!),{config:c}));break;
  case 'native':invariant(['compile','captions','hooks','inspect','open','build','revise','render'].includes(args[1]!),'Unknown native operation');invariant(args[2],'Native packet required');await interruptibleCommand(tools=>executeNative(store,c,args[0]!,args[1] as NativeAction,path.resolve(args[2]!),tools));break;
  default:throw Error('Unknown command. Run acq-edit help');
  }

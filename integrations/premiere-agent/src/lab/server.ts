@@ -84,14 +84,20 @@ export function createLab(
   const result = (v: unknown) => ({
     content: [{ type: "text" as const, text: JSON.stringify(v) }],
   });
-  const projects = new ToolkitProjects(runtimeRoot, bridgeOptions);
+  const projects = new ToolkitProjects(runtimeRoot, bridgeOptions, sendCommand, {snapshot});
   server.registerTool('lab_inspect_toolkit_workspace', {
     description: 'Read open-project identities for toolkit lifecycle preflight; never closes or saves a project.',
-    inputSchema: fromJsonSchema({type:'object',properties:{},additionalProperties:false}),
-  }, async () => {
-    try { return result(await projects.inspect()); }
+    inputSchema: fromJsonSchema({type:'object',properties:{operationId:{type:'string',pattern:'^[A-Za-z0-9_-]{1,80}$'}},additionalProperties:false}),
+  }, async (args:any) => {
+    try { return result(await projects.inspect(args.operationId)); }
     catch(error) { return {isError:true,...result({error:String(error)})}; }
   });
+  server.registerTool('lab_reconcile_toolkit_project', {
+    description:'Reconcile a terminal uncertain toolkit lifecycle operation from pinned process/native evidence. Reads native state and releases only its original writer lock; never opens, creates, saves or replays a project request.',
+    inputSchema:fromJsonSchema({type:'object',additionalProperties:false,required:['operationId','evidencePath','evidenceSha256'],properties:{
+      operationId:{type:'string',pattern:'^[A-Za-z0-9_-]{1,80}$'},evidencePath:{type:'string'},evidenceSha256:{type:'string',pattern:'^[a-f0-9]{64}$'},
+    }}),
+  },async(args:any)=>{try{return result(await projects.reconcile(args))}catch(error){return {isError:true,...result({error:String(error)})}}});
   server.registerTool('lab_toolkit_project', {
     description: 'Create or reopen one exact toolkit project from an empty workspace under a short-lived lifecycle scope. General lifecycle tools remain blocked. Unknown outcomes retain the shared writer lock; never replay.',
     inputSchema: fromJsonSchema({type:'object',additionalProperties:false,

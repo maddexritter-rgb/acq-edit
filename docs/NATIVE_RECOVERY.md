@@ -40,6 +40,10 @@ Save the observed findings inside this project:
 
 These descriptions are operator assertions backed by the inspection performed, not an automatic host-status proof. Never generate them before inspecting. Reconciliation pins the evidence file's hash in the event record and marks the operation `reconciled`; it does not label an uncertain render successful. All old media, packets, logs, partial files and published versions remain in place. It does not consume review notes or reset decisions.
 
+## Premiere lifecycle recovery
+
+For Premiere `native ... open` operations, generic evidence alone cannot clear the reservation. Add the observed `premiereLifecycle.outcome` and follow [PREMIERE_STATE.md](PREMIERE_STATE.md). The CLI journals recovery attempts separately, refuses live or uncertain prior recovery processes, and verifies the Lab's immutable report before settling its own operation. The original native request is never replayed. Missing/legacy/non-uncertain lifecycle journals require explicit repair; this route does not infer that their locks are safe to remove.
+
 ## Resolve the owning editing job separately
 
 After every native operation is settled, an existing valid render receipt may be published through the normal `publish` command with its original job ID. Publication still verifies native/media/plan/inspection hashes, source-cut proofs and the exact submitted parent; it refuses a duplicate publication. If the full job already published, use those existing version IDs. `reconcile JOB_ID ready` requires the ordinary `{ "jobId": "...", "versionIds": ["..."] }` result and independently verifies all publications before releasing the job.

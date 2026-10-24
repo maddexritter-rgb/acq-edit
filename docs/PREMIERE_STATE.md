@@ -63,7 +63,25 @@ The adapter creates an exclusive, five-minute scope at `lab/runtime/toolkit-scop
 
 The service shares `writer.lock` and the durable operations directory with ordinary Lab edits. It rechecks workspace and disk state under that lock, writes the running journal before dispatch, then checks workspace identity and saved bytes after the host responds. The generated native script independently checks the host version, empty workspace, target existence and scope deadline immediately before creation/opening. A delayed queued command cannot start after the scope expires. Reusing an operation ID returns its original journal and never repeats the native action.
 
-A failed or lost response after dispatch leaves the operation `unknown` and retains the Lab writer lock. The outer toolkit native operation also requires reconciliation. Original media, prior versions, feedback, scope and host receipts remain intact. Do not remove the lock or resend the request because a timeout elapsed. A dedicated lifecycle reconciliation command is still outstanding; host/process inspection and explicit repair are required before proceeding. `native-reconcile` alone does not clear the Lab lock or establish what happened in Premiere.
+A failed or lost response after dispatch leaves the operation `unknown` and retains the Lab writer lock. The outer toolkit native operation also requires reconciliation. Original media, prior versions, feedback, scope and host receipts remain intact. Do not remove the lock or resend the request because a timeout elapsed.
+
+### Reconcile an uncertain lifecycle operation
+
+After actual process and native-host inspection, save the ordinary evidence from [NATIVE_RECOVERY.md](NATIVE_RECOVERY.md), adding one explicit outcome:
+
+```json
+"premiereLifecycle": { "outcome": "target-open" }
+```
+
+Choose `unchanged` only when the original empty workspace remains and creation produced no target file, or reopening left the original saved bytes unchanged. Choose `target-open` when exactly the intended project is open; recovery pins its current complete native snapshot and saved-file hash, including intervening edits. Choose `artifacts-retained` when the workspace is still empty but a target file remains. That outcome preserves and hashes partial bytes without asserting that they are a valid native project.
+
+Run the existing `native-reconcile OPERATION_ID EVIDENCE.json` command. For Premiere lifecycle operations it verifies the installed integration, journals a dedicated recovery subprocess, and calls `lab_reconcile_toolkit_project`. Text-only evidence cannot clear this operation. The adapter keeps the original evidence unchanged and writes a separately pinned request and result under `10_WORK/premiere-reconciliation/<operation-id>/<evidence-hash>/`.
+
+The Lab requires its original bridge PID to be gone, the original hash-pinned scope to have expired, and fresh workspace inspection with no running native lifecycle marker. Expiry prevents a delayed queued lifecycle request from starting; expiry alone never proves completion. The native script records entry and return around the actual API call. Recovery checks native state twice, pins the full snapshot for `target-open`, and refuses changed files, workspace, evidence or an unrelated writer lock. It performs no create, open, save, render or replay.
+
+An immutable reconciliation report commits before the exact original writer lock is released. A retry with the same evidence can finish that release or return the same report. The original uncertain operation journal remains unchanged, and repeating its operation ID still returns that original result without dispatch. Only after verifying the derived request and report does the outer CLI mark its own operation reconciled. Job recovery and publication remain separate.
+
+This automatic route requires a version-2 uncertain lifecycle journal and its original scope/lock. Legacy records, failures before a lifecycle journal exists, and failures after a committed lifecycle response need explicit repair; they cannot be cleared through text-only evidence. A hard crash while writing a reconciliation report or holding its reconciliation mutex also requires inspection and repair of that exact retained record. No stale-lock takeover is implemented. PID reuse is conservatively treated as a live process.
 
 ## Verification
 
@@ -74,6 +92,8 @@ integrations/premiere-agent/node_modules/.bin/tsc -p integrations/premiere-agent
 node --test tests/premiere_lifecycle_test.mjs
 ```
 
-The 17 integration cases exercise exact create/open dispatch, durable duplicate handling, occupied workspaces, unknown outcomes, stale/expired scope, changed manifests/files, active leases, symlink targets, in-host preconditions, deadline expiry and inspect-only authority. Eight Python session cases cover receipt/scope preservation, reopening, an already active target, unrelated workspaces, missing ownership, saved/unsaved changes and post-open mismatch. Publication tests verify both supported engines' frozen reopening metadata across a database restart and reject mismatched Premiere inspection/path/file/sequence pins.
+The original integration cases exercise exact create/open dispatch, durable duplicate handling, occupied workspaces, unknown outcomes, stale/expired scope, changed manifests/files, active leases, symlink targets, in-host preconditions, deadline expiry and inspect-only authority. The original Python session cases cover receipt/scope preservation, reopening, an already active target, unrelated workspaces, missing ownership, saved/unsaved changes and post-open mismatch. Publication tests verify both supported engines' frozen reopening metadata across a database restart and reject mismatched Premiere inspection/path/file/sequence pins.
 
 These tests use simulated host responses and test-generated native bytes. The native project API and empty-workspace behavior still require a real isolated panel/project fixture. Human review and complete native editing/rendering acceptance remain separate release gates.
+
+Recovery regression cases additionally cover all three outcomes, live/expired/running-state gates, changed evidence/files/snapshots, duplicate recovery, report-before-lock-release restart, native marker return and preservation of original journals. Service tests verify runtime checks, tracked recovery processes, evidence/report binding and refusal to clear the outer reservation on failure. These remain simulated-host checks.

@@ -25,6 +25,9 @@ def execute(action,backend,config_path,project_path=None,packet_path=None):
         directory=inside(Path(project['root'])/'10_WORK',os.environ['ACQ_EDIT_NATIVE_OPERATION_DIR'])
         require(directory.name==operation_id and directory.parent.name=='native-operations' and directory.is_dir(),'Native operation journal differs from project')
     packet=read(inside(project['root'],packet_path))
+    if action=='reconcile':
+        require(backend=='premiere','Dedicated native reconciliation is currently Premiere-only')
+        packet={**packet,'_evidencePath':str(inside(project['root'],packet_path))}
     lock=Path(project['root'])/'10_WORK/native.lock'
     with lock.open('a') as stream:
         fcntl.flock(stream,fcntl.LOCK_EX|fcntl.LOCK_NB)
@@ -44,7 +47,7 @@ def execute(action,backend,config_path,project_path=None,packet_path=None):
 
 def main():
     parser=argparse.ArgumentParser()
-    parser.add_argument('action',choices=['doctor','compile','captions','hooks','inspect','open','build','revise','render'])
+    parser.add_argument('action',choices=['doctor','compile','captions','hooks','inspect','open','build','revise','render','reconcile'])
     parser.add_argument('--backend',choices=['filmcraft','premiere','resolve'],required=True)
     parser.add_argument('--config',required=True)
     parser.add_argument('--project');parser.add_argument('--packet')

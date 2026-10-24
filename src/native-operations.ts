@@ -1,6 +1,7 @@
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {readdir} from 'node:fs/promises';
+import {writeFileSync,renameSync} from 'node:fs';
 import {Store} from './store.js';
 import {type NativeAction,type NativeOperation,now,invariant} from './contracts.js';
 import {type Config,ROOT,HOME,secretEnv} from './config.js';
@@ -48,14 +49,58 @@ export async function executeNative(store:Store,config:Config,projectId:string,a
   return value as Record<string,unknown>;
  }catch(e){await record(store,id,{state:'reconciliation_required',ownerPid:null,error:(e as Error).message});throw new Error(`Native operation ${id} requires reconciliation: ${(e as Error).message}`)}
 }
-export async function reconcileNative(store:Store,id:string,evidencePath:string){
+async function reconcilePremiere(store:Store,operation:NativeOperation,file:string,evidenceSha256:string,tools:{config?:Config;execute?:typeof run;verifyRuntime?:typeof verifyRuntime}){
+ const config=tools.config;invariant(config,'Configured Premiere runtime required for lifecycle recovery');
+ const directory=path.join(operation.directory,'reconciliation-attempts');
+ let names:string[]=[];try{names=await readdir(directory)}catch(e:any){if(e.code!=='ENOENT')throw e}
+ for(const name of names.filter(n=>n.endsWith('.json'))){
+  const prior=await readJson<any>(await containedFile(operation.directory,path.join(directory,name)));
+  invariant(prior.operationId===operation.id,'Recovery attempt identity differs');
+  invariant(!intakeProcessAlive(prior.ownerPid)&&!intakeProcessAlive(prior.childPid),'A previous recovery process is still live');
+  invariant(!prior.childPending,'Previous recovery command launch is unknown; inspect its process journal before repair');
+ }
+ const attemptFile=path.join(directory,randomUUID()+'.json');
+ const attempt={operationId:operation.id,evidence:file,evidenceSha256,ownerPid:process.pid as number|null,childPid:null as number|null,childPending:false,state:'preflight',createdAt:now(),updatedAt:now(),error:null as string|null};
+ await atomicJson(attemptFile,attempt);
+ // onSpawn is synchronous: persist the child before allowing asynchronous command work.
+ const persist=()=>{attempt.updatedAt=now();const staged=attemptFile+'.new';writeFileSync(staged,JSON.stringify(attempt,null,2)+'\n',{mode:0o600});renameSync(staged,attemptFile)};
+ try{
+  await (tools.verifyRuntime||verifyRuntime)(config);
+  invariant(await sha256(file)===evidenceSha256,'Recovery evidence changed before dispatch');
+  const env:NodeJS.ProcessEnv={...process.env,...await secretEnv(),ACQ_EDIT_ROOT:ROOT};
+  delete env.ACQ_EDIT_NATIVE_OPERATION_ID;delete env.ACQ_EDIT_NATIVE_OPERATION_DIR;
+  attempt.state='running';attempt.childPending=true;persist();
+  let stdout:string;
+  try{stdout=await (tools.execute||run)(config.python,[path.join(ROOT,'python/native.py'),'reconcile','--backend','premiere','--config',path.join(HOME,'config.json'),'--project',path.join(store.project(operation.projectId).root,'project.json'),'--packet',file],{timeout:120_000,env,onSpawn:pid=>{attempt.childPid=pid;attempt.childPending=false;persist()}})}
+  finally{attempt.childPending=false;if(!intakeProcessAlive(attempt.childPid))attempt.childPid=null;persist()}
+  invariant(!intakeProcessAlive(attempt.childPid),'Recovery command is still live');
+  const value=JSON.parse(stdout);
+  invariant(value.schema==='acq-edit/premiere-lifecycle-recovery-result-v1'&&value.operationId===operation.id&&value.originalWriterLockReleased===true&&value.nativeRequestReplayed===false,'Premiere lifecycle recovery did not prove release of its original lock');
+  const resultPath=await containedFile(store.project(operation.projectId).root,value.resultPath);
+  invariant(await sha256(resultPath)===value.resultSha256,'Premiere recovery result changed');
+  const report=await readJson<any>(resultPath);
+  invariant(report.schema==='acq-edit/premiere-project-reconciliation-v1'&&report.operationId===operation.id&&report.projectId===operation.projectId&&report.releaseAuthorized===true&&report.originalWriterLockReleased===true&&report.nativeRequestReplayed===false,'Premiere recovery report identity differs');
+  const requestPath=await containedFile(store.project(operation.projectId).root,report.evidencePath),request=await readJson<any>(requestPath);
+  invariant(await sha256(requestPath)===report.evidenceSha256&&request.originalEvidencePath===file&&request.originalEvidenceSha256===evidenceSha256,'Premiere recovery report does not bind the submitted evidence');
+  invariant(await sha256(file)===evidenceSha256,'Recovery evidence changed during inspection');
+  attempt.state='succeeded';return {resultPath,resultSha256:value.resultSha256,attemptFile};
+ }catch(e){attempt.state='failed';attempt.error=(e as Error).message;throw e}
+ finally{attempt.ownerPid=null;persist()}
+}
+export async function reconcileNative(store:Store,id:string,evidencePath:string,tools:{config?:Config;execute?:typeof run;verifyRuntime?:typeof verifyRuntime}={}){
  const operation=store.nativeOperation(id);invariant(['running','reconciliation_required'].includes(operation.state),'Native operation is already terminal');
  const file=await containedFile(store.project(operation.projectId).root,evidencePath),evidence=await readJson<any>(file);
  invariant(evidence.operationId===id&&evidence.backend===operation.backend&&evidence.noActiveWriter===true&&typeof evidence.processInspection==='string'&&evidence.processInspection.trim()&&typeof evidence.nativeInspection==='string'&&evidence.nativeInspection.trim(),'Evidence must identify the operation/backend and describe terminal process and native host inspection');
  const evidenceSha256=await sha256(file);
  invariant(!intakeProcessAlive(operation.ownerPid)&&!intakeProcessAlive(operation.childPid),'Native operation owner or command is still live');
  await children(operation,true);
- store.transaction(()=>{const current=store.nativeOperation(id);invariant(JSON.stringify(current)===JSON.stringify(operation),'Native operation changed during reconciliation');invariant(!intakeProcessAlive(current.ownerPid)&&!intakeProcessAlive(current.childPid),'Native process is still live');store.updateNativeOperation(id,{state:'reconciled',ownerPid:null,childPid:null,childPending:false,error:'Operator inspected the native outcome; original files and result retained'});store.event(operation.projectId,{type:'native.reconciled',operationId:id,evidence:file,evidenceSha256})});
+ let premiereRecovery:{resultPath:string;resultSha256:string;attemptFile:string}|undefined;
+ if(operation.backend==='premiere'&&operation.action==='open'){
+  invariant(evidence.premiereLifecycle&&['unchanged','target-open','artifacts-retained'].includes(evidence.premiereLifecycle.outcome),'Premiere lifecycle recovery requires an explicit observed outcome');
+  premiereRecovery=await reconcilePremiere(store,operation,file,evidenceSha256,tools);
+ }
+ invariant(await sha256(file)===evidenceSha256,'Recovery evidence changed during reconciliation');
+ store.transaction(()=>{const current=store.nativeOperation(id);invariant(JSON.stringify(current)===JSON.stringify(operation),'Native operation changed during reconciliation');invariant(!intakeProcessAlive(current.ownerPid)&&!intakeProcessAlive(current.childPid),'Native process is still live');store.updateNativeOperation(id,{state:'reconciled',ownerPid:null,childPid:null,childPending:false,error:'Operator inspected the native outcome; original files and result retained'});store.event(operation.projectId,{type:'native.reconciled',operationId:id,evidence:file,evidenceSha256,...(premiereRecovery?{premiereRecovery}:{})})});
  return record(store,id);
 }
 export async function reconcileJob(store:Store,id:string,outcome:'ready'|'failed',evidencePath:string){

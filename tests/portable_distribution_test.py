@@ -1,6 +1,7 @@
 import importlib.util
 import json
 import os
+import shlex
 from pathlib import Path
 import subprocess
 import sys
@@ -32,7 +33,9 @@ class PortableDistributionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix='portable intake spaces ') as tmp:
             root = Path(tmp)
             node = root / 'node'
-            node.write_text('#!' + sys.executable + '\nimport json,sys\nprint(json.dumps(sys.argv[1:]))\n')
+            # A shebang cannot contain a Python path with spaces; quote it in a shell launcher.
+            node.write_text('#!/bin/sh\nexec ' + shlex.quote(sys.executable) +
+                            ' -c ' + shlex.quote('import json,sys;print(json.dumps(sys.argv[1:]))') + ' "$@"\n')
             node.chmod(0o755)
             script = root / 'gdrive_pull.sh'
             script.write_text((ROOT / 'distribution/skills/footage-fetch/scripts/gdrive_pull.sh').read_text().replace('__ACQ_TOOLKIT__', str(root)))

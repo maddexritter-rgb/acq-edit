@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,mkdir,writeFile,readFile,rm} from 'node:fs/promises';
+import {mkdtemp,mkdir,writeFile,readFile,rm,realpath} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {Store} from '../dist/store.js';
@@ -8,12 +8,12 @@ import {executeNative as nativeCommand,reconcileNative,reconcileJob} from '../di
 import {sha256} from '../dist/files.js';
 import {publish} from '../dist/publish.js';
 const executeNative=(store,config,projectId,action,packet,tools={})=>nativeCommand(store,config,projectId,action,packet,{verifyRuntime:async()=>({ready:true}),...tools});
-async function fixture(t){
- const root=await mkdtemp(path.join(os.tmpdir(),'acq-native-'));await mkdir(path.join(root,'10_WORK'));
- const store=new Store(path.join(root,'state.sqlite'));store.addProject({id:'p',root,title:'Native recovery fixture',backend:'filmcraft',agent:'codex',createdAt:''});
+async function fixture(t,backend='filmcraft'){
+ const root=await realpath(await mkdtemp(path.join(os.tmpdir(),'acq-native-')));await mkdir(path.join(root,'10_WORK'));
+ const store=new Store(path.join(root,'state.sqlite'));store.addProject({id:'p',root,title:'Native recovery fixture',backend,agent:'codex',createdAt:''});
  const packet=path.join(root,'10_WORK/packet.json');await writeFile(packet,'{}');
  t.after(async()=>{delete process.env.ACQ_EDIT_JOB_ID;store.close();await rm(root,{recursive:true,force:true})});
- return {root,store,packet,config:{python:process.execPath,backend:'filmcraft'},evidence:async(id,extra={})=>{const file=path.join(root,'10_WORK',id+'-evidence.json');await writeFile(file,JSON.stringify({operationId:id,backend:'filmcraft',noActiveWriter:true,processInspection:'Controlled test observed terminal process',nativeInspection:'Controlled fixture has no native host writer',...extra}));return file}};
+ return {root,store,packet,config:{python:process.execPath,backend},evidence:async(id,extra={})=>{const file=path.join(root,'10_WORK',id+'-evidence.json');await writeFile(file,JSON.stringify({operationId:id,backend,noActiveWriter:true,processInspection:'Controlled test observed terminal process',nativeInspection:'Controlled fixture has no native host writer',...extra}));return file}};
 }
 test('native success records exact packet, command identity and immutable result before releasing project',async t=>{
  const f=await fixture(t);const result=await executeNative(f.store,f.config,'p','inspect',f.packet,{execute:async(cmd,args,options)=>{
@@ -75,4 +75,65 @@ test('stale runtime is refused before spawning a native process',async t=>{
  const f=await fixture(t);let spawned=false;
  await assert.rejects(executeNative(f.store,f.config,'p','build',f.packet,{verifyRuntime:async()=>{throw Error('stale installed runtime')},execute:async()=>{spawned=true;return '{}'}}),/stale installed runtime/);
  assert.equal(spawned,false);const op=f.store.nativeOperations('p')[0];assert.equal(op.state,'reconciliation_required');assert.equal(op.childPid,null);assert.equal(op.childPending,false);assert.equal(op.resultPath,undefined);
+});
+
+async function premiereRecoveryFixture(t){
+ const f=await fixture(t,'premiere');
+ await assert.rejects(executeNative(f.store,f.config,'p','open',f.packet,{execute:async(c,a,o)=>{o.onSpawn(2147483647);throw Error('lost lifecycle response')}}));
+ const op=f.store.nativeOperations('p')[0],file=await f.evidence(op.id,{premiereLifecycle:{outcome:'unchanged'}});
+ const execute=async(c,args,options)=>{
+  assert.equal(args[1],'reconcile');assert.equal(args[3],'premiere');assert.equal(args.at(-1),file);
+  assert.equal(options.env.ACQ_EDIT_NATIVE_OPERATION_ID,undefined);options.onSpawn(2147483647);
+  assert.equal(f.store.nativeOperation(op.id).state,'reconciliation_required');
+  const request=path.join(f.root,'10_WORK/derived.json'),report=path.join(f.root,'10_WORK/reconciled.json');
+  await writeFile(request,JSON.stringify({originalEvidencePath:file,originalEvidenceSha256:await sha256(file)}));
+  await writeFile(report,JSON.stringify({schema:'acq-edit/premiere-project-reconciliation-v1',operationId:op.id,projectId:'p',releaseAuthorized:true,originalWriterLockReleased:true,nativeRequestReplayed:false,evidencePath:request,evidenceSha256:await sha256(request)}));
+  return JSON.stringify({schema:'acq-edit/premiere-lifecycle-recovery-result-v1',operationId:op.id,resultPath:report,resultSha256:await sha256(report),originalWriterLockReleased:true,nativeRequestReplayed:false});
+ };
+ return {...f,op,file,tools:{config:f.config,verifyRuntime:async()=>({ready:true}),execute}};
+}
+test('Premiere lifecycle reconciliation requires verified lock release and preserves original records',async t=>{
+ const f=await premiereRecoveryFixture(t),packet=await readFile(f.packet),original=await readFile(path.join(f.op.directory,'operation.json'));
+ const result=await reconcileNative(f.store,f.op.id,f.file,f.tools);
+ assert.equal(result.state,'reconciled');assert.deepEqual(await readFile(f.packet),packet);
+ const {readdir}=await import('node:fs/promises'),dir=path.join(f.op.directory,'reconciliation-attempts');
+ const attempts=await readdir(dir);assert.equal(attempts.length,1);
+ const attempt=JSON.parse(await readFile(path.join(dir,attempts[0])));assert.equal(attempt.state,'succeeded');assert.equal(attempt.ownerPid,null);assert.equal(attempt.childPid,null);assert.equal(attempt.childPending,false);
+ assert.equal(JSON.parse(original).error,'lost lifecycle response');assert.equal(result.packetSha256,f.op.packetSha256);
+});
+test('Premiere lifecycle cannot be cleared using generic text evidence or a stale installation',async t=>{
+ const f=await premiereRecoveryFixture(t);let invoked=false;
+ await assert.rejects(reconcileNative(f.store,f.op.id,await f.evidence(f.op.id)),/explicit observed outcome/);
+ f.file=await f.evidence(f.op.id,{premiereLifecycle:{outcome:'unchanged'}});
+ await assert.rejects(reconcileNative(f.store,f.op.id,f.file,{...f.tools,verifyRuntime:async()=>{throw Error('stale runtime')},execute:async()=>{invoked=true;return '{}'}}),/stale runtime/);
+ assert.equal(invoked,false);assert.equal(f.store.nativeOperation(f.op.id).state,'reconciliation_required');
+});
+test('failed recovery remains reserved and can resume without replaying the original operation',async t=>{
+ const f=await premiereRecoveryFixture(t);
+ await assert.rejects(reconcileNative(f.store,f.op.id,f.file,{...f.tools,execute:async(c,a,o)=>{o.onSpawn(2147483647);throw Error('native inspection unavailable')}}),/inspection unavailable/);
+ assert.equal(f.store.nativeOperation(f.op.id).state,'reconciliation_required');
+ assert.equal((await reconcileNative(f.store,f.op.id,f.file,f.tools)).state,'reconciled');
+});
+test('live or uncertain prior recovery subprocess prevents another recovery dispatch',async t=>{
+ const f=await premiereRecoveryFixture(t),dir=path.join(f.op.directory,'reconciliation-attempts');await mkdir(dir);
+ const journal=path.join(dir,'prior.json');let invoked=false;
+ for(const prior of [{ownerPid:process.pid,childPid:null,childPending:false},{ownerPid:null,childPid:process.pid,childPending:false},{ownerPid:null,childPid:null,childPending:true}]){
+  await writeFile(journal,JSON.stringify({operationId:f.op.id,...prior}));
+  await assert.rejects(reconcileNative(f.store,f.op.id,f.file,{...f.tools,execute:async()=>{invoked=true;return '{}'}}),/still live|launch is unknown/);
+ }
+ assert.equal(invoked,false);assert.equal(f.store.nativeOperation(f.op.id).state,'reconciliation_required');
+});
+for(const corruption of ['unreleased','replayed','report-changed','unbound','evidence-changed'])test(`Premiere recovery rejects ${corruption} without settling the outer operation`,async t=>{
+ const f=await premiereRecoveryFixture(t);
+ const execute=async(...args)=>{
+  const value=JSON.parse(await f.tools.execute(...args));
+  if(corruption==='unreleased')value.originalWriterLockReleased=false;
+  if(corruption==='replayed')value.nativeRequestReplayed=true;
+  if(corruption==='report-changed')await writeFile(value.resultPath,'{}');
+  if(corruption==='unbound')await writeFile(path.join(f.root,'10_WORK/derived.json'),'{}');
+  if(corruption==='evidence-changed')await writeFile(f.file,'{}');
+  return JSON.stringify(value);
+ };
+ await assert.rejects(reconcileNative(f.store,f.op.id,f.file,{...f.tools,execute}));
+ assert.equal(f.store.nativeOperation(f.op.id).state,'reconciliation_required');
 });

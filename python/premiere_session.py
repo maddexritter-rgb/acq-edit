@@ -8,7 +8,7 @@ from common import inside, require, sha, save, read
 
 
 def call(client, name, args):
-    require(name in ('lab_inspect_toolkit_workspace', 'lab_toolkit_project'), 'Unknown lifecycle endpoint')
+    require(name in ('lab_inspect_toolkit_workspace', 'lab_toolkit_project', 'lab_reconcile_toolkit_project'), 'Unknown lifecycle endpoint')
     value, error = client._call(name, args)
     require(not error, 'Premiere lifecycle request failed: ' + str(value))
     require(isinstance(value, dict), 'Malformed Premiere lifecycle response')
@@ -102,3 +102,69 @@ def open_project(adapter, project, packet, client_type):
     return {'status': 'inspected_native_session', 'mode': mode, 'receipt': str(receipt),
             'operationId': operation_id, 'inspection': current, 'requiresStageScope': True,
             'nativeWorkflowQualified': False}
+
+
+def reconcile_project(adapter, project, evidence, client_type):
+    """Inspect the uncertain operation and request lock reconciliation, never replay."""
+    root = Path(project['root']).resolve()
+    operation_id = evidence['operationId']
+    require(str(uuid.UUID(operation_id)) == operation_id and evidence.get('backend') == 'premiere',
+            'Exact Premiere lifecycle operation required')
+    intent = evidence.get('premiereLifecycle')
+    require(isinstance(intent, dict) and set(intent) <= {'schema', 'outcome'}
+            and intent.get('schema', 'acq-edit/premiere-lifecycle-reconciliation-v1') == 'acq-edit/premiere-lifecycle-reconciliation-v1'
+            and intent.get('outcome') in ('unchanged', 'target-open', 'artifacts-retained'),
+            'Specify the observed Premiere lifecycle outcome')
+    require(evidence.get('noActiveWriter') is True and evidence.get('processInspection')
+            and evidence.get('nativeInspection'), 'Terminal process and native inspection evidence required')
+    # native.py pins the original evidence file; its path is supplied separately by the adapter.
+    source = inside(root, evidence['_evidencePath'])
+    original = read(source)
+    require({key: value for key, value in evidence.items() if key != '_evidencePath'} == original,
+            'Recovery evidence differs from its source file')
+    source_hash = sha(source)
+    directory = inside(root / '10_WORK', root / '10_WORK/premiere-reconciliation' / operation_id / source_hash)
+    request_file, result_file = directory / 'request.json', directory / 'result.json'
+    client = client_type(adapter.profile)
+    try:
+        operation = client.inspect('lab_get_operation', {'operation_id': operation_id})
+        require(operation and operation.get('schema') == 'acq-edit/premiere-project-operation-v2'
+                and operation.get('projectId') == project['id'] and operation.get('status') in ('unknown', 'running'),
+                'Original uncertain Premiere lifecycle journal required; legacy journals need explicit repair')
+        native = inside(root / '10_WORK', operation['request']['projectPath'])
+        if request_file.exists():
+            request = read(request_file)
+            require(request.get('originalEvidencePath') == str(source)
+                    and request.get('originalEvidenceSha256') == source_hash, 'Existing reconciliation request differs; preserved')
+        else:
+            observed = call(client, 'lab_inspect_toolkit_workspace', {'operationId': operation_id})
+            observed_intent = {'schema': 'acq-edit/premiere-lifecycle-reconciliation-v1',
+                               'outcome': intent['outcome'], 'expectedWorkspaceRevision': observed['revision']}
+            if intent['outcome'] != 'unchanged':
+                observed_intent['expectedNativeSha256'] = sha(native)
+            if intent['outcome'] == 'target-open':
+                require(observed['state']['activePath'] == str(native), 'Expected lifecycle target is not active; unrelated project preserved')
+                state = client.inspect('lab_snapshot', {})
+                require(state['projectPath'] == str(native) and re.fullmatch(r'[a-f0-9]{64}', state['revision']),
+                        'Exact native snapshot revision required')
+                observed_intent['expectedNativeRevision'] = state['revision']
+            request = {**original, 'originalEvidencePath': str(source), 'originalEvidenceSha256': source_hash,
+                       'premiereLifecycle': observed_intent}
+            require(sha(source) == source_hash, 'Recovery evidence changed during inspection')
+            save(request_file, request)
+            request_file.chmod(0o600)
+        result = call(client, 'lab_reconcile_toolkit_project', {'operationId': operation_id,
+                      'evidencePath': str(request_file), 'evidenceSha256': sha(request_file)})
+        require(result.get('operationId') == operation_id and result.get('projectId') == project['id']
+                and result.get('releaseAuthorized') is True and result.get('originalWriterLockReleased') is True
+                and result.get('nativeRequestReplayed') is False, 'Lifecycle reconciliation did not release its original lock')
+        if result_file.exists(): require(read(result_file) == result, 'Existing recovery result differs; preserved')
+        else:
+            save(result_file, result)
+            result_file.chmod(0o600)
+        require(sha(source) == source_hash, 'Original recovery evidence changed')
+        return {'schema': 'acq-edit/premiere-lifecycle-recovery-result-v1', 'operationId': operation_id,
+                'resultPath': str(result_file), 'resultSha256': sha(result_file),
+                'originalWriterLockReleased': True, 'nativeRequestReplayed': False}
+    finally:
+        client.close()

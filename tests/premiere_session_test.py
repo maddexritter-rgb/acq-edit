@@ -125,3 +125,89 @@ class PremiereSessionTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'Reopened Premiere state differs'): self.run_open()
         self.assertEqual(self.native.read_bytes(), original)
         self.assertTrue(Path(self.packet['receipt']).is_file())
+
+    def recovery_fixture(self, outcome='unchanged'):
+        import uuid
+        from premiere_session import reconcile_project
+        operation_id = str(uuid.uuid4())
+        source = self.root / '10_WORK/recovery-evidence.json'
+        original = {'operationId': operation_id, 'backend': 'premiere', 'noActiveWriter': True,
+                    'processInspection': 'Test observed terminated process', 'nativeInspection': 'Test inspected native fixture',
+                    'premiereLifecycle': {'outcome': outcome}}
+        source.write_text(json.dumps(original))
+        evidence = {**original, '_evidencePath': str(source)}
+        operation = {'schema': 'acq-edit/premiere-project-operation-v2', 'projectId': self.project['id'],
+                     'status': 'unknown', 'request': {'projectPath': str(self.native)}}
+        self.state['revision'] = 'b' * 64
+        if outcome != 'unchanged': self.native.write_bytes(b'retained native bytes')
+        if outcome == 'target-open': self.workspace['state']['activePath'] = str(self.native)
+        owner = self
+        responses = []
+        class Client:
+            def __init__(self, profile): pass
+            def inspect(self, name, args):
+                owner.requests.append(name)
+                if name == 'lab_get_operation': return operation
+                owner.assertEqual(name, 'lab_snapshot')
+                return owner.state
+            def _call(self, name, args):
+                owner.requests.append(name)
+                if name == 'lab_inspect_toolkit_workspace': return owner.workspace, False
+                owner.assertEqual(name, 'lab_reconcile_toolkit_project')
+                owner.assertEqual(sha(args['evidencePath']), args['evidenceSha256'])
+                request = json.loads(Path(args['evidencePath']).read_text())
+                responses.append(request)
+                return {'schema': 'acq-edit/premiere-project-reconciliation-v1', 'operationId': operation_id,
+                        'projectId': owner.project['id'], 'releaseAuthorized': True, 'originalWriterLockReleased': True,
+                        'nativeRequestReplayed': False, 'evidencePath': args['evidencePath'], 'evidenceSha256': args['evidenceSha256']}, False
+            def close(self): owner.requests.append('close')
+        return (lambda: reconcile_project(self.adapter, self.project, evidence, Client)), evidence, source, operation, responses
+
+    def test_recovery_keeps_original_evidence_and_derives_pinned_native_request_once(self):
+        run, evidence, source, operation, responses = self.recovery_fixture('target-open')
+        original = source.read_bytes()
+        result = run()
+        self.assertEqual(result['resultSha256'], sha(result['resultPath']))
+        self.assertEqual(responses[0]['originalEvidenceSha256'], sha(source))
+        self.assertEqual(responses[0]['premiereLifecycle']['expectedNativeSha256'], sha(self.native))
+        self.assertEqual(responses[0]['premiereLifecycle']['expectedNativeRevision'], 'b' * 64)
+        self.assertEqual(source.read_bytes(), original)
+        self.assertEqual(self.requests, ['lab_get_operation', 'lab_inspect_toolkit_workspace', 'lab_snapshot', 'lab_reconcile_toolkit_project', 'close'])
+        self.requests.clear()
+        self.assertEqual(run(), result)
+        self.assertEqual(self.requests, ['lab_get_operation', 'lab_reconcile_toolkit_project', 'close'])
+
+    def test_empty_workspace_recovery_never_requests_a_full_native_snapshot(self):
+        run, *unused = self.recovery_fixture()
+        self.assertTrue(run()['originalWriterLockReleased'])
+        self.assertNotIn('lab_snapshot', self.requests)
+        self.assertFalse(self.native.exists())
+
+    def test_artifact_recovery_pins_bytes_without_claiming_an_open_project(self):
+        run, evidence, source, operation, responses = self.recovery_fixture('artifacts-retained')
+        native = self.native.read_bytes()
+        run()
+        self.assertEqual(responses[0]['premiereLifecycle']['expectedNativeSha256'], sha(self.native))
+        self.assertEqual(self.native.read_bytes(), native)
+        self.assertNotIn('lab_snapshot', self.requests)
+
+    def test_recovery_rejects_legacy_or_successful_operation_journals(self):
+        run, evidence, source, operation, responses = self.recovery_fixture()
+        for schema, status in [('old', 'unknown'), ('acq-edit/premiere-project-operation-v2', 'committed_unverified')]:
+            operation.update(schema=schema, status=status)
+            with self.assertRaisesRegex(RuntimeError, 'Original uncertain'): run()
+        self.assertNotIn('lab_reconcile_toolkit_project', self.requests)
+
+    def test_recovery_refuses_an_unrelated_active_project_without_dispatch(self):
+        run, *unused = self.recovery_fixture('target-open')
+        self.workspace['state']['activePath'] = '/manual-work.prproj'
+        with self.assertRaisesRegex(RuntimeError, 'not active'): run()
+        self.assertNotIn('lab_reconcile_toolkit_project', self.requests)
+
+    def test_recovery_requires_original_evidence_and_explicit_supported_intent(self):
+        run, evidence, source, operation, responses = self.recovery_fixture()
+        source.write_text('{}')
+        with self.assertRaisesRegex(RuntimeError, 'source file'): run()
+        evidence['premiereLifecycle']['schema'] = 'unknown'
+        with self.assertRaisesRegex(RuntimeError, 'observed Premiere'): run()
+        self.assertEqual(self.requests, [])
