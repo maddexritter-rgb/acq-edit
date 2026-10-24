@@ -153,6 +153,7 @@ class Adapter:
    merge.Blend.SetExpression(f'iif(time >= {start} and time < {end}, 1, 0)');source=merge
   output.ConnectInput('Input',source)
  def revise(self,project,packet):
+  if packet.get('kind')=='graphic-replacement':return self.revise_graphics(project,packet)
   if packet.get('kind')=='panel-framing':return self.revise_panels(project,packet)
   if packet.get('kind')=='tracking-framing':return self.revise_tracking(project,packet)
   if packet.get('kind')=='spoken-recut':
@@ -282,6 +283,37 @@ class Adapter:
   require(fingerprint(self.snapshot(p))==fingerprint(after),'Revised panel timeline changed during parent verification')
   pm=r.GetProjectManager();require(pm.SaveProject(),'Native save failed');require(pm.ExportProject(p.GetName(),str(native),False),'Native panel checkpoint failed');save(inspection,after)
   return {'nativeProject':str(native),'timelineId':duplicate.GetUniqueId(),'fingerprint':fingerprint(after),'status':'revised-native-render-pending'}
+ def revise_graphics(self,project,packet):
+  from graphics_revision import prepare
+  from resolve_graphics import items,inspect,protected,replace,fresh_media
+  previous,spec,indices=prepare(project,packet);r,p=self.selected(project)
+  require(not p.IsRenderingInProgress(),'Resolve render active; graphic revision must wait')
+  before=self.snapshot(p);require(fingerprint(before)==packet['expectedFingerprint'],'Native state changed; reconcile before replacing graphics')
+  original=p.GetCurrentTimeline();items(original,previous,indices);original_detail=inspect(self,p)
+  fresh_media(p.GetMediaPool(),spec,indices)
+  native=inside(project['root'],packet['nativeProject']);inspection=inside(project['root'],packet['inspection'])
+  require(not native.exists() and not inspection.exists(),'Graphic revision outputs exist; reconcile before retrying')
+  require(packet['title'] not in [p.GetTimelineByIndex(i).GetName() for i in range(1,p.GetTimelineCount()+1)],'Revision timeline name exists')
+  original_copy=inspect(self,p,duplicate=True);page=r.GetCurrentPage()
+  require(r.OpenPage('edit') and r.GetCurrentPage()=='edit','Resolve take replacement requires the Edit page')
+  try:
+   duplicate=original.DuplicateTimeline(packet['title']);require(duplicate and p.SetCurrentTimeline(duplicate),'Cannot preserve parent before graphic replacement')
+   require(duplicate.GetName()==packet['title'] and duplicate.GetUniqueId()!=original.GetUniqueId(),'Unexpected duplicate identity')
+   require(inspect(self,p,duplicate=True)==original_copy,'Duplication changed protected state; reconcile before replacing graphics')
+   clips=items(duplicate,previous,indices);baseline=protected(inspect(self,p),indices)
+   for index in indices:
+    asset=spec['graphics'][index];require(sha(asset['path'])==asset['sha256'],'Replacement graphic changed')
+    media=p.GetMediaPool().ImportMedia([asset['path']]);require(media and len(media)==1,'Graphic import failed')
+    replace(clips[index],media[0],asset)
+   items(duplicate,spec,indices);require(protected(inspect(self,p),indices)==baseline,'Graphic replacement changed protected native state')
+   after=self.snapshot(p);require(p.SetCurrentTimeline(original),'Cannot verify graphic parent')
+   require(inspect(self,p)==original_detail,'Parent changed during graphic replacement')
+   require(p.SetCurrentTimeline(duplicate),'Cannot restore revised graphic timeline')
+   require(self.snapshot(p)==after,'Revision changed during parent verification')
+   pm=r.GetProjectManager();require(pm.SaveProject(),'Native save failed');require(pm.ExportProject(p.GetName(),str(native),False),'Native graphic checkpoint failed');save(inspection,after)
+   return {'nativeProject':str(native),'timelineId':duplicate.GetUniqueId(),'fingerprint':fingerprint(after),'status':'revised-native-render-pending'}
+  finally:
+   require(r.OpenPage(page),'Cannot restore Resolve page after graphic replacement')
  def render(self,project,packet):
   spec=plan(project,packet);r,p=self.selected(project);state=self.snapshot(p);require(fingerprint(state)==packet['expectedFingerprint'],'Timeline changed before export');save(inside(project['root'],packet['inspection']),state)
   if spec.get('captionContract'):
@@ -290,6 +322,8 @@ class Adapter:
    caption_prepared=validate(project,spec);verify_fonts(r,caption_prepared)
    verify_timeline(p.GetCurrentTimeline(),spec,caption_prepared)
   verify_framing(p.GetCurrentTimeline(),spec)
+  from resolve_graphics import items as graphic_items
+  graphic_items(p.GetCurrentTimeline(),spec)
   native=inside(project['root'],packet['nativeProject']);checkpoint_hash=sha(native)
   require(not p.IsRenderingInProgress(),'Another Resolve render is active');media=inside(project['root'],packet['media']);require(not media.exists(),'Never overwrite render');media.parent.mkdir(parents=True,exist_ok=True)
   require('H.264 Master' in p.GetRenderPresetList() and p.LoadRenderPreset('H.264 Master'),'Built-in H.264 Master preset unavailable; cannot reset native export state')
