@@ -1,6 +1,6 @@
 import path from 'node:path';
 import {access,stat,constants} from 'node:fs/promises';
-import {type Config,ROOT,HOME,secretEnv} from './config.js';
+import {type Config,ROOT,HOME,secretEnv,agentExecutable} from './config.js';
 import {run} from './process.js';
 import {invariant} from './contracts.js';
 
@@ -29,7 +29,7 @@ export async function doctor(c:Config,tools:DoctorTools={}){
   {id:'youtube',binary:'yt-dlp',args:['--version'],required:false,repair:'Install yt-dlp before importing YouTube footage.'},
   {id:'drive',binary:'rclone',args:['--version'],required:false,repair:'Install rclone and configure your Drive remote before importing Drive footage.'},
   {id:'python',binary:c.python,args:['--version'],required:true,repair:'Run scripts/install_shared.sh, then select its Python environment in setup.'},
-  {id:'agent',binary:c.agentCommand||c.agent,args:['--version'],required:true,repair:'Install the selected agent CLI and sign in; check agentCommand if customized.'},
+  {id:'agent',binary:agentExecutable(c,c.agent),args:['--version'],required:true,repair:'Install the selected agent CLI and sign in; check agentCommands (or the legacy agentCommand) if customized.'},
  ];
  const availability=await Promise.all(entries.map(async item=>{
   try{return {available:true,version:(await execute(item.binary,item.args,{env,timeout:15000,outputLimit:64000})).split('\n')[0]}}

@@ -1,5 +1,5 @@
 import { open } from 'node:fs/promises';
-import { type Config,ROOT,HOME,secretEnv } from './config.js';
+import { type Config,ROOT,HOME,secretEnv,agentExecutable } from './config.js';
 import { type Project,type Job } from './contracts.js';
 import { atomicJson } from './files.js';
 import path from 'node:path';
@@ -15,7 +15,7 @@ export async function executeAgent(config:Config,p:Project,j:Job,onSession:(id:s
   const args=p.agent==='claude'
    ? ['-p',prompt,'--output-format','stream-json','--verbose','--permission-mode','acceptEdits','--add-dir',ROOT,...(j.agentSession?['--resume',j.agentSession]:[])]
    : ['app-server'];
-  await runAgentTransport({agent:p.agent,command:config.agentCommand||p.agent,args,cwd:p.root,env,session:j.agentSession,prompt,
+  await runAgentTransport({agent:p.agent,command:agentExecutable(config,p.agent),args,cwd:p.root,env,session:j.agentSession,prompt,
    writableRoots:[p.root,HOME,path.join(ROOT,'.local')],onSession,onLine:line=>log.write(line+'\n'),signal,timeoutMs:config.agentTimeoutMs});
  }finally{try{await log.sync()}finally{await log.close()}}
 }

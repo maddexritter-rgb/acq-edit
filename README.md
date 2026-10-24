@@ -24,6 +24,8 @@ node dist/cli.js doctor
 
 See [installation verification and recovery](docs/INSTALLATION.md) for selected-engine prerequisite checks, repeat installs and retained partial installations.
 
+Rerunning `setup` keeps existing values when you press Enter. It offers the selected integration's conventional install path, preserves advanced settings and retains a private copy of the previous configuration when changes are saved. Backend and agent choices are defaults for new projects; existing projects keep their identities. Stop the review service and finish or reconcile active work before changing setup.
+
 `doctor` returns a JSON report with `readiness.ready`, blocking repair steps and optional intake dependencies. It exits 1 when a required prerequisite is missing, including before setup. It checks local brain configuration without retrieving guidance or printing keys. A ready result does not verify agent login/credit, API key validity or native editing quality.
 
 Setup stores configuration and API keys under `~/.config/acq-edit`, outside the checkout. API key entry is hidden. Supply your own AssemblyAI and Gemini keys. Maddex supplies the restricted editorial-brain reader configuration through a separate private channel. No database service-role key belongs on a teammate's machine.

@@ -1,17 +1,16 @@
 #!/usr/bin/env node
 import {doctor} from './doctor.js';
+import {readSetup,collectSetup,saveSetup} from './setup.js';
 import {executeNative,reconcileNative,reconcileJob} from './native-operations.js';
 import {importDriveFolder,resumeDriveBatch,abandonDriveBatch} from './drive-batch.js';
 import path from 'node:path';
-import os from 'node:os';
 import { createInterface } from 'node:readline/promises';
-import { mkdir,writeFile,access } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { Store } from './store.js';
-import { config,saveConfig,HOME,ROOT,secretEnv,type Config } from './config.js';
-import { backend,invariant,type NativeAction } from './contracts.js';
+import { config,HOME,ROOT,secretEnv } from './config.js';
+import { invariant,type NativeAction } from './contracts.js';
 import { createProject,importLocal,importUrl,exportState } from './projects.js';
-import { atomicJson,readJson,containedFile } from './files.js';
+import { containedFile } from './files.js';
 import { serve } from './server.js';
 import { publish } from './publish.js';
 import { run } from './process.js';
@@ -22,17 +21,16 @@ const [command,...args]=process.argv.slice(2);const output=(x:unknown)=>console.
 async function interruptibleCommand(work:(tools:IntakeTools)=>Promise<unknown>){const controller=new AbortController();const stop=()=>controller.abort();process.on('SIGINT',stop);process.on('SIGTERM',stop);try{output(await work({signal:controller.signal}))}finally{process.off('SIGINT',stop);process.off('SIGTERM',stop)}}
 async function main(){
  if(command==='setup'){
-  const rl=createInterface({input:process.stdin,output:process.stdout});try{
-   const engine=backend(args[0]||await rl.question('Backend (filmcraft / premiere / resolve): '));
-   const agent=args[1]||await rl.question('Agent (codex / claude): ');invariant(agent==='codex'||agent==='claude','Choose codex or claude');
-   const storageRoot=path.resolve(await rl.question(`Project storage root [${path.join(os.homedir(),'Movies','ACQ Edit')}]: `)||path.join(os.homedir(),'Movies','ACQ Edit'));
-   const c:Config={backend:engine,agent,storageRoot,python:path.join(ROOT,'.local','venv','bin','python'),port:4317};
-   if(engine==='filmcraft')c.filmcraft=await rl.question('FilmCraft CLI absolute path (or run scripts/install_engine.py filmcraft first): ');
-   if(engine==='premiere')c.premiereProfile=await rl.question('Toolkit Premiere Agent profile absolute path: ');
-   if(engine==='resolve')c.resolvePython='/Applications/DaVinci Resolve/DaVinci Resolve.app/Contents/Applications/ResolvePython';
-   c.brainConfig=await rl.question('Editorial brain configuration directory (context.json + restricted read_token): ');
-   await mkdir(storageRoot,{recursive:true});await saveConfig(c);
-   console.log('Configuration saved. Run credentials to enter API keys privately, then doctor. No global skills or editor settings were changed.');
+  const snapshot=await readSetup(HOME);
+  const rl=createInterface({input:process.stdin,output:process.stdout});const controller=new AbortController();
+  rl.on('close',()=>controller.abort());rl.on('SIGINT',()=>controller.abort());
+  try{
+   const c=await collectSetup(snapshot,args,prompt=>rl.question(prompt,{signal:controller.signal}),ROOT);
+   invariant(!controller.signal.aborted,'Setup cancelled before saving.');
+   const saved=await saveSetup(HOME,snapshot,c);
+   console.log(saved.changed?'Configuration saved.':'Configuration unchanged.');
+   if(saved.backup)console.log(`Previous configuration preserved at ${saved.backup}`);
+   console.log('Existing projects retain their storage, backend and agent. Run credentials to enter API keys privately, then doctor.');
   }finally{rl.close()}return;
  }
  if(command==='credentials'){const {spawn}=await import('node:child_process');await new Promise<void>((resolve,reject)=>{const child=spawn('python3',[path.join(ROOT,'scripts','credentials.py'),HOME],{stdio:'inherit'});child.on('error',reject);child.on('close',code=>code===0?resolve():reject(new Error('Credential entry failed')))});return}
