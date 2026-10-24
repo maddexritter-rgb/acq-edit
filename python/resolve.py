@@ -11,6 +11,7 @@ from resolve_framing import write_tracking,verify_timeline as verify_framing
 from framing_plan import fusion_crop,require_static_fusion_crop
 from resolve_precision import patch_checkpoint
 from fusion_state import fusion_hash,SCHEMA as FUSION_STATE_SCHEMA
+from resolve_sources import verify_timeline as verify_source_clocks,read_clocks,pin_new_copy
 class Adapter:
  def __init__(self,config):self.config=config
  def connect(self):
@@ -27,7 +28,7 @@ class Adapter:
   root=self.project_root/'10_WORK';root.mkdir(parents=True,exist_ok=True)
   with tempfile.TemporaryDirectory(prefix='fusion-inspect-',dir=root) as folder:
    for index in range(1,item.GetFusionCompCount()+1):
-    comp=item.GetFusionCompByIndex(index);require(comp,'Fusion comp missing');comp.GetAttrs();output=Path(folder)/f'{index}.comp';require(item.ExportFusionComp(str(output),index),'Cannot inspect native Fusion graph');results.append(fusion_hash(output.read_text(encoding='utf-8')))
+    comp=item.GetFusionCompByIndex(index);require(comp,'Fusion comp missing');before=read_clocks(comp);output=Path(folder)/f'{index}.comp';require(item.ExportFusionComp(str(output),index),'Cannot inspect native Fusion graph');require(read_clocks(comp)==before,'Fusion inspection changed live source clocks; preserve the timeline and reconcile');results.append(fusion_hash(output.read_text(encoding='utf-8')))
   return results
  def snapshot(self,p):
   t=p.GetCurrentTimeline();require(t,'No current timeline');tracks={};track_state={}
@@ -107,7 +108,7 @@ class Adapter:
    placed=pool.AppendToTimeline([{'mediaPoolItem':media[0],'startFrame':0,'endFrame':graphic['frames'],'recordFrame':graphic['startFrame'],'mediaType':1,'trackIndex':index+2}]);require(placed and len(placed)==1,'Graphics placement failed');item=placed[0]
    require(item.GetStart(True)==graphic['startFrame'] and item.GetDuration(True)==graphic['frames'] and item.GetLeftOffset(True)==0 and Path(item.GetMediaPoolItem().GetClipProperty('File Path')).resolve()==Path(graphic['path']).resolve(),'Native graphic source/timing readback mismatch')
   self.music(timeline,pool,sources,spec)
-  verify_framing(timeline,spec)
+  verify_source_clocks(timeline,spec);verify_framing(timeline,spec)
   if caption_prepared:
    from resolve_captions import verify_timeline
    verify_timeline(timeline,spec,caption_prepared)
@@ -177,6 +178,7 @@ class Adapter:
   r,p=self.selected(project);before=self.snapshot(p);require(fingerprint(before)==packet['expectedFingerprint'],'Native state changed; inspect and merge user edits')
   require(packet['kind'] in ['caption-style','music-gain','fixed-framing'],'Spoken recuts require a new reviewed Assembly Design plan and new timeline; no partial dependent-layer edits')
   spec=plan(project,packet) if packet['kind']=='fixed-framing' or (packet['kind']=='caption-style' and packet.get('plan')) else None
+  if spec:verify_source_clocks(p.GetCurrentTimeline(),spec)
   caption_prepared=None
   if spec and spec.get('captionContract'):
    from caption_plan import validate
@@ -187,6 +189,7 @@ class Adapter:
    from resolve_panels import preflight_fixed_revision
    preflight_fixed_revision(p.GetCurrentTimeline(),spec,packet['edits'])
   original=p.GetCurrentTimeline();copy=original.DuplicateTimeline(packet['title']);require(copy and p.SetCurrentTimeline(copy),'Cannot preserve prior timeline before revision')
+  pin_new_copy(original,copy,spec)
   for edit in packet['edits']:
    if packet['kind']=='caption-style':
     items=copy.GetItemListInTrack('video',edit['track']);require(0<=edit['itemIndex']<len(items),'Caption target absent');comp=items[edit['itemIndex']].GetFusionCompByIndex(edit['compIndex']);require(comp,'Caption Fusion comp absent');tool=comp.FindTool(edit['tool']);require(tool and edit['tool'].startswith('ACQ_Caption_'),'Only ACQ-owned caption nodes may be edited')
@@ -206,7 +209,7 @@ class Adapter:
     wanted=item.GetProperties()['AudioVolume']+delta;require(-60<=wanted<=12,'Music gain exceeds supported range');require(item.SetProperties({'AudioVolumeEnabled':True,'AudioVolume':wanted}),'Music gain revision failed');require(abs(item.GetProperties()['AudioVolume']-wanted)<1e-6,'Music gain revision readback mismatch')
   after=self.snapshot(p)
   before_cuts=[(i['start'],i['end'],i['left'],i['source']) for kind in ['video','audio'] for track in before['tracks'][kind] for i in track];after_cuts=[(i['start'],i['end'],i['left'],i['source']) for kind in ['video','audio'] for track in after['tracks'][kind] for i in track];require(before_cuts==after_cuts,'Finishing revision changed cuts')
-  if spec:verify_framing(copy,spec)
+  if spec:verify_source_clocks(copy,spec);verify_framing(copy,spec)
   if caption_prepared:
    from resolve_captions import verify_timeline
    verify_timeline(copy,spec,caption_prepared)
@@ -221,6 +224,7 @@ class Adapter:
   native=inside(project['root'],packet['nativeProject']);inspection=inside(project['root'],packet['inspection'])
   require(not native.exists() and not inspection.exists(),'Tracking revision outputs exist; reconcile before retrying')
   original=p.GetCurrentTimeline();duplicate=original.DuplicateTimeline(packet['title']);require(duplicate and p.SetCurrentTimeline(duplicate),'Cannot preserve parent timeline before tracking revision')
+  pin_new_copy(original,duplicate,previous)
   verify_framing(duplicate,previous)
   indices=[i for i,cut in enumerate(spec['cuts']) if cut['id'] in packet['cutIds']]
   def protected_snapshot():
@@ -264,6 +268,7 @@ class Adapter:
    return duplicate_snapshot(state,graphs)
   original_copy_state=copy_state()
   original=p.GetCurrentTimeline();duplicate=original.DuplicateTimeline(packet['title']);require(duplicate and p.SetCurrentTimeline(duplicate),'Cannot preserve parent timeline before panel revision')
+  pin_new_copy(original,duplicate,previous)
   require(duplicate.GetName()==packet['title'] and duplicate.GetUniqueId()!=original.GetUniqueId(),'Unexpected native duplicate identity')
   require(copy_state()==original_copy_state,'Native duplication changed protected state; reconcile before editing panels')
   verify_framing(duplicate,previous)
@@ -302,6 +307,7 @@ class Adapter:
   require(r.OpenPage('edit') and r.GetCurrentPage()=='edit','Resolve take replacement requires the Edit page')
   try:
    duplicate=original.DuplicateTimeline(packet['title']);require(duplicate and p.SetCurrentTimeline(duplicate),'Cannot preserve parent before graphic replacement')
+   pin_new_copy(original,duplicate,previous)
    require(duplicate.GetName()==packet['title'] and duplicate.GetUniqueId()!=original.GetUniqueId(),'Unexpected duplicate identity')
    require(inspect(self,p,duplicate=True)==original_copy,'Duplication changed protected state; reconcile before replacing graphics')
    clips=items(duplicate,previous,indices);baseline=protected(inspect(self,p),indices)
@@ -368,7 +374,7 @@ class Adapter:
   previous,spec,prepared=prepare(project,packet);r,p=self.selected(project)
   require(not p.IsRenderingInProgress(),'Resolve is rendering; wait before hook removal')
   before=self.snapshot(p);require(fingerprint(before)==packet['expectedFingerprint'],'Native state changed; reconcile before hook removal')
-  original=p.GetCurrentTimeline();verify_timeline(original,previous,prepared)
+  original=p.GetCurrentTimeline();verify_source_clocks(original,previous);verify_timeline(original,previous,prepared)
   track=original.GetTrackCount('video');require(track>1 and not original.GetIsTrackLocked('video',track),'Owned hook track is locked or is the only picture track')
   original_detail=inspect(self,p);baseline=inspect(self,p,duplicate=True,omit_last_video_track=True)
   native=inside(project['root'],packet['nativeProject']);inspection=inside(project['root'],packet['inspection'])
@@ -377,6 +383,8 @@ class Adapter:
   duplicate=original.DuplicateTimeline(packet['title']);require(duplicate and p.SetCurrentTimeline(duplicate),'Cannot duplicate hook parent')
   verify_timeline(duplicate,previous,prepared)
   require(duplicate.DeleteTrack('video',track),'Native hook track removal failed')
+  pin_new_copy(original,duplicate,spec)
+  verify_source_clocks(duplicate,spec)
   require(inspect(self,p,duplicate=True)==baseline,'Hook removal changed protected native state or metadata')
   after=self.snapshot(p);require(p.SetCurrentTimeline(original) and inspect(self,p)==original_detail,'Hook removal changed parent timeline')
   require(p.SetCurrentTimeline(duplicate) and self.snapshot(p)==after,'New timeline changed during parent verification')
@@ -425,7 +433,7 @@ class Adapter:
    return {'nativeProject':str(native),'timelineId':revised.GetUniqueId(),'fingerprint':fingerprint(after),'status':'revised-native-render-pending'}
   finally:require(r.OpenPage(page),'Cannot restore Resolve page after hook construction')
  def render(self,project,packet):
-  spec=plan(project,packet);r,p=self.selected(project);state=self.snapshot(p);require(fingerprint(state)==packet['expectedFingerprint'],'Timeline changed before export');save(inside(project['root'],packet['inspection']),state)
+  spec=plan(project,packet);r,p=self.selected(project);verify_source_clocks(p.GetCurrentTimeline(),spec);state=self.snapshot(p);require(fingerprint(state)==packet['expectedFingerprint'],'Timeline changed before export');save(inside(project['root'],packet['inspection']),state)
   if spec.get('hookContract'):
    from hook_plan import validate
    from resolve_hooks import verify_timeline,font_preflight
@@ -449,4 +457,4 @@ class Adapter:
   while p.IsRenderingInProgress():require(time.monotonic()<deadline,'Render timeout; reconcile original job');time.sleep(1)
   status=p.GetRenderJobStatus(job);save(str(media)+'.status.json',status);require(status.get('JobStatus')=='Complete','Native render did not complete')
   require(sha(native)==checkpoint_hash,'Native checkpoint changed during render')
-  require(fingerprint(self.snapshot(p))==packet['expectedFingerprint'],'Native timeline changed during render');return result_receipt(project,packet,spec,packet['nativeProject'],media,packet['inspection'])
+  verify_source_clocks(p.GetCurrentTimeline(),spec);require(fingerprint(self.snapshot(p))==packet['expectedFingerprint'],'Native timeline changed during render');return result_receipt(project,packet,spec,packet['nativeProject'],media,packet['inspection'])
