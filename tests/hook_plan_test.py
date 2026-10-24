@@ -85,11 +85,20 @@ class HookPlanTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError,'source changed'):hooks.validate(self.project,self.spec)
 
     def test_other_engine_and_caption_hiding_refuse(self):
-        self.resolved(); self.spec['backend']='resolve'
+        self.resolved(); self.spec['backend']='premiere'
         with self.assertRaisesRegex(RuntimeError,'no qualified'):hooks.validate(self.project,self.spec)
         self.spec['backend']='filmcraft'
         file=Path(self.spec['hookContract']['path']);m=json.loads(file.read_text());m['caption_strategy']='replace';file.write_text(json.dumps(m));self.spec['hookContract']['sha256']=sha(file)
         with self.assertRaisesRegex(RuntimeError,'Unsupported native hook'):hooks.validate(self.project,self.spec)
+
+    def test_resolve_base_inspection_is_pinned_before_native_editing(self):
+        self.resolved();self.project['backend']=self.spec['backend']='resolve'
+        receipt=Path(self.spec['hookContract']['baseReceipt']);value=json.loads(receipt.read_text())
+        inspection=self.root/'inspection.json';inspection.write_text('{"timeline":"fixture"}')
+        value.update(backend='resolve',nativeInspectionPath=str(inspection));receipt.write_text(json.dumps(value))
+        self.spec['hookContract'].update(baseReceiptSha256=sha(receipt),basePlanFingerprint=hooks.base_fingerprint(self.spec),baseInspectionSha256=sha(inspection))
+        hooks.validate(self.project,self.spec);inspection.write_text('{"timeline":"changed"}')
+        with self.assertRaisesRegex(RuntimeError,'Base Resolve inspection changed'):hooks.validate(self.project,self.spec)
 
     def test_tampered_native_coordinates_are_not_a_new_layout_owner(self):
         self.resolved();file=Path(self.spec['hookContract']['path']);m=json.loads(file.read_text());m['placement_intervals'][0]['native_text'][0]['baseline_px'][0]+=1;file.write_text(json.dumps(m));self.spec['hookContract']['sha256']=sha(file)

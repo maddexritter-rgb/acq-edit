@@ -74,7 +74,7 @@ export interface EditPlan {
   brain:{receiptPath:string;sha256:string;versionsPath?:string;versionsSha256?:string}; editorial:{selectionPath:string;sha256:string;compiledPath?:string;compiledSha256?:string;execution?:{decisionsPath:string;decisionsSha256:string;routingPath:string;routingSha256:string;phonemesPath?:string;phonemesSha256?:string};reviewed:boolean};
   sources:Source[]; cuts:{id:string;sourceId:string;audioSourceId?:string;audioRecordSample?:number;sourceInFrame:number;frames:number;recordFrame:number;audioInSample:number;audioSamples:number;wordIds:string[];boundaryEvidence:string}[];
   captionContract?:{path:string;sha256:string;helperHashes:Record<string,string>};
-  hookContract?:{path:string;sha256:string;helperSha256:string;basePlanFingerprint:string;baseReceipt:string;baseReceiptSha256:string};
+  hookContract?:{path:string;sha256:string;helperSha256:string;basePlanFingerprint:string;baseReceipt:string;baseReceiptSha256:string;baseInspectionSha256?:string};
   captions:{startFrame:number;endFrame:number;text:string;style:Record<string,unknown>}[];
   graphics:{path:string;startFrame:number;frames:number;sha256:string}[];
   framing:FramingPlan|Record<string,never>; audio:AudioPlan;

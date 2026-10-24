@@ -23,8 +23,11 @@ def items(timeline,spec,targets=()):
     return result
 
 
-def inspect(adapter,p,duplicate=False,source_slots=()):
+def inspect(adapter,p,duplicate=False,source_slots=(),omit_last_video_track=False):
     state=adapter.snapshot(p);timeline=p.GetCurrentTimeline();extra={};graphs={}
+    if omit_last_video_track:
+        require(len(state['tracks']['video'])>1,'Cannot omit the only picture track')
+        state['tracks']['video'].pop();state['trackState']['video'].pop()
     with tempfile.TemporaryDirectory(prefix='graphic-inspect-',dir=adapter.project_root/'10_WORK') as folder:
         for kind,tracks in state['tracks'].items():
             for track,clips in enumerate(tracks):

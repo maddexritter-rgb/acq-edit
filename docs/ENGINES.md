@@ -54,6 +54,8 @@ Assembly-bound camera panels use native Media Pool inputs, independent camera tr
 
 Production body captions use the same pinned caption-clips handoff as FilmCraft with an explicit Resolve typography/shadow/motion profile. Native Fusion nodes execute the cards, hold timing and arrival; no FilmCraft engine is installed or invoked. Planned revisions and exports verify graph inputs, clocks, exact fonts and cut geometry. See `NATIVE_CAPTIONS.md` for the supported fields, native build/revision evidence and open audio/real-footage qualifications.
 
+Editable first-hook additions use the same owner-prepared recipe after a finished native render. Resolve constructs native Fusion text/cards on a separate top track through a version-gated DRT insertion; all existing timeline state is compared and the parent retained. Native visibility keys preserve the full fingerprint through save/reopen and export. See [NATIVE_HOOKS.md](NATIVE_HOOKS.md) for packets, typography limits and qualification evidence.
+
 The selected native project name is `ACQ_<project-id>`. The adapter refuses another open project. Create/open the dedicated project deliberately before execution. It never closes user work to make room for itself.
 
 ## Agent integrations

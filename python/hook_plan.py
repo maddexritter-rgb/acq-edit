@@ -2,6 +2,10 @@
 import copy
 import importlib.util
 import math
+import json
+import os
+import subprocess
+import sys
 from fractions import Fraction
 from pathlib import Path
 from common import SKILLS, inside, read, save, sha, require, fingerprint
@@ -23,7 +27,7 @@ def base_fingerprint(spec):
 def prepare_plan(project, packet):
     from common import plan, verify_native_render
     spec = plan(project, packet)
-    require(spec['backend'] == 'filmcraft', 'Native hook transport is currently qualified only for FilmCraft; no backend switch is permitted')
+    require(spec['backend'] in ['filmcraft','resolve'], 'Native hook transport requires FilmCraft or Resolve; no backend switch is permitted')
     require(not spec.get('hookContract'), 'Existing hooks need an identified replacement operation; additive duplication is refused')
     recipe_path = inside(project['root'], packet['recipe'])
     require(sha(recipe_path) == packet['recipeSha256'], 'Hook recipe changed')
@@ -46,6 +50,8 @@ def prepare_plan(project, packet):
     contract = {'path': str(out/'resolved.json'), 'sha256': sha(out/'resolved.json'),
                 'helperSha256': sha(SKILLS/HELPER), 'basePlanFingerprint': base_fingerprint(spec),
                 'baseReceipt': str(receipt_path), 'baseReceiptSha256': sha(receipt_path)}
+    if spec['backend']=='resolve':
+        contract['baseInspectionSha256']=sha(inside(project['root'],receipt['nativeInspectionPath']))
     spec['hookContract'] = contract
     validate(project, spec)
     save(out/'plan.json', spec)
@@ -56,7 +62,15 @@ def prepare_plan(project, packet):
 def validate(project, spec):
     contract = spec.get('hookContract')
     if not contract: return None
-    require(spec['backend'] == 'filmcraft', 'This backend has no qualified native hook transport; do not discard or bake the hook')
+    require(spec['backend'] in ['filmcraft','resolve'], 'This backend has no qualified native hook transport; do not discard or bake the hook')
+    try:
+        import PIL
+    except ImportError:
+        interpreter=os.environ.get('ACQ_EDIT_SHARED_PYTHON')
+        require(interpreter and Path(interpreter).resolve()!=Path(sys.executable).resolve(), 'Hook layout validation requires the configured shared Python with Pillow')
+        result=subprocess.run([interpreter,str(Path(__file__).resolve())],input=json.dumps({'project':project,'spec':spec}),text=True,capture_output=True,timeout=120)
+        require(result.returncode==0,'Hook layout validation failed: '+result.stderr[-2000:])
+        return json.loads(result.stdout)
     require(contract['basePlanFingerprint'] == base_fingerprint(spec), 'Hook geometry/copy context changed; recalculate the hook from the current finished cut')
     require(contract['helperSha256'] == sha(SKILLS/HELPER), 'Hook helper changed; preserve the recipe and reconcile')
     path = inside(project['root'], contract['path'])
@@ -67,6 +81,8 @@ def validate(project, spec):
     receipt_path = inside(project['root'], contract['baseReceipt'])
     require(sha(receipt_path) == contract['baseReceiptSha256'], 'Base render receipt changed')
     receipt = read(receipt_path)
+    if spec['backend']=='resolve':
+        require(contract.get('baseInspectionSha256')==sha(inside(project['root'],receipt['nativeInspectionPath'])), 'Base Resolve inspection changed')
     require(receipt['projectId'] == project['id'] and receipt['backend'] == project['backend'] and receipt['clipId'] == spec['clipId'], 'Base hook receipt identity differs')
     require(Path(receipt['media']).resolve() == Path(m['source']).resolve(), 'Hook source differs from base render')
     require(m['schema'] == 'text-hook/v1' and m['clip_id'] == spec['clipId'] and m.get('caption_strategy', 'preserve') == 'preserve' and m['existing_hook'] == 'none', 'Unsupported native hook recipe')
@@ -189,3 +205,8 @@ def verify_addition(before, after, spec, prepared, destination, frame_ticks):
     actual['next_id'] = expected['next_id']
     expected['name'] = destination; expected['root']['name'] = destination
     require(fingerprint(actual)==fingerprint(expected), 'Hook addition changed protected native state')
+
+
+if __name__=='__main__':
+    request=json.load(sys.stdin)
+    print(json.dumps(validate(request['project'],request['spec'])))
