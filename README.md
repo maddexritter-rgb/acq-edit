@@ -8,6 +8,8 @@ A private, Mac-based editing toolkit for Codex and Claude Code. Give your agent 
 
 Requirements: macOS, Node.js 24+, Python 3.11, FFmpeg/ffprobe, and an authenticated Codex or Claude Code CLI. Install only the editor you choose. Resolve requires Studio 21.1; Premiere requires a supported Agent Lab host profile. FilmCraft runs headlessly.
 
+Building FilmCraft locally also requires Git, Rust/Cargo 1.95+ and Xcode Command Line Tools. Run `python3 scripts/install_engine.py filmcraft --check` to check them before installation.
+
 ```sh
 git clone git@github.com:maddexritter-rgb/acq-edit.git
 cd acq-edit

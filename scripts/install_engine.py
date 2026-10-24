@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 """Preflight and install only the chosen integration in this checkout's .local tree."""
 import argparse
+import hashlib
 import json
 import os
+import platform
 import re
 import shutil
 import subprocess
 import sys
+import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 from materialize import materialize
 from prepare_premiere_panel import prepare as prepare_premiere_panel
@@ -15,6 +19,14 @@ from prepare_premiere_runtime import copy_resources, check_transport
 ROOT = Path(__file__).resolve().parents[1]
 PIN = '71438c627b5cbcfb550526c3971f4d0037733c5c'
 RESOLVE = Path('/Applications/DaVinci Resolve/DaVinci Resolve.app/Contents/Applications/ResolvePython')
+
+
+def digest(path):
+    value = hashlib.sha256()
+    with Path(path).open('rb') as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b''):
+            value.update(chunk)
+    return value.hexdigest()
 
 
 def run(args, cwd=None):
@@ -28,7 +40,8 @@ def output(args, cwd=None):
 def preflight(backend):
     required = ['node', 'ffmpeg', 'ffprobe']
     if backend == 'filmcraft':
-        required += ['git', 'cargo', 'rustc', 'pkg-config']
+        required += ['git', 'cargo', 'rustc']
+        required += ['xcrun'] if sys.platform == 'darwin' else ['pkg-config']
     elif backend == 'premiere':
         required += ['npm']
     tools = {name: shutil.which(name) for name in required}
@@ -49,8 +62,50 @@ def preflight(backend):
             errors.append('Cannot determine Rust version')
     if backend == 'resolve' and not RESOLVE.is_file():
         errors.append('Install DaVinci Resolve Studio 21.1; bundled ResolvePython was not found')
-    return {'backend': backend, 'prerequisitesPresent': not errors, 'executables': tools,
+    native_build = {}
+    if backend == 'filmcraft' and sys.platform == 'darwin' and tools.get('xcrun'):
+        try:
+            native_build = {'clang': output([tools['xcrun'], '--find', 'clang']),
+                            'sdk': output([tools['xcrun'], '--show-sdk-path'])}
+            if not Path(native_build['clang']).is_file() or not Path(native_build['sdk']).is_dir():
+                errors.append('Xcode Command Line Tools compiler or macOS SDK is unavailable')
+        except subprocess.SubprocessError:
+            errors.append('Install or select Xcode Command Line Tools; xcrun could not locate the compiler and macOS SDK')
+    return {'backend': backend, 'prerequisitesPresent': not errors, 'executables': tools, 'nativeBuildTools': native_build,
             'errors': errors, 'nativeWorkflowQualified': False}
+
+
+def record_filmcraft_build(dest, check):
+    """Record actual inputs/output after a clean, pinned, locked source build."""
+    if output(['git', 'rev-parse', 'HEAD'], dest) != PIN or output(['git', 'status', '--porcelain', '--untracked-files=all'], dest):
+        raise RuntimeError('FilmCraft sources changed during build; no successful build receipt written')
+    binary = dest / 'target/release/filmcraft-cli'
+    if not binary.is_file():
+        raise RuntimeError('FilmCraft build did not produce the expected native executable')
+    help_output = output([str(binary), '--help'], dest)
+    receipt = {
+        'schema': 'acq-edit/filmcraft-build-v1',
+        'createdAt': datetime.now(timezone.utc).isoformat(),
+        'source': {'origin': output(['git', 'remote', 'get-url', 'origin'], dest), 'commit': PIN,
+                   'cargoLockSha256': digest(dest / 'Cargo.lock'), 'cargoManifestSha256': digest(dest / 'Cargo.toml')},
+        'command': ['cargo', 'build', '--release', '--locked', '-p', 'filmcraft-cli'],
+        'compiler': output([check['executables']['rustc'], '-vV']),
+        'cargo': output([check['executables']['cargo'], '--version']),
+        'nativeBuildTools': check.get('nativeBuildTools', {}),
+        'host': {'system': platform.system(), 'machine': platform.machine(), 'release': platform.release()},
+        'buildEnvironment': {key: os.environ[key] for key in ['RUSTFLAGS', 'CARGO_ENCODED_RUSTFLAGS', 'CARGO_BUILD_TARGET',
+                              'CARGO_BUILD_RUSTFLAGS', 'MACOSX_DEPLOYMENT_TARGET', 'SDKROOT', 'CRAFT_FONTS_DIR', 'CRAFT_FONTS_REQUIRED'] if key in os.environ},
+        'binary': {'path': str(binary.resolve()), 'sha256': digest(binary), 'bytes': binary.stat().st_size,
+                   'helpSha256': hashlib.sha256(help_output.encode()).hexdigest()},
+        'installerSha256': digest(Path(__file__)), 'nativeWorkflowQualified': False,
+    }
+    directory = ROOT / '.local/filmcraft-builds'
+    directory.mkdir(exist_ok=True)
+    target = directory / (str(uuid.uuid4()) + '.json')
+    with target.open('x') as stream:
+        json.dump(receipt, stream, indent=2)
+    print('FilmCraft build receipt: ' + str(target))
+    return target
 
 
 def install(backend, assets, premiere_port=17878):
@@ -89,6 +144,7 @@ def install(backend, assets, premiere_port=17878):
                 run(['git', 'fetch', 'origin', PIN], dest)
                 run(['git', 'checkout', '--detach', PIN], dest)
             run(['cargo', 'build', '--release', '--locked', '-p', 'filmcraft-cli'], dest)
+            record_filmcraft_build(dest, check)
             print('FilmCraft CLI: ' + str(dest / 'target/release/filmcraft-cli'))
         elif backend == 'premiere':
             shutil.copytree(ROOT / 'integrations/premiere-agent', dest)

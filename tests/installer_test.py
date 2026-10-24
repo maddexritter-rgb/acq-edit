@@ -192,10 +192,53 @@ class EnginePreflightTests(unittest.TestCase):
             self.assertEqual(list(Path(tmp).iterdir()), [])
 
     def test_old_node_and_rust_are_specific_failures(self):
-        with patch.object(install_engine.shutil, 'which', side_effect=lambda name: name), patch.object(install_engine, 'output', side_effect=lambda args: 'v22.0.0' if args[0] == 'node' else 'rustc 1.94.0'):
+        with patch.object(install_engine.sys, 'platform', 'linux'), patch.object(install_engine.shutil, 'which', side_effect=lambda name: name), patch.object(install_engine, 'output', side_effect=lambda args: 'v22.0.0' if args[0] == 'node' else 'rustc 1.94.0'):
             result = install_engine.preflight('filmcraft')
         self.assertFalse(result['prerequisitesPresent'])
         self.assertEqual(len(result['errors']), 2)
+
+    def test_macos_build_requires_apple_sdk_not_linux_pkg_config(self):
+        def output(args):
+            return {'node':'v24.0.0','rustc':'rustc 1.95.0'}.get(args[0], '/tools/clang' if args[-1]=='clang' else '/tools/MacOSX.sdk')
+        with patch.object(install_engine.sys, 'platform', 'darwin'), patch.object(install_engine.shutil, 'which', side_effect=lambda name: None if name=='pkg-config' else name), patch.object(install_engine, 'output', output), patch.object(Path,'is_file',return_value=True), patch.object(Path,'is_dir',return_value=True):
+            result=install_engine.preflight('filmcraft')
+        self.assertTrue(result['prerequisitesPresent']);self.assertNotIn('pkg-config',result['executables'])
+        self.assertEqual(result['nativeBuildTools'],{'clang':'/tools/clang','sdk':'/tools/MacOSX.sdk'})
+
+    def test_missing_macos_sdk_stops_before_installation(self):
+        def output(args):
+            return 'v24.0.0' if args[0]=='node' else 'rustc 1.95.0' if args[0]=='rustc' else '/absent'
+        with patch.object(install_engine.sys, 'platform', 'darwin'), patch.object(install_engine.shutil, 'which', side_effect=lambda name:name), patch.object(install_engine, 'output', output), patch.object(Path,'is_file',return_value=False):
+            result=install_engine.preflight('filmcraft')
+        self.assertFalse(result['prerequisitesPresent']);self.assertIn('macOS SDK',result['errors'][0])
+
+
+    def test_filmcraft_build_receipts_pin_real_inputs_and_preserve_history(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);dest=root/'.local/filmcraft';(dest/'target/release').mkdir(parents=True)
+            for name,content in [('Cargo.toml','manifest'),('Cargo.lock','locked'),('target/release/filmcraft-cli','native binary')]:
+                (dest/name).write_text(content)
+            def output(args,cwd=None):
+                if args[:2]==['git','rev-parse']:return install_engine.PIN
+                if args[:2]==['git','status']:return ''
+                if args[:2]==['git','remote']:return 'https://github.com/storytold/filmcraft.git'
+                return 'verified tool output'
+            with patch.object(install_engine,'ROOT',root),patch.object(install_engine,'output',output):
+                first=install_engine.record_filmcraft_build(dest,{'executables':{'rustc':'rustc','cargo':'cargo'}})
+                original=first.read_bytes();second=install_engine.record_filmcraft_build(dest,{'executables':{'rustc':'rustc','cargo':'cargo'}})
+            receipt=json.loads(first.read_text());self.assertNotEqual(first,second);self.assertEqual(first.read_bytes(),original)
+            self.assertEqual(receipt['source']['commit'],install_engine.PIN)
+            self.assertEqual(receipt['source']['cargoLockSha256'],install_engine.digest(dest/'Cargo.lock'))
+            self.assertEqual(receipt['binary']['sha256'],install_engine.digest(dest/'target/release/filmcraft-cli'))
+            self.assertFalse(receipt['nativeWorkflowQualified'])
+
+    def test_changed_filmcraft_sources_cannot_receive_a_success_receipt(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            with patch.object(install_engine,'ROOT',root),patch.object(install_engine,'output',side_effect=[install_engine.PIN,' M Cargo.lock']):
+                with self.assertRaisesRegex(RuntimeError,'sources changed'):
+                    install_engine.record_filmcraft_build(root/'filmcraft',{'executables':{'rustc':'rustc','cargo':'cargo'}})
+            self.assertFalse((root/'.local/filmcraft-builds').exists())
 
 
 if __name__ == '__main__':
