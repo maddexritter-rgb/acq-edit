@@ -66,7 +66,30 @@ Indices are zero-based. Replacement sources must be distinct audio-only PCM file
 
 A direct native fixture replaced the first of two mono music placements at a one-second source offset, keeping 80 ms fades and a 0.6-second duration. Both native exports decoded 50 frames; all picture pixels were identical. The selected 220 Hz test tone was replaced by 1320 Hz, with more than 40 dB separation in each direction. The second bed and the 440/880 Hz dialogue signals changed by less than 0.01 dB in the checked windows. All protected native fields, twelve prior artifacts, source/parent files and feedback remained intact. An initial preflight assumption that audio had an intrinsic time-remap effect was corrected from native evidence; no replacement had occurred in that failed attempt. The measurement script's original assumed music frequency was also corrected against the actual source.
 
-This proves bounded native execution on synthetic tones, not real auditioning, audio-quality approval, agent orchestration or reference fidelity. Different source offsets, channel conversions, overlapping beds, and new automation remain unsupported by this operation. Resolve and Premiere do not yet implement music-source replacement; they must report that limitation without switching engines.
+This proves bounded native execution on synthetic tones, not real auditioning, audio-quality approval, agent orchestration or reference fidelity. Different source offsets, channel conversions, overlapping beds, and new automation remain unsupported by this operation. Premiere does not yet implement music-source replacement; report that limitation without switching engines.
+
+## Resolve music-source replacement
+
+Resolve Studio **21.1.1 build 10** supports the same pinned previous/new plan and `musicIndices` contract through its own DRT timeline archive. Resolve's native audio `AddTake` returned false; audio take-count/selection getters returned null, with the disposable probe unchanged. Video take replacement must not be assumed to work for audio. Media-pool-wide `ReplaceClip` would also change the parent and other occurrences, so this operation does not use it.
+
+The Resolve packet uses these fields alongside `kind`, `previousPlan`, `previousPlanSha256`, `plan`, `musicIndices`, and a fresh `expectedFingerprint`:
+
+```json
+{
+  "nativeProject": "<project>/10_WORK/music-revision.drp",
+  "inspection": "<project>/10_WORK/music-revision-inspection.json",
+  "archiveDirectory": "<project>/10_WORK/music-revision-archives",
+  "title": "Clip music revision 2"
+}
+```
+
+All destinations and timeline names must be fresh. The selected replacement paths must not already exist in Resolve's Media Pool; CLI source registration alone does not import them into the editor. Each source must meet the shared prepared-PCM, sample-rate, channel-count and duration requirements. Source offsets, duration and fades currently require whole timeline frames, without rounding. Native frame comparisons ignore at most `1e-9` frame of floating-point representation noise; a one-sample timing displacement is still rejected.
+
+The adapter exports the inspected parent as DRT, imports each replacement source into a temporary native donor timeline, and exports its media descriptors. It creates a new DRT by changing only selected music clips' `MediaRef` and `MediaFilePath` leaves and appending the new native media descriptors. All other original archive bytes—including effects, automation and channel routing—remain intact. Native import creates a new timeline, after which explicit readback verifies sources/ranges, the full protected state, Fusion graphs, markers, flags, names and audio channel mappings. Fresh source flags are copied and selected names restored because native import otherwise uses the new filename. The existing parent timeline is rechecked, then the project is saved and exported as a new DRP. Archive/hash and native-readback receipts remain in `archiveDirectory`; failed intermediate timelines and donor media stay available for reconciliation. The operation never invokes Premiere or FilmCraft.
+
+A fresh Resolve-only fixture independently built and replaced one of two stereo music beds using a one-second source offset, 0.6-second placements and 80 ms fades. Both final exports decoded 50 frames and 97,216 audio sample frames. Every decoded picture pixel was identical. The selected 220 Hz tone changed to 1320 Hz; measured dialogue and the unselected bed changed by less than 0.01 dB in the checked windows. Custom name, color, marker, source flags, native fades/properties and channel mappings survived save/close/reopen; parent checkpoint/source hashes stayed unchanged. The previously open review project's complete snapshot and render queue were restored. Earlier failed probes were retained and reconciled; the successful fixture has no unresolved operations.
+
+This is direct native execution on synthetic tones. Agent-driven review-room music replacement, real music auditioning, speech/audio quality, other Resolve/archive versions, nested archive bins, changed sections and new envelopes remain separate acceptance work. The auxiliary native donor timeline is retained for recovery; it is not the final composition or render path.
 
 ## Live Resolve agent-loop audio finding
 

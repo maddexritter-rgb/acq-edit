@@ -6,7 +6,7 @@ All timings read back before a render can be accepted. Unqualified host versions
 import time,math,tempfile
 from pathlib import Path
 from common import *
-from audio_plan import resolve_music_frames
+from audio_plan import resolve_music_frames,same_native_frame
 from resolve_framing import write_tracking,verify_timeline as verify_framing
 from framing_plan import fusion_crop,require_static_fusion_crop
 from resolve_precision import patch_checkpoint
@@ -118,7 +118,7 @@ class Adapter:
    while timeline.GetTrackCount('audio')<2:require(timeline.AddTrack('audio','stereo'),'Cannot add native music track')
    placed=pool.AppendToTimeline([{'mediaPoolItem':sources[bed['sourceId']],'mediaType':2,'trackIndex':2,'startFrame':timing['sourceInSample'],'endFrame':timing['sourceInSample']+timing['samples'],'recordFrame':bed['startFrame']}])
    require(placed and len(placed)==1,'Native music placement failed');item=placed[0]
-   require(item.GetStart(True)==bed['startFrame'] and item.GetLeftOffset(True)==timing['sourceInSample'] and item.GetDuration(True)==timing['samples'],'Native music timing readback mismatch')
+   require(all(same_native_frame(a,b) for a,b in zip([item.GetStart(True),item.GetLeftOffset(True),item.GetDuration(True)],[bed['startFrame'],timing['sourceInSample'],timing['samples']])),'Native music timing readback mismatch')
    require(item.SetProperties({'AudioVolumeEnabled':True,'AudioVolume':bed['gainDb']}),'Native music gain failed')
    require(abs(item.GetProperties()['AudioVolume']-bed['gainDb'])<1e-6,'Native music gain readback mismatch')
    fades={'FadeIn':timing['fadeInSamples'],'FadeOut':timing['fadeOutSamples']}
@@ -153,6 +153,7 @@ class Adapter:
    merge.Blend.SetExpression(f'iif(time >= {start} and time < {end}, 1, 0)');source=merge
   output.ConnectInput('Input',source)
  def revise(self,project,packet):
+  if packet.get('kind')=='music-replacement':return self.revise_music(project,packet)
   if packet.get('kind')=='graphic-replacement':return self.revise_graphics(project,packet)
   if packet.get('kind')=='panel-framing':return self.revise_panels(project,packet)
   if packet.get('kind')=='tracking-framing':return self.revise_tracking(project,packet)
@@ -314,8 +315,54 @@ class Adapter:
    return {'nativeProject':str(native),'timelineId':duplicate.GetUniqueId(),'fingerprint':fingerprint(after),'status':'revised-native-render-pending'}
   finally:
    require(r.OpenPage(page),'Cannot restore Resolve page after graphic replacement')
+ def revise_music(self,project,packet):
+  from music_revision import prepare
+  from resolve_music import items,inspect,fresh_media,source
+  from resolve_music_archive import patch_checkpoint as replace_bindings
+  previous,spec,indices=prepare(project,packet);indices=sorted(indices);r,p=self.selected(project)
+  require(r.GetVersion()[:4]==[21,1,1,10],'Music archive replacement is qualified only for Resolve Studio 21.1.1 build 10')
+  require(not p.IsRenderingInProgress(),'Resolve render active; music revision must wait')
+  before=self.snapshot(p);require(fingerprint(before)==packet['expectedFingerprint'],'Native state changed; reconcile before replacing music')
+  original=p.GetCurrentTimeline();clips=items(original,previous,indices);original_detail=inspect(self,p)
+  fresh_media(p.GetMediaPool(),spec,indices)
+  native=inside(project['root'],packet['nativeProject']);inspection=inside(project['root'],packet['inspection']);work=inside(project['root'],packet['archiveDirectory'])
+  require(not native.exists() and not inspection.exists() and not work.exists(),'Music revision outputs exist; reconcile before retrying')
+  names=[p.GetTimelineByIndex(i).GetName() for i in range(1,p.GetTimelineCount()+1)];donor_name=packet['title']+' sources'
+  require(packet['title'] not in names and donor_name not in names,'Revision timeline name exists')
+  baseline=inspect(self,p,duplicate=True,indices=indices);page=r.GetCurrentPage();work.mkdir(parents=True)
+  try:
+   require(original.Export(str(work/'parent.drt'),r.EXPORT_DRT),'Cannot export native parent timeline')
+   pool=p.GetMediaPool();donor=pool.CreateEmptyTimeline(donor_name);require(donor and p.SetCurrentTimeline(donor),'Cannot create native source donor')
+   require(donor.SetStartTimecode('00:00:00:00'),'Cannot set source donor clock')
+   for index in indices:
+    asset=source(spec,index);bed=spec['audio']['music'][index];timing=resolve_music_frames(spec,bed)
+    require(sha(asset['path'])==asset['sha256'],'Replacement music changed');media=pool.ImportMedia([asset['path']]);require(media and len(media)==1,'Music import failed')
+    require(not media[0].GetFlagList(),'Fresh replacement source has unexpected flags')
+    for flag in clips[index].GetFlagList():require(media[0].AddFlag(flag),'Cannot preserve replacement source flag')
+    placed=pool.AppendToTimeline([{'mediaPoolItem':media[0],'mediaType':2,'trackIndex':1,'startFrame':timing['sourceInSample'],'endFrame':timing['sourceInSample']+timing['samples'],'recordFrame':bed['startFrame']}])
+    require(placed and len(placed)==1,'Cannot construct native source donor')
+   require(donor.Export(str(work/'donor.drt'),r.EXPORT_DRT),'Cannot export native donor timeline')
+   require(p.SetCurrentTimeline(original) and inspect(self,p)==original_detail,'Parent changed while preparing music source')
+   proof=replace_bindings(work/'parent.drt',work/'donor.drt',work/'replacement.drt',previous,spec,indices);save(work/'archive-proof.json',proof)
+   revised=pool.ImportTimelineFromFile(str(work/'replacement.drt'));require(revised and p.SetCurrentTimeline(revised),'Cannot import native music replacement')
+   require(revised.GetUniqueId()!=original.GetUniqueId() and revised.SetName(packet['title']),'Unexpected replacement timeline identity')
+   revised_items=items(revised,spec,indices)
+   for index in indices:
+    require(revised_items[index].SetName(original_detail['state']['tracks']['audio'][1][index]['name']),'Cannot restore selected music clip name after native import')
+   require(inspect(self,p,duplicate=True,indices=indices)==baseline,'Music replacement changed protected native state, metadata or routing')
+   after=self.snapshot(p);require(p.SetCurrentTimeline(original),'Cannot verify music parent')
+   require(inspect(self,p)==original_detail,'Parent changed during music replacement')
+   require(p.SetCurrentTimeline(revised) and self.snapshot(p)==after,'Revision changed during parent verification')
+   pm=r.GetProjectManager();require(pm.SaveProject(),'Native save failed');require(pm.ExportProject(p.GetName(),str(native),False),'Native music checkpoint failed');save(inspection,after)
+   save(work/'native-readback.json',{'archiveProofSha256':sha(work/'archive-proof.json'),'fingerprint':fingerprint(after),'parentPreserved':True,'protectedStatePreserved':True})
+   return {'nativeProject':str(native),'timelineId':revised.GetUniqueId(),'fingerprint':fingerprint(after),'status':'revised-native-render-pending','musicBindingProof':str(work/'native-readback.json')}
+  finally:
+   require(r.OpenPage(page),'Cannot restore Resolve page after music replacement')
  def render(self,project,packet):
   spec=plan(project,packet);r,p=self.selected(project);state=self.snapshot(p);require(fingerprint(state)==packet['expectedFingerprint'],'Timeline changed before export');save(inside(project['root'],packet['inspection']),state)
+  if spec.get('audio',{}).get('music'):
+   from resolve_music import items as music_items
+   music_items(p.GetCurrentTimeline(),spec)
   if spec.get('captionContract'):
    from caption_plan import validate
    from resolve_captions import verify_timeline,verify_fonts

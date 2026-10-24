@@ -2,6 +2,10 @@
 import math
 from common import inside,require,sha
 
+def same_native_frame(actual,expected):
+ """Ignore floating point representation noise, never a sample/frame edit."""
+ return type(actual) in (float,int) and math.isclose(actual,expected,rel_tol=0,abs_tol=1e-9)
+
 def validate_audio(project,spec,total_frames):
  audio=spec.get('audio',{});require(isinstance(audio,dict),'Audio plan must be an object')
  require(isinstance(audio.get('properties',{}),dict),'Native audio properties must be an object')

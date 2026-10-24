@@ -23,7 +23,7 @@ def items(timeline,spec,targets=()):
     return result
 
 
-def inspect(adapter,p,duplicate=False):
+def inspect(adapter,p,duplicate=False,source_slots=()):
     state=adapter.snapshot(p);timeline=p.GetCurrentTimeline();extra={};graphs={}
     with tempfile.TemporaryDirectory(prefix='graphic-inspect-',dir=adapter.project_root/'10_WORK') as folder:
         for kind,tracks in state['tracks'].items():
@@ -37,6 +37,9 @@ def inspect(adapter,p,duplicate=False):
                             path=Path(folder)/f'{kind}-{track}-{index}-{comp}.comp'
                             require(item.ExportFusionComp(str(path),comp+1),'Cannot inspect duplicate Fusion graph')
                             graphs[(kind,track,index,comp)]=path.read_text(encoding='utf-8')
+    for kind,track,index in source_slots:
+        item=state['tracks'][kind][track][index]
+        item['source']=item['sourcePath']='<verified replacement source>'
     return {'state':duplicate_snapshot(state,graphs) if duplicate else state,'extra':extra}
 
 
@@ -70,6 +73,11 @@ def replace(item,media,asset):
 def fresh_media(pool,spec,indices):
     """Flags belong to media: never rewrite metadata on an already-used asset."""
     wanted=[str(Path(spec['graphics'][i]['path']).resolve()) for i in indices]
+    fresh_paths(pool,wanted)
+
+
+def fresh_paths(pool,paths):
+    wanted=[str(Path(path).resolve()) for path in paths]
     require(len(wanted)==len(set(wanted)),'Resolve replacements require a distinct new media path per target')
     pending=[pool.GetRootFolder()];known=set()
     while pending:
