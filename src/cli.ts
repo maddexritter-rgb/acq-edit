@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import {doctor} from './doctor.js';
 import {executeNative,reconcileNative,reconcileJob} from './native-operations.js';
 import {importDriveFolder,resumeDriveBatch,abandonDriveBatch} from './drive-batch.js';
 import path from 'node:path';
@@ -36,15 +37,12 @@ async function main(){
  }
  if(command==='credentials'){const {spawn}=await import('node:child_process');await new Promise<void>((resolve,reject)=>{const child=spawn('python3',[path.join(ROOT,'scripts','credentials.py'),HOME],{stdio:'inherit'});child.on('error',reject);child.on('close',code=>code===0?resolve():reject(new Error('Credential entry failed')))});return}
  if(command==='help'||!command){console.log(`ACQ Edit\nsetup [backend] [agent]\ncredentials\ndoctor\nproject <title>\nprojects\nopen <project-id>\nsource <project-id> <file>\nyoutube <project-id> <url>\ndrive <project-id> <url> [rclone-remote]\ndrive-folder <project-id> <folder-url> [rclone-remote]\ndrive-batches <project-id>\ndrive-resume <batch-id> [--retry-failed]\ndrive-abandon <batch-id> <evidence.json>\nnative-operations <project-id>\nnative-reconcile <operation-id> <evidence.json>\nintakes <project-id>\nintake-abandon <intake-id> <evidence.json>\nintake-recover <intake-id>\nbrain <project-id> <request.json>\nbuild <project-id> <request>\nclip <project-id> <title>\npublish <project-id> <render-receipt.json>\nserve [--no-worker]\nworker\nreconcile <job-id> <ready|failed> <evidence-path>\nnative <project-id> <compile|captions|hooks|reference|inspect|open|build|revise|render> <packet.json>\n`);return}
- const c=await config();const store=new Store(path.join(HOME,'state.sqlite'));
  if(command==='doctor'){
-  const checks:Record<string,unknown>={node:process.version,platform:process.platform,backend:c.backend,agent:c.agent};
-  for(const binary of ['ffmpeg','ffprobe','yt-dlp','rclone',c.python,c.agentCommand||c.agent]){try{checks[binary]={available:true,version:(await run(binary,[binary.includes('python')?'--version':binary==='ffmpeg'||binary==='ffprobe'?'-version':'--version'])).split('\n')[0]}}catch{checks[binary]={available:false}}}
-  const secrets=await secretEnv();checks.credentials={assemblyAI:!!(secrets.ASSEMBLYAI_API_KEY||process.env.ASSEMBLYAI_API_KEY),gemini:!!(secrets.GEMINI_API_KEY||process.env.GEMINI_API_KEY)};
-  try{checks.skills=JSON.parse(await run(c.python,[path.join(ROOT,'scripts','materialize.py'),'--verify']))}catch(e){checks.skills={ready:false,error:(e as Error).message}}
-  try{checks.native=JSON.parse(await run(c.backend==='resolve'?c.resolvePython!:c.python,[path.join(ROOT,'python','native.py'),'doctor','--backend',c.backend,'--config',path.join(HOME,'config.json')]))}catch(e){checks.native={ready:false,error:(e as Error).message}}
-  output(checks);store.close();return;
+  try{const checks=await doctor(await config());output(checks);if(!checks.readiness.ready)process.exitCode=1;}
+  catch{output({readiness:{ready:false,blocking:[{check:'configuration',repair:'Run setup to create a valid readable toolkit configuration, then rerun doctor.'}],optional:[],qualification:'Local prerequisite checks only; configuration could not be inspected.'}});process.exitCode=1;}
+  return;
  }
+ const c=await config();const store=new Store(path.join(HOME,'state.sqlite'));
  if(command==='serve'){
   const release=await serviceLock(HOME);store.recover();const room=serve(store,c,!args.includes('--no-worker'));room.server.listen(c.port,'127.0.0.1',()=>console.log(`Review room: http://127.0.0.1:${c.port}/session?token=${room.token}`));
   let stopping=false;const stop=()=>{if(stopping)return;stopping=true;void room.stop().then(()=>{store.close();return release()}).then(()=>process.exit(0)).catch(e=>{console.error(e.message);process.exitCode=1})};room.server.on('error',e=>{console.error(e.message);void release().finally(()=>process.exit(1))});process.on('SIGINT',stop);process.on('SIGTERM',stop);return;

@@ -85,6 +85,26 @@ def configured_reader(config):
             else: os.environ[key] = value
 
 
+def check_configuration(config):
+    """Local-only readiness. Never fetch guidance or return credential values."""
+    try:
+        with configured_reader(config):
+            endpoint, key, project = owner().configuration()
+            from urllib.parse import urlsplit
+            url = urlsplit(endpoint)
+            require(key.strip() and project.strip(), 'missing')
+            require(url.scheme == 'https' and url.hostname and
+                    project in url.hostname.split('.') and
+                    url.path == '/functions/v1/editorial-search' and
+                    not url.username and not url.password and not url.query and not url.fragment, 'invalid')
+    except Exception:
+        # Parse/filesystem exceptions can contain private configuration contents.
+        return {'ready': False, 'remoteAccess': 'not-checked',
+                'repair': 'Configure brainConfig with context.json for the matching editorial-search endpoint/project and a restricted read token. Check token ownership and mode 0600; no global fallback is used.'}
+    return {'ready': True, 'remoteAccess': 'not-checked',
+            'qualification': 'Local configuration only; token validity, restricted scope and live guidance retrieval are not verified.'}
+
+
 def fetch(project, config, request):
     allowed = {'format', 'problem', 'output', 'projectPrefix', 'heldOut', 'readingOverlays', 'brand', 'productionType', 'stage'}
     require(set(request) <= allowed, 'Unknown brain request field; this command only retrieves guidance')
@@ -117,8 +137,14 @@ def fetch(project, config, request):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--project', required=True); parser.add_argument('--config', required=True); parser.add_argument('--request', required=True)
+    parser.add_argument('--project'); parser.add_argument('--config', required=True); parser.add_argument('--request')
+    parser.add_argument('--check-config', action='store_true')
     args = parser.parse_args()
+    if args.check_config:
+        try: checked = check_configuration(read(args.config))
+        except Exception: checked = {'ready': False, 'remoteAccess': 'not-checked', 'repair': 'Run setup with a readable toolkit configuration.'}
+        print(json.dumps(checked)); sys.exit(0)
+    if not args.project or not args.request: parser.error('--project and --request are required for retrieval')
     try:
         project = read(args.project); request = read(inside(project['root'], args.request))
         print(json.dumps(fetch(project, read(args.config), request), indent=2))

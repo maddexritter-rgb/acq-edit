@@ -31,6 +31,27 @@ class BrainReceiptTests(unittest.TestCase):
  def request(self,name):return {'format':'monologue','problem':'Preserve the complete source payoff','output':str(self.root/'10_WORK'/name)}
  def fetch(self,name):
   with patch('urllib.request.urlopen',side_effect=self.transport):return brain.fetch(self.project,self.config,self.request(name))
+ def test_local_readiness_reuses_owner_without_network_or_secret_output(self):
+  cfg=Path(self.config['brainConfig']);before={str(p):p.read_bytes() for p in cfg.iterdir()}
+  with patch('urllib.request.urlopen',side_effect=AssertionError('Doctor must not fetch guidance')):
+   result=brain.check_configuration(self.config)
+  self.assertTrue(result['ready']);self.assertEqual(result['remoteAccess'],'not-checked')
+  self.assertNotIn('fixture-restricted-token',json.dumps(result));self.assertEqual(before,{str(p):p.read_bytes() for p in cfg.iterdir()})
+  self.assertEqual(list((self.root/'10_WORK').iterdir()),[])
+ def test_local_readiness_refuses_missing_mismatched_or_broad_token_configuration(self):
+  cfg=Path(self.config['brainConfig']);token=cfg/'read_token';context=cfg/'context.json';original=context.read_text()
+  self.assertFalse(brain.check_configuration({})['ready'])
+  for data in [{'function_url':'https://other.supabase.co/functions/v1/editorial-search','project_ref':'fixtureproject'}, {'function_url':'http://fixtureproject.supabase.co/functions/v1/editorial-search','project_ref':'fixtureproject'}, {'function_url':'https://fixtureproject.supabase.co/functions/v1/editorial-search?key=private','project_ref':'fixtureproject'}]:
+   context.write_text(json.dumps(data));self.assertFalse(brain.check_configuration(self.config)['ready'])
+  context.write_text(original);token.chmod(0o644);self.assertFalse(brain.check_configuration(self.config)['ready'])
+  token.chmod(0o600);token.write_text('  ');self.assertFalse(brain.check_configuration(self.config)['ready'])
+ def test_local_readiness_hides_malformed_configuration_and_restores_environment(self):
+  context=Path(self.config['brainConfig'])/'context.json';context.write_text('{"secret":"do-not-print-this"')
+  result=brain.check_configuration(self.config);self.assertFalse(result['ready']);self.assertNotIn('do-not-print-this',json.dumps(result))
+  context.write_text(json.dumps({'function_url':'https://fixtureproject.supabase.co/functions/v1/editorial-search','project_ref':'fixtureproject'}))
+  with patch.dict(os.environ,{'EDITORIAL_BRAIN_CONFIG_DIR':'unrelated','EDITORIAL_BRAIN_FUNCTION_URL':'unrelated','EDITORIAL_BRAIN_PROJECT_REF':'unrelated'}):
+   self.assertTrue(brain.check_configuration(self.config)['ready'])
+   self.assertEqual(os.environ['EDITORIAL_BRAIN_CONFIG_DIR'],'unrelated');self.assertEqual(os.environ['EDITORIAL_BRAIN_FUNCTION_URL'],'unrelated');self.assertEqual(os.environ['EDITORIAL_BRAIN_PROJECT_REF'],'unrelated')
  def test_new_revision_records_new_guidance_without_rewriting_existing_design(self):
   first=self.fetch('first');pinned=Path(first['receiptPath']).read_bytes();plan=self.root/'10_WORK/approved-plan.json';plan.write_text(json.dumps({'brain':first,'approved':True}));plan_before=sha(plan)
   self.revision=2;second=self.fetch('second')
