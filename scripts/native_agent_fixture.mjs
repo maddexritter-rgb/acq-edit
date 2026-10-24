@@ -8,9 +8,9 @@ import { spawnSync } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
 
 const [mode, directory, configFile, scenario = 'caption'] = process.argv.slice(2);
-assert(['caption','tracking','panels','recut','hook'].includes(scenario), 'Unknown live fixture scenario');
+assert(['caption','tracking','panels','recut','hook','caption-visibility'].includes(scenario), 'Unknown live fixture scenario');
 assert(['prepare', 'check'].includes(mode) && directory,
-  'Usage: node scripts/native_agent_fixture.mjs prepare NEW_DIRECTORY CONFIG_JSON [caption|tracking|panels|recut|hook] | check DIRECTORY');
+  'Usage: node scripts/native_agent_fixture.mjs prepare NEW_DIRECTORY CONFIG_JSON [caption|tracking|panels|recut|hook|caption-visibility] | check DIRECTORY');
 const base = path.resolve(directory);
 const json = async file => JSON.parse(await readFile(file, 'utf8'));
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -26,6 +26,7 @@ if (mode === 'prepare') {
   const existing = await json(path.resolve(configFile));
   assert(['filmcraft', 'resolve'].includes(existing.backend),
     'This fixture supports FilmCraft or Resolve; it never switches an existing project backend');
+  if(scenario==='caption-visibility')assert.equal(existing.backend,'filmcraft','Native caption visibility is currently FilmCraft-only');
   assert(['codex', 'claude'].includes(existing.agent), 'Unknown configured agent');
   if (existing.backend === 'filmcraft') run(existing.filmcraft, ['--help']);
   else { assert(existing.resolvePython, 'Configured ResolvePython required'); run(existing.resolvePython, ['-c', 'print("ResolvePython available")']); }
@@ -49,8 +50,8 @@ if (mode === 'prepare') {
   try {
     const project = await createProject(store, config.storageRoot, 'Synthetic native agent loop', config.backend, config.agent);
     const seed = path.join(base, 'synthetic.mp4');
-    run('ffmpeg', ['-v', 'error', '-n', '-f', 'lavfi', '-i', scenario==='panels'?'color=red:size=640x360:rate=25:duration=4,drawbox=x=220:y=100:w=16:h=100:color=white:t=fill':`testsrc2=size=640x360:rate=25:duration=${scenario==='hook'?6:4}`,
-      '-f', 'lavfi', '-i', scenario==='recut'?'aevalsrc=if(lt(t\\,2)\\,0.12*sin(2*PI*440*t)\\,0.12*sin(2*PI*880*t)):s=48000:d=4':`sine=frequency=440:sample_rate=48000:duration=${scenario==='hook'?6:4}`, '-c:v', 'libx264',
+    run('ffmpeg', ['-v', 'error', '-n', '-f', 'lavfi', '-i', scenario==='panels'?'color=red:size=640x360:rate=25:duration=4,drawbox=x=220:y=100:w=16:h=100:color=white:t=fill':`testsrc2=size=640x360:rate=25:duration=${scenario==='caption-visibility'?7:scenario==='hook'?6:4}`,
+      '-f', 'lavfi', '-i', scenario==='recut'?'aevalsrc=if(lt(t\\,2)\\,0.12*sin(2*PI*440*t)\\,0.12*sin(2*PI*880*t)):s=48000:d=4':`sine=frequency=440:sample_rate=48000:duration=${scenario==='caption-visibility'?7:scenario==='hook'?6:4}`, '-c:v', 'libx264',
       '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-shortest', seed]);
     const rawSource = await importLocal(store, project.id, seed);
     const work = path.join(project.root, '10_WORK');
@@ -86,6 +87,12 @@ if (mode === 'prepare') {
       plan.captions[0].endFrame=150;plan.captions[0].style.size=24;
       const seedPlan=path.join(work,'hook-seed-plan.json');await atomicJson(seedPlan,plan);
       run(config.python,[path.resolve('scripts/hook_agent_fixture.py'),'prepare',seedPlan,base,existing.fixtureFont||'/System/Library/Fonts/Supplemental/Arial Bold.ttf']);
+    }
+    if(scenario==='caption-visibility'){
+      plan.cuts=[0,1,2].map(i=>({...plan.cuts[0],id:`cut-${i}`,sourceInFrame:i*50,recordFrame:i*50,frames:i===2?75:50,audioInSample:i*96000,audioSamples:i===2?144000:96000}));
+      plan.captions=[];
+      const seedPlan=path.join(work,'visibility-seed-plan.json');await atomicJson(seedPlan,plan);
+      plan=JSON.parse(run(config.python,[path.resolve('scripts/hook_agent_fixture.py'),'prepare-visibility',seedPlan,base,existing.fixtureFont||'/System/Library/Fonts/Supplemental/Arial Bold.ttf']));
     }
     if (scenario === 'tracking') {
       plan.width=360;plan.height=640;
@@ -139,7 +146,7 @@ Expected output: ${plan.cuts.reduce((n,c)=>n+c.frames,0)} frames, ${plan.width}x
 } else {
   const f = await json(path.join(base, 'fixture.json'));
   if(f.scenario==='recut'){console.log(run(f.config.python,[path.resolve('scripts/recut_agent_fixture.py'),'check',path.join(base,'fixture.json')]).toString());process.exit(0)}
-  const tracking=f.scenario==='tracking',panels=f.scenario==='panels',vertical=tracking||panels,expectedWidth=vertical?360:640,expectedHeight=vertical?640:360,expectedFrames=f.scenario==='hook'?150:panels?75:50,hook=f.scenario==='hook';
+  const tracking=f.scenario==='tracking',panels=f.scenario==='panels',vertical=tracking||panels,expectedWidth=vertical?360:640,expectedHeight=vertical?640:360,expectedFrames=f.scenario==='caption-visibility'?175:f.scenario==='hook'?150:panels?75:50,hook=f.scenario==='hook',visibility=f.scenario==='caption-visibility';
   if(f.initialPlanSha256)assert.equal(digest(await readFile(f.planPath)),f.initialPlanSha256,'Frozen fixture plan changed');
   const db = new DatabaseSync(path.join(f.home, 'state.sqlite'), { readOnly: true });
   const rows = (sql, ...args) => db.prepare(sql).all(...args).map(r => JSON.parse(r.data));
@@ -207,9 +214,10 @@ Expected output: ${plan.cuts.reduce((n,c)=>n+c.frames,0)} frames, ${plan.width}x
     }
     assert.notEqual(pictures[0], pictures[1], 'Revision produced identical pictures');
     let panelEvidence=null,hookEvidence=null;
+    if(visibility)hookEvidence=JSON.parse(run(f.config.python,[path.resolve('scripts/hook_agent_fixture.py'),'check-visibility',path.join(base,'fixture.json'),JSON.stringify(versions)]));
     if(hook)hookEvidence=JSON.parse(run(f.config.python,[path.resolve('scripts/hook_agent_fixture.py'),'check',path.join(base,'fixture.json'),JSON.stringify(versions)]));
     if(panels){panelEvidence=JSON.parse(run(f.config.python,[path.resolve('scripts/panel_agent_fixture.py'),'check',path.join(base,'fixture.json'),JSON.stringify(versions)]));}
-    else if(hook){ /* Full plan and native hook comparisons run in the scenario checker. */ }
+    else if(hook||visibility){ /* Full plan and native hook comparisons run in the scenario checker. */ }
     else if(tracking){
       assert.equal(plans[0].framing.shots['cut-0'].mode,'tracked-crop');
       assert.deepEqual(plans[1].framing.shots['cut-0'].xByFrame,Array.from({length:25},(_,i)=>80.25+i));
@@ -225,7 +233,7 @@ Expected output: ${plan.cuts.reduce((n,c)=>n+c.frames,0)} frames, ${plan.width}x
       assert.deepEqual(plans[1], plans[0], 'Caption wording revision changed other plan fields');
     }
     if (f.project.backend === 'filmcraft') {
-      if(hook){assert(hookEvidence.nativeGraph.includes('protected native tracks preserved'));}
+      if(hook||visibility){assert(hookEvidence.nativeGraph.includes('protected native tracks preserved'));}
       else if(panels){assert(panelEvidence.nativeGraph.includes('protected saved project preserved'));}
       else if(tracking){
         const data=await Promise.all(versions.map(v=>json(v.nativeCheckpoint)));
@@ -286,18 +294,18 @@ Expected output: ${plan.cuts.reduce((n,c)=>n+c.frames,0)} frames, ${plan.width}x
     assert.equal(pending[0].submitted.comments.length, 1);
     assert.equal(pending[0].latest.comments.length, 2);
     assert.equal(jobs[1].snapshot[0].feedback.comments.length, 1, 'Late feedback leaked into submitted snapshot');
-    if(panels||hook){
+    if(panels||hook||visibility){
       const request=await json(path.join(base,'revision-request.json')),submitted=jobs[1].snapshot[0];
       assert.equal(submitted.feedback.notes,request.notes,'Submitted panel notes changed');
       assert.equal(submitted.feedback.comments[0].text,request.comment,'Submitted panel comment changed');
       assert.equal(pending[0].latest.comments[1].text,request.lateComment,'Late panel comment changed');
-      if(hook)assert(submitted.owners.includes('text-hook')&&submitted.owners.includes('caption-clips'),'Hook feedback missed its capability owners');
+      if(hook||visibility)assert(submitted.owners.includes('text-hook')&&submitted.owners.includes('caption-clips'),'Hook feedback missed its capability owners');
       else assert(submitted.owners.includes('assembly-design')&&submitted.owners.includes('horizontal-to-vertical'),'Panel feedback missed its capability owners');
     }
 
     console.log(JSON.stringify({ passed: failures.length === 0, failures, scope: `synthetic ${f.project.backend} ${f.scenario||'caption'} agent/review integration, not editorial approval`,
       agent: f.project.agent, nativeJobs: jobs.length, versions: versions.map(v => v.id),
-      sourceAndPublishedHashesPreserved: true, archivedArtifactsPinned: Boolean(archivedArtifactsPinned), nativeChange: f.project.backend === 'filmcraft' ? (hook?'requested hook and caption wording; protected native tracks preserved':panels?'selected panels only; protected saved native project data preserved':tracking?'selected X curve only; protected saved native project data preserved':'caption text only') : 'finishing plan changed; native cuts/sources/properties/links preserved; Fusion appearance requires inspection',
+      sourceAndPublishedHashesPreserved: true, archivedArtifactsPinned: Boolean(archivedArtifactsPinned), nativeChange: f.project.backend === 'filmcraft' ? (visibility?'requested hook and caption visibility; protected native tracks preserved':hook?'requested hook and caption wording; protected native tracks preserved':panels?'selected panels only; protected saved native project data preserved':tracking?'selected X curve only; protected saved native project data preserved':'caption text only') : 'finishing plan changed; native cuts/sources/properties/links preserved; Fusion appearance requires inspection',
       ...(panelEvidence?{panelEvidence}:{}), ...(hookEvidence?{hookEvidence}:{}), decodedAudioIdentical: pcm[0] === pcm[1],
       audioDifference: {maxSampleDifference: maxDifference, rmsRelativeDb: differenceEnergy && signalEnergy ? 10 * Math.log10(differenceEnergy / signalEnergy) : null},
       renderedPicturesChanged: true, lateCommentPreserved: true }, null, 2));

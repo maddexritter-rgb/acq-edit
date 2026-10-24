@@ -1,9 +1,25 @@
-import copy,sys,unittest
+import copy,json,sys,unittest
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
-from hook_agent_fixture import compare_plans,protected_native,protected_regions
+from hook_agent_fixture import compare_plans,protected_native,protected_regions,compare_visibility_plans,protected_visibility_native
 
 class HookAgentFixtureTests(unittest.TestCase):
+ def test_visibility_checker_only_allows_mask_and_new_hook_in_plan(self):
+  first={'cuts':[{'frames':175}],'captions':[{'text':'original'}]}
+  second={**copy.deepcopy(first),'captionVisibility':{'hiddenRanges':[{'startFrame':0,'endFrame':126}]},'hookContract':{'sha256':'new'}}
+  compare_visibility_plans(first,second,first)
+  for mutate in [lambda p:p['cuts'][0].update(frames=174),lambda p:p['captions'][0].update(text='changed'),lambda p:p['captionVisibility']['hiddenRanges'][0].update(endFrame=125)]:
+   changed=copy.deepcopy(second);mutate(changed)
+   with self.assertRaises(RuntimeError):compare_visibility_plans(first,changed,first)
+ def test_visibility_checker_retains_native_caption_text_and_source_tracks(self):
+  first=json.loads((Path(__file__).parent/'fixtures/filmcraft-caption-native.json').read_text());second=copy.deepcopy(first)
+  seq=second['project']['items'][str(second['view']['active_sequence'])]['kind']['Sequence'];seq['video_tracks'].append({'items':[{'hook':True}]})
+  for track in seq['video_tracks'][1:4]:
+   for item in track['items']:
+    next(e['params'] for e in item['effects'] if e['effect']=='opacity')['opacity']={'value':{'Float':0}}
+  protected_visibility_native(first,second)
+  seq['video_tracks'][1]['items'][0]['start']+=1
+  with self.assertRaisesRegex(RuntimeError,'protected native tracks'):protected_visibility_native(first,second)
  def test_checker_requires_only_requested_changes_and_fresh_layout(self):
   seed={'cuts':[{'in':10,'frames':150}],'captions':[{'text':'NATIVE AGENT LOOP','startFrame':0,'endFrame':150}],'audio':{}}
   first=copy.deepcopy(seed);first['hookContract']={'sha256':'first','baseReceiptSha256':'base1'}
