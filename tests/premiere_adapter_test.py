@@ -71,7 +71,7 @@ class PremiereAdapterTests(unittest.TestCase):
   self.packet['expectedFingerprint']=fingerprint(self.state)
   Path(self.packet['plan']).write_text(json.dumps(self.plan))
   self.result={'path':export['output_path'],'start_ticks':export['start_ticks'],'end_ticks':export['end_ticks'],'expected_frames':50,'preserved_bounded_state':True,'restored_in':'0','restored_out':export['end_ticks']}
-  self.mutations=[];self.link_calls=0;self.observed_baseline=copy.deepcopy(self.baseline);self.verification={'frames':50,'width':640,'height':360,'fullDecode':True}
+  self.mutations=[];self.remote_records={};self.batch_reads=[];self.link_calls=0;self.observed_baseline=copy.deepcopy(self.baseline);self.verification={'frames':50,'width':640,'height':360,'fullDecode':True}
   owner=self
   class Client:
    def __init__(self,profile):pass
@@ -80,6 +80,8 @@ class PremiereAdapterTests(unittest.TestCase):
     if name=='lab_inspect_export_state':return {'success':True,'data':copy.deepcopy(owner.observed_baseline)}
     if name=='inspect_assembly_links':
      owner.assertEqual(args,{'project_path':str(owner.native),'sequence_id':'sequence-1','paged':True});owner.link_calls+=1;return {'success':True,'data':copy.deepcopy(owner.links)}
+    if name in ['lab_get_operation','lab_get_job']:
+     key=(name,next(iter(args.values())));owner.batch_reads.append(key);return copy.deepcopy(owner.remote_records.get(key))
     raise AssertionError(name)
    def close(self):pass
   def execute(client,operation,receipt,timeout):
@@ -101,6 +103,42 @@ class PremiereAdapterTests(unittest.TestCase):
   self.assertEqual(json.loads(Path(self.packet['inspection']).read_text())['snapshot'],self.state)
   evidence=json.loads(Path(self.packet['inspection']).read_text());self.assertEqual(evidence['nativeSourceLinks'],self.links)
   self.assertEqual(len(evidence['sourceCutVerification']['mapping']),2);self.assertEqual(self.link_calls,2)
+
+ def test_later_malformed_stage_packet_cannot_partially_edit_native_project(self):
+  original=sha(self.native)
+  cases=[lambda o:o.update(schema='wrong'),lambda o:o.update(operation_id='../unsafe'),
+   lambda o:o.update(tool=None),lambda o:o.update(stage='unknown'),lambda o:o.update(target=None),
+   lambda o:o['target'].pop('sequence_id'),lambda o:o['target'].update(expected_revision='stale'),
+   lambda o:o.update(arguments=[]),lambda o:o['arguments'].update(_lab={'operation_id':'other'}),
+   lambda o:o.update(intended_changes=[]),lambda o:o.update(protected_state=None)]
+  for change in cases:
+   packet=copy.deepcopy(self.packet);change(packet['operations'][1])
+   with self.subTest(packet=packet['operations'][1]),self.assertRaises(RuntimeError):self.adapter.execute(self.project,packet)
+   self.assertEqual(self.mutations,[]);self.assertEqual(self.batch_reads,[])
+   self.assertFalse(Path(packet['receiptDirectory']).exists());self.assertEqual(sha(self.native),original)
+
+ def test_existing_later_remote_operation_refuses_whole_batch_without_local_receipts(self):
+  original=sha(self.native)
+  for endpoint in ['lab_get_operation','lab_get_job']:
+   # Settled, unknown and even malformed existing records cannot be replayed.
+   for record in [{'status':'committed_unverified'},{'state':'running'},{}]:
+    self.remote_records={(endpoint,'op-2'):record};self.batch_reads.clear()
+    with self.subTest(endpoint=endpoint,record=record),self.assertRaisesRegex(RuntimeError,'already exists'):
+     self.adapter.execute(self.project,self.packet)
+    self.assertEqual(self.mutations,[]);self.assertEqual(len(self.batch_reads),4)
+    self.assertFalse(Path(self.packet['receiptDirectory']).exists());self.assertEqual(sha(self.native),original)
+
+ def test_all_remote_ids_checked_before_dispatch_and_positive_timeout_required(self):
+  original=self.executor.side_effect
+  def checked(*args,**kwargs):
+   self.assertEqual(self.batch_reads,[('lab_get_operation','op-1'),('lab_get_job','op-1'),('lab_get_operation','op-2'),('lab_get_job','op-2')])
+   return original(*args,**kwargs)
+  for timeout in [0,-1,True,float('nan'),float('inf'),'120']:
+   packet=copy.deepcopy(self.packet);packet['timeoutSeconds']=timeout
+   with self.subTest(timeout=timeout),self.assertRaisesRegex(RuntimeError,'timeout'):self.adapter.execute(self.project,packet)
+   self.assertEqual(self.mutations,[]);self.assertEqual(self.batch_reads,[])
+  self.executor.side_effect=checked;self.adapter.render(self.project,self.packet)
+  self.assertEqual(self.mutations,['save_project','lab_export_exact_range'])
 
  def test_wrong_native_passage_source_link_or_playback_stops_before_export(self):
   original=copy.deepcopy(self.links)

@@ -1,5 +1,5 @@
 """Guarded Agent Lab adapter. Uses canonical scope/lease and stage owners."""
-import sys
+import sys,re,math
 from fractions import Fraction
 from pathlib import Path
 from common import *
@@ -48,20 +48,38 @@ class Adapter:
   require(self.profile.mode=='scoped-edit','Production stages require scoped-edit profile');state=self.inspect(project,packet);require(state['fingerprint']==packet['expectedFingerprint'],'Native state changed; reconcile user edits')
   # Each operation was compiled by its owning canonical skill. The bridge checks exact
   # project, stage, input/output paths and the single-writer lease for every operation.
-  native=inside(project['root'],packet['nativeProject']);operations=packet['operations'];require(operations,'No native operations supplied')
+  native=inside(project['root'],packet['nativeProject']);operations=packet['operations'];require(isinstance(operations,list) and operations,'Native operations must be a nonempty list')
+  timeout=packet.get('timeoutSeconds',120)
+  require(type(timeout) in (int,float) and math.isfinite(timeout) and timeout>0,'Native operation timeout must be positive and finite')
   directory=inside(project['root'],packet['receiptDirectory']);paths=[];ids=set()
   # Validate the whole packet before the first mutation. A valid Lab scope for
   # another project must never authorize work outside this toolkit project.
   for index,operation in enumerate(operations):
-   require(operation['stage'] in ['assembly','reframe','captions','music','export'],'Unknown stage owner')
-   require(operation['target']['project_path']==str(native),'Operation targets another native project')
+   require(isinstance(operation,dict) and operation.get('schema')=='edit.native-operation/v1','Unknown native operation schema')
+   require(operation.get('stage') in ['assembly','reframe','captions','music','export'],'Unknown stage owner')
+   require(isinstance(operation.get('operation_id'),str) and re.fullmatch(r'[A-Za-z0-9_-]{1,80}',operation['operation_id']),'Invalid native operation ID')
+   require(isinstance(operation.get('tool'),str) and re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*',operation['tool']),'Invalid native operation tool')
+   target=operation.get('target');require(isinstance(target,dict) and target.get('project_path')==str(native),'Operation targets another native project')
+   require('sequence_id' in target and (target['sequence_id'] is None or isinstance(target['sequence_id'],str)),'Explicit native sequence identity required')
+   require(isinstance(target.get('expected_revision'),str) and re.fullmatch(r'[a-f0-9]{64}',target['expected_revision']),'Exact native snapshot revision required')
+   args=operation.get('arguments');require(isinstance(args,dict) and all(isinstance(k,str) and not k.startswith('_lab') for k in args),'Native arguments must not override Lab guards')
+   for field in ['intended_changes','protected_state']:
+    require(isinstance(operation.get(field),list) and operation[field],'Native operation must declare '+field)
    require(operation['operation_id'] not in ids,'Duplicate native operation ID');ids.add(operation['operation_id'])
    receipt=directory/f'{index:03}.json';require(not receipt.exists(),'Operation receipt exists; reconcile instead of replaying');paths.append(receipt)
-  directory.mkdir(parents=True,exist_ok=True)
   receipts=[];saved_hash=None;client=PremiereBridge(self.profile)
   try:
+   # A missing local receipt is not evidence that a later native operation never
+   # ran. Check every remote ID before dispatching the first item in the batch.
+   # The canonical bridge still repeats its live checks at each submission.
+   for operation in operations:
+    op=operation['operation_id']
+    prior=client.inspect('lab_get_operation',{'operation_id':op})
+    job=client.inspect('lab_get_job',{'job_id':op})
+    require(prior is None and job is None,'Native operation ID already exists; reconcile the original operation instead of starting this batch')
+   directory.mkdir(parents=True,exist_ok=True)
    for operation,receipt in zip(operations,paths):
-    receipts.append(execute_operation(client,operation,receipt,timeout=packet.get('timeoutSeconds',120)))
+    receipts.append(execute_operation(client,operation,receipt,timeout=timeout))
     if operation['tool']=='save_project':saved_hash=sha(native)
   finally:client.close()
   return {'receipts':receipts,'savedNativeSha256':saved_hash,'status':'inspect-native-state-before-publishing'}
