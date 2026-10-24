@@ -14,7 +14,7 @@ export interface Intake {
  batchId?:string;driveExpected?:DriveFile;
 }
 export interface DriveFile {id:string;name:string;parentId:string;folders:string[];bytes:number;md5:string}
-export type NativeAction='compile'|'captions'|'hooks'|'inspect'|'build'|'revise'|'render';
+export type NativeAction='compile'|'captions'|'hooks'|'inspect'|'open'|'build'|'revise'|'render';
 export interface NativeOperation {
  id:string;projectId:string;jobId:string|null;backend:Backend;action:NativeAction;
  packetPath:string;packetSha256:string;directory:string;

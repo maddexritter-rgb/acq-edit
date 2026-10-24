@@ -2,6 +2,8 @@
 
 Use a fresh checkout for a teammate installation or an upgrade. Keep existing projects and credentials in their configured external locations. The installer does not migrate project state or install global agent skills.
 
+Resume saved review state with `acq-edit open PROJECT_ID`, then `acq-edit serve`. Resolve's explicit native reopening uses a prior inspection's identity/fingerprint packet; follow [RESOLVE_STATE.md](RESOLVE_STATE.md). Keep the existing native project database available. Review exports and DRP checkpoints alone do not silently replace a missing or manually changed native project.
+
 The shared installer currently uses the `python3.11` executable. Install Node.js 24+, Python 3.11 and FFmpeg/ffprobe first, plus the selected agent CLI. YouTube and Drive intake additionally require `yt-dlp` and `rclone`; Drive authentication belongs to the teammate. Editor licenses, assets and agent authentication are separate setup steps.
 
 Run the read-only prerequisite check for the selected engine before installation:

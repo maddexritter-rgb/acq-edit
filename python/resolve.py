@@ -20,7 +20,8 @@ class Adapter:
   require(r.IsStudio(),'DaVinci Resolve Studio required');require(r.GetVersionString().startswith('21.1.'),'This adapter is qualified against the 21.1 API; review installed scripting docs for other versions')
   return r
  def doctor(self):
-  r=self.connect();p=r.GetProjectManager().GetCurrentProject();return {'backend':'resolve','connected':True,'version':r.GetVersionString(),'studio':r.IsStudio(),'currentProject':p.GetName() if p else None,'samplePrecision':{'available':r.GetVersion()[:4]==[21,1,1,10],'route':'new native DRT checkpoint with exact import/readback'},'nativeAcceptance':'mechanical fixtures verified; real editorial and pilot acceptance remain pending'}
+  from resolve_project import empty_workspace
+  r=self.connect();p=r.GetProjectManager().GetCurrentProject();return {'backend':'resolve','connected':True,'version':r.GetVersionString(),'studio':r.IsStudio(),'currentProject':p.GetName() if p else None,'emptyWorkspace':empty_workspace(r),'samplePrecision':{'available':r.GetVersion()[:4]==[21,1,1,10],'route':'new native DRT checkpoint with exact import/readback'},'nativeAcceptance':'mechanical fixtures verified; real editorial and pilot acceptance remain pending'}
  def selected(self,project):
   self.project_root=Path(project['root']);r=self.connect();p=r.GetProjectManager().GetCurrentProject();require(p and p.GetName()=='ACQ_'+project['id'],'Open this toolkit project in Resolve. Never switch or mutate an unrelated project implicitly.');return r,p
  def fusion_fingerprints(self,item):
@@ -45,7 +46,12 @@ class Adapter:
   else:
    from resolve_project import inspect_without_timeline
    state=inspect_without_timeline(p)
-  return {'state':state,'fingerprint':fingerprint(state),'version':r.GetVersionString()}
+  from resolve_project import inspection_result
+  return inspection_result(r,p,state)
+ def open(self,project,packet):
+  from resolve_project import reopen
+  self.project_root=Path(project['root'])
+  return reopen(self.connect(),project,packet,self.snapshot)
  def build(self,project,packet):
   self.project_root=Path(project['root']);spec=plan(project,packet)
   require(not spec.get('hookContract'),'Add a prepared hook to its inspected finished native base; do not rebuild that base')

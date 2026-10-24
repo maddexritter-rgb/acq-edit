@@ -25,7 +25,7 @@ class NativeDispatchTests(unittest.TestCase):
     def test_backend_mismatch_never_imports_an_adapter(self):
         with patch.object(native.importlib,'import_module') as load:
             for backend in ['filmcraft','premiere']:
-                for action in ['compile','captions','inspect','build','revise','render']:
+                for action in ['compile','captions','inspect','open','build','revise','render']:
                     with self.subTest(backend=backend,action=action),self.assertRaisesRegex(RuntimeError,'Backend is fixed'):self.call(action,backend)
             load.assert_not_called()
         self.assertFalse((self.root/'10_WORK/native.lock').exists())
