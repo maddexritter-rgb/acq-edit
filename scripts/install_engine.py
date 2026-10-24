@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from materialize import materialize
 from prepare_premiere_panel import prepare as prepare_premiere_panel
-from prepare_premiere_runtime import copy_resources, check_transport
+from prepare_premiere_runtime import copy_resources, check_transport, prepare_helpers
 
 ROOT = Path(__file__).resolve().parents[1]
 PIN = '71438c627b5cbcfb550526c3971f4d0037733c5c'
@@ -147,7 +147,9 @@ def install(backend, assets, premiere_port=17878):
             record_filmcraft_build(dest, check)
             print('FilmCraft CLI: ' + str(dest / 'target/release/filmcraft-cli'))
         elif backend == 'premiere':
-            shutil.copytree(ROOT / 'integrations/premiere-agent', dest)
+            shutil.copytree(ROOT / 'integrations/premiere-agent', dest,
+                            ignore=shutil.ignore_patterns('node_modules', 'dist', '__pycache__'))
+            helper_hashes = prepare_helpers(dest, ROOT)
             run(['npm', 'ci', '--ignore-scripts'], dest)
             # Invoke the installed compiler directly; npx must not fetch another version.
             run([str(dest / 'node_modules/.bin/tsc')], dest)
@@ -159,12 +161,12 @@ def install(backend, assets, premiere_port=17878):
                        'command': [check['executables']['node'], str(local / 'skills/assembly-design/scripts/precision_bridge.mjs'), str(dest)],
                        'cwd': str(dest), 'fixture_root': str(dest / 'lab/runtime/fixtures'),
                        'connector': 'premiere-agent-lab', 'host_version': '26.3.0', 'mode': 'scoped-edit',
-                       'project_authorization': str(dest / 'lab/runtime/edit-authorization.json')}
+                       'project_authorization': str(dest / 'lab/runtime/edit-project-authorization.json')}
             target = local / 'premiere-profile.json'
             with target.open('x') as stream:
                 json.dump(profile, stream, indent=2)
             target.chmod(0o600)
-            check_transport(dest, target, local / 'skills/edit/scripts/premiere_agent.py', resource_hashes)
+            check_transport(dest, target, local / 'skills/edit/scripts/premiere_agent.py', resource_hashes, helper_hashes)
             print('Prepared isolated panel: ' + panel['cep'])
             print('Profile: ' + str(target))
             print('Panel not installed into Adobe automatically. Follow docs/ENGINES.md.')

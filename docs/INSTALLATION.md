@@ -19,6 +19,10 @@ After a successful pinned FilmCraft build, the installer checks that tracked sou
 
 ## Verified materialization
 
+Premiere installation also packages the four Python helpers used by native assembly, mixed-source master validation and camera coverage. The three compiler consumers resolve only the verified `.local/skills/edit/scripts` runtime. Their original and distribution hashes remain separate in the integration manifests. Setup checks these hashes, imports every helper and the actual compiler, then records helper hashes beside MCP discovery results. It never falls back to a global skill tree. Changed helpers or local skills are preserved and rejected. The source snapshot command retains reviewed dependency patches and refuses changed upstream inputs before writing.
+
+The generated scoped profile now writes `lab/runtime/edit-project-authorization.json`, matching the Lab runtime and Python validators. Older profiles using `edit-authorization.json` are not repaired automatically; use a fresh installation. Setup excludes old `dist`, `node_modules` and bytecode directories before rebuilding.
+
 `materialize.py` validates every distribution path and SHA-256 before writing any runtime files. It rejects duplicate/traversing paths and symlink entries. It substitutes the checkout and configured asset paths only in the private runtime copy.
 
 All 681 packaged files are written to a new staging directory before the runtime is exposed at `.local/skills`. Every skill entrypoint receives a short routing reference immediately after its YAML metadata, before canonical execution instructions. It links to the toolkit's shared [native execution routing](AGENT_WORKFLOW.md#native-execution-routing), including for directly invoked stage skills. The materializer preserves metadata and procedure bodies. Six distribution descriptions have explicit, reproducible portability corrections for valid discovery metadata; their canonical source hashes remain in the source manifest.
@@ -38,6 +42,18 @@ A separate copy of the release-source files was installed under a path containin
 A second isolated checkout prepared and compiled the Premiere Agent Lab package and generated its local profile. It did not install the panel into Adobe or connect to the production host. The initial dependency audit reported seven advisories, including the newly updated [Zod resource-exhaustion advisory](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5). The toolkit dependency lockfile was updated, Vitest/coverage were pinned to 4.1.12, and a fresh dependency install plus TypeScript compilation passed with zero npm audit findings. Original snapshot hashes and distribution override hashes are retained separately. This does not qualify a Premiere native workflow.
 
 A subsequent fresh Premiere installation with isolated `HOME` exposed a missing runtime resource-copy step despite successful TypeScript compilation. The installer now validates and copies all 22 JSON resources, then initializes the actual packaged MCP transport and verifies required native tool registration. Fresh installation passed with 507 discovered tools. The generated ACQ Edit Agent CEP/UXP packages have distinct IDs, storage keys, mailbox and port; the production panel is not replaced. Three panel-isolation and four runtime-resource/startup failure-boundary regression tests pass. No panel was installed into Adobe and no host operation was executed by these installation checks.
+
+On October 24, another fresh Premiere-only directory installation passed helper/compiler verification, npm installation, TypeScript compilation and actual MCP discovery. A synthetic 640×360/25 fps source with PCM tone audio exercised the original v2 selection → compiled → resolved → XML → independent exact-reproduction validator chain. It retained two 25-frame ranges and explicitly recorded no native host execution or editorial approval. Empty-HOME tests passed real helper/compiler imports; changed local compiler bytes and a one-frame change to the resolved selection were rejected while preserving previous XML. Missing-helper and changed-upstream snapshot tests also preserve the prior distribution. This is packaging and compiler evidence, not a Premiere render or clean-Mac qualification.
+
+To reproduce that mechanical fixture after a fresh Premiere installation:
+
+```sh
+python3 scripts/premiere_assembly_fixture.py \
+  --runtime "$PWD/.local/premiere-agent" \
+  --output "$PWD/.local/premiere-agent/lab/runtime/fixtures/compiler-replay"
+```
+
+The output directory must be new. This fixture deliberately uses compiler replay mode with synthetic words and tone audio. It supplies no current-brain receipt, listening evidence or human approval and cannot satisfy the real-footage acceptance gate. It invokes no Premiere tool.
 
 Nineteen installer regression tests cover corruption before writes, traversal/duplicates, local changes, incomplete/unreceipted runtimes, asset changes, symlinks, exclusive reservations, failed staging, engine-specific prerequisites and preserving a dirty FilmCraft checkout. The added cases cover direct-stage routing with preserved YAML/body, malformed or missing inputs, and read-only detection of changed runtime/contract bytes.
 

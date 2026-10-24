@@ -3,6 +3,7 @@
 import hashlib,json,re,subprocess,sys
 from pathlib import Path
 from skill_dependencies import verify as verify_dependencies
+from prepare_premiere_runtime import REQUIRED_HELPERS
 ROOT=Path(__file__).resolve().parents[1]
 patterns=[r'(?:sk-(?:proj-|ant-)?[A-Za-z0-9_-]{24,}|sb_secret_[A-Za-z0-9_-]{20,}|xox[baprs]-[A-Za-z0-9-]{15,}|AIza[A-Za-z0-9_-]{30,}|eyJ[A-Za-z0-9_-]{15,}\.[A-Za-z0-9_-]{15,}\.[A-Za-z0-9_-]{10,})',r'(?i)(?:api_key|access_token|refresh_token|service_role_key)\s*[:=]\s*[\"\x27][a-zA-Z0-9_./+=-]{24,}[\"\x27]']
 hits=[]
@@ -29,6 +30,8 @@ if premiere_manifest.exists():
  overrides=json.loads((ROOT/'integrations/premiere-distribution-overrides.json').read_text())['files']
  overrides={entry['path']:entry for entry in overrides}
  source_entries=json.loads(premiere_manifest.read_text())['files']
+ required={'scripts/'+name for name in REQUIRED_HELPERS}
+ if required-{entry['path'] for entry in source_entries}:hits.append('Missing required Premiere Python helper provenance')
  for entry in source_entries:
   override=overrides.get(entry['path'])
   if override and override['originalSourceSha256']!=entry['sha256']:hits.append(entry['path']+': original Premiere source hash mismatch')

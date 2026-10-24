@@ -1,6 +1,6 @@
 {
   "schema": "acq-edit/premiere-distribution-overrides-v1",
-  "reason": "Patched dependency resolution and pinned Vitest 4.1.12 development packages; native integration source unchanged.",
+  "reason": "Pinned development dependencies and bound assembly compiler helpers to the verified checkout-local skill runtime; native validation and exact-project scope preserved.",
   "files": [
     {
       "path": "package.json",
@@ -11,6 +11,21 @@
       "path": "package-lock.json",
       "originalSourceSha256": "2d663e6202ca249a384a8a2ff16f35562116129e86c15e98b9accb6927fbb1c3",
       "distributionSha256": "8d5d536ebcb011a73a9d4a4af4ed46aafd11b16f5ee7e6dcc520e6d5df60702f"
+    },
+    {
+      "path": "scripts/validate-assembly-import.py",
+      "originalSourceSha256": "b592e307fdcbfb6abe23db3de27cd4733f44072a107f53e3959bb4dbf1f00281",
+      "distributionSha256": "b52b56364b8991c3f518c9d47392a95fc0b5e394e5ddfa3dd43925edde297bf2"
+    },
+    {
+      "path": "scripts/validate-master-import.py",
+      "originalSourceSha256": "8093ff3f37c907829ae6d8d94803361e505dbc99ede16afaee2bbd1498dff606",
+      "distributionSha256": "c49846a39052047a8d5391efe808c4c6a5f3a6d86ba582c61aaba5befd34f4cc"
+    },
+    {
+      "path": "scripts/assembly-master-compiler.py",
+      "originalSourceSha256": "1250f83ca777a56e14d46b8cad67e0ab215cd54948a57c84c3379114b5d0b280",
+      "distributionSha256": "e8b1e5cc4c7b6c1afb526983c39e972e85786e2dd05e3f132369c82dd613fc49"
     }
   ]
 }

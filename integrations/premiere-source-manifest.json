@@ -922,6 +922,22 @@
     {
       "path": "scripts/lab-prepare.mjs",
       "sha256": "c2f7d26d4b3cc18ace1c1d20598e045e6d78315305fe73be4f6d31251d6036d8"
+    },
+    {
+      "path": "scripts/validate-assembly-import.py",
+      "sha256": "b592e307fdcbfb6abe23db3de27cd4733f44072a107f53e3959bb4dbf1f00281"
+    },
+    {
+      "path": "scripts/validate-master-import.py",
+      "sha256": "8093ff3f37c907829ae6d8d94803361e505dbc99ede16afaee2bbd1498dff606"
+    },
+    {
+      "path": "scripts/assembly-master-compiler.py",
+      "sha256": "1250f83ca777a56e14d46b8cad67e0ab215cd54948a57c84c3379114b5d0b280"
+    },
+    {
+      "path": "scripts/prepare-assembly-coverage.py",
+      "sha256": "9b2058d1ba404c750f300e036edf4b24f51f652e6fa0ae10e54f8107af0197d6"
     }
   ]
 }

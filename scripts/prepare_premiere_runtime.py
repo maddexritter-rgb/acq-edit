@@ -9,6 +9,54 @@ import sys
 
 REQUIRED_TOOLS = {'lab_snapshot', 'lab_import_compiled_assembly', 'lab_apply_assembly_audio_edges',
                   'lab_export_exact_range', 'lab_import_prepared_caption_sequence'}
+REQUIRED_HELPERS = ('validate-assembly-import.py', 'validate-master-import.py',
+                    'assembly-master-compiler.py', 'prepare-assembly-coverage.py')
+
+
+def verify_helpers(root, toolkit):
+    root, toolkit = Path(root), Path(toolkit)
+    manifest = json.loads((toolkit / 'integrations/premiere-source-manifest.json').read_text())
+    overrides = json.loads((toolkit / 'integrations/premiere-distribution-overrides.json').read_text())
+    entries = {row['path']: row['sha256'] for row in manifest['files']}
+    changes = {row['path']: row for row in overrides['files']}
+    hashes = {}
+    for name in REQUIRED_HELPERS:
+        rel = 'scripts/' + name
+        expected = entries[rel]
+        if rel in changes:
+            if changes[rel]['originalSourceSha256'] != expected:
+                raise RuntimeError('Premiere helper original source mismatch: ' + name)
+            expected = changes[rel]['distributionSha256']
+        target = root / rel
+        if target.is_symlink() or hashlib.sha256(target.read_bytes()).hexdigest() != expected:
+            raise RuntimeError('Premiere helper hash mismatch: ' + name)
+        hashes[name] = expected
+    bootstrap = root / 'scripts/acq_edit_runtime.py'
+    if bootstrap.is_symlink() or bootstrap.read_bytes() != (toolkit / 'scripts/premiere_skill_runtime.py').read_bytes():
+        raise RuntimeError('Premiere skill runtime bootstrap mismatch')
+    hashes[bootstrap.name] = hashlib.sha256(bootstrap.read_bytes()).hexdigest()
+    return hashes
+
+
+def prepare_helpers(root, toolkit):
+    root, toolkit = Path(root), Path(toolkit)
+    with (root / 'scripts/acq_edit_runtime.py').open('xb') as stream:
+        stream.write((toolkit / 'scripts/premiere_skill_runtime.py').read_bytes())
+    hashes = verify_helpers(root, toolkit)
+    # Exercise real imports and verified compiler resolution before MCP discovery.
+    probe = """import importlib.util, sys
+from pathlib import Path
+root=Path(sys.argv[1]);sys.path.insert(0,str(root/'scripts'))
+from acq_edit_runtime import skill_scripts
+assert skill_scripts().is_dir()
+for name in ('validate-assembly-import.py','validate-master-import.py','assembly-master-compiler.py','prepare-assembly-coverage.py'):
+    spec=importlib.util.spec_from_file_location('probe_'+name,root/'scripts'/name)
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+    if name=='assembly-master-compiler.py':module.canonical()
+"""
+    subprocess.run([sys.executable, '-B', '-c', probe, str(root)], check=True, timeout=60,
+                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    return hashes
 
 
 def copy_resources(root):
@@ -34,7 +82,7 @@ def copy_resources(root):
     return hashes
 
 
-def check_transport(root, profile, cli, resource_hashes):
+def check_transport(root, profile, cli, resource_hashes, helper_hashes=None):
     # tools/list initializes the actual packaged server but never dispatches an editor command.
     process = subprocess.Popen([sys.executable, str(cli), '--profile', str(profile), 'tools'],
                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
@@ -67,6 +115,7 @@ def check_transport(root, profile, cli, resource_hashes):
                 pass
             process.communicate()
     receipt = {'schema': 'acq-edit/premiere-runtime-v1', 'resourceHashes': resource_hashes,
+               'helperHashes': helper_hashes or {},
                'transportInitialized': True, 'toolCount': len(names), 'requiredTools': sorted(REQUIRED_TOOLS),
                'hostToolsCalled': False, 'hostQualified': False}
     with (Path(root) / 'lab/runtime-preparation.json').open('x') as stream:
