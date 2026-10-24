@@ -56,3 +56,34 @@ test('changed cuts cannot publish without an exact native recut proof',async t=>
  await writeFile(proofFile,JSON.stringify({...proof,planSha256:'stale'}));receipt.recutVerificationSha256=await sha256(proofFile);
  await assert.rejects(verifyRecutReceipt(s,p,receipt),/does not describe/);
 });
+
+test('native resume metadata rejects unrelated inspections, engines and stale startup overrides',async()=>{
+ const {verifyNativeReopen}=await import('../dist/publish.js');
+ const p={id:'p',backend:'resolve'},state={project:'ACQ_p',timeline:'timeline-id'},digest='a'.repeat(64);
+ const value={nativeProjectId:'native-id',database:{DbType:'Disk',DbName:'Test'},timelineId:'timeline-id',expectedFingerprint:'b'.repeat(64),inspectionSha256:digest};
+ assert.deepEqual(verifyNativeReopen(p,value,state,digest),value);
+ assert.equal(verifyNativeReopen(p,undefined,null,digest),undefined);
+ for(const bad of [null,[],{...value,emptyWorkspace:{}},{...value,timelineId:'another'},{...value,inspectionSha256:'wrong'},{...value,expectedFingerprint:'bad'},{...value,database:{DbName:'Test'}}])assert.throws(()=>verifyNativeReopen(p,bad,state,digest),/Native reopen|native reopen|Unexpected/);
+ assert.throws(()=>verifyNativeReopen({...p,backend:'filmcraft'},value,state,digest),/requires Resolve/);
+ assert.throws(()=>verifyNativeReopen(p,value,{...state,project:'ACQ_other'},digest),/differs/);
+});
+
+test('resume target survives database restart and revision submission and is checked against the archive',async t=>{
+ const root=await mkdtemp(path.join(os.tmpdir(),'acq-resume-')),database=path.join(root,'state.sqlite');let s=new Store(database);
+ t.after(async()=>{s.close();await rm(root,{recursive:true,force:true})});
+ const p={id:'p',title:'Resume fixture',root,backend:'resolve',agent:'codex',createdAt:''};s.addProject(p);s.addClip({id:'c',projectId:'p',number:1,title:'Clip',currentVersionId:null});
+ const files=Object.fromEntries(['media','native','plan','receipt','inspection'].map(k=>[k,path.join(root,k)]));
+ for(const k of ['media','native','plan'])await writeFile(files[k],k);
+ await writeFile(files.inspection,JSON.stringify({project:'ACQ_p',timeline:'timeline-id'}));
+ const target={nativeProjectId:'native-id',database:{DbType:'Disk',DbName:'Test'},timelineId:'timeline-id',expectedFingerprint:'b'.repeat(64),inspectionSha256:await sha256(files.inspection)};
+ await writeFile(files.receipt,JSON.stringify({nativeReopen:target}));
+ const j=s.enqueueBuild('p','Build fixture');s.claim();
+ const v={id:'v1',clipId:'c',number:1,parentId:null,jobId:j.id,createdAt:'',media:files.media,sha256:await sha256(files.media),nativeProject:files.native,nativeCheckpoint:files.native,nativeFingerprint:await sha256(files.native),planPath:files.plan,planSha256:await sha256(files.plan),inspectionPath:files.inspection,inspectionSha256:await sha256(files.inspection),receiptPath:files.receipt,receiptSha256:await sha256(files.receipt),nativeReopen:target};
+ s.publish(v);await verifyPublishedVersions(s,j.id,['v1']);s.finishJob(j.id,['v1']);s.close();s=new Store(database);
+ s.saveFeedback('v1',{decision:'revise',notes:'Change caption',comments:[]},0);const next=s.enqueue('p',['v1']);
+ assert.deepEqual(next.snapshot[0].version.nativeReopen,target);
+ const changed={...v,nativeReopen:{...target,nativeProjectId:'different'}};
+ s.db.prepare('UPDATE versions SET data=? WHERE id=?').run(JSON.stringify(changed),'v1');
+ await assert.rejects(verifyPublishedVersions(s,j.id,['v1']),/reopen metadata changed/);
+ assert.deepEqual(s.job(next.id).snapshot[0].version.nativeReopen,target);
+});

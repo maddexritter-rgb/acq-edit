@@ -44,5 +44,19 @@ class MediaIntegrityTests(unittest.TestCase):
   proof=receipt['inputMediaVerification'];self.assertEqual(proof['phase'],'after-render-verification');self.assertEqual(len(proof['files']),2)
   self.assertEqual([i['role'] for i in proof['files']],['source','graphic'])
   for item in proof['files']:self.assertEqual(item['expectedSha256'],item['actualSha256'])
+ def test_resolve_resume_metadata_binds_the_exact_rendered_inspection(self):
+  self.project['backend']='resolve';state={'project':'ACQ_fixture','timeline':'timeline-id','caption':'Original'}
+  inspection=self.root/'10_WORK/inspection.json';inspection.write_text(json.dumps(state))
+  target={'nativeProjectId':'native-id','database':{'DbType':'Disk','DbName':'Test'},'timelineId':'timeline-id','expectedFingerprint':common.fingerprint(state)}
+  receipt=common.result_receipt(self.project,self.packet,self.spec,self.native,self.media,inspection,verification={'fixture':True},native_reopen=target)
+  self.assertEqual(receipt['nativeReopen'],{**target,'inspectionSha256':common.sha(inspection)})
+ def test_stale_resume_or_startup_override_cannot_enter_a_receipt(self):
+  self.project['backend']='resolve';state={'project':'ACQ_fixture','timeline':'timeline-id'}
+  inspection=self.root/'10_WORK/inspection.json';inspection.write_text(json.dumps(state))
+  target={'nativeProjectId':'native-id','database':{'DbType':'Disk','DbName':'Test'},'timelineId':'timeline-id','expectedFingerprint':common.fingerprint(state)}
+  for bad in [{**target,'expectedFingerprint':'0'*64},{**target,'timelineId':'other'},{**target,'emptyWorkspace':{'stale':True}}]:
+   with self.assertRaisesRegex(RuntimeError,'Native reopen'):
+    common.result_receipt(self.project,self.packet,self.spec,self.native,self.media,inspection,verification={'fixture':True},native_reopen=bad)
+   self.assertFalse(Path(self.packet['receipt']).exists())
 
 if __name__=='__main__':unittest.main()

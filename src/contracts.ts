@@ -28,7 +28,8 @@ export interface DriveBatch {
  ownerPid:number|null;childPid:number|null;childPending?:boolean;createdAt:string;updatedAt:string;error:string|null;
  manifestPath?:string;manifestSha256?:string;
 }
-export interface Version { id:string; clipId:string; number:number; media:string; sha256:string; nativeProject:string; nativeCheckpoint?:string; nativeFingerprint:string; planPath:string; planSha256?:string; inspectionPath?:string; inspectionSha256?:string; receiptPath:string; receiptSha256?:string; recutVerificationPath?:string; recutVerificationSha256?:string; createdAt:string; parentId:string|null; jobId?:string }
+export interface ResolveReopen { nativeProjectId:string; database:{DbType:string;DbName:string;IpAddress?:string}; timelineId:string; expectedFingerprint:string; inspectionSha256:string }
+export interface Version { id:string; clipId:string; number:number; media:string; sha256:string; nativeProject:string; nativeCheckpoint?:string; nativeFingerprint:string; planPath:string; planSha256?:string; inspectionPath?:string; inspectionSha256?:string; receiptPath:string; receiptSha256?:string; nativeReopen?:ResolveReopen; recutVerificationPath?:string; recutVerificationSha256?:string; createdAt:string; parentId:string|null; jobId?:string }
 export interface Clip { id:string; projectId:string; number:number; title:string; currentVersionId:string|null }
 export interface Feedback { versionId:string; revision:number; decision:Decision; notes:string; comments:Comment[]; updatedAt:string }
 export interface Comment { id:string; seconds:number; text:string }

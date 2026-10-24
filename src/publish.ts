@@ -4,11 +4,23 @@ import { constants } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { Store } from './store.js';
-import { type Backend,type Version,type Project,type EditPlan,invariant,now } from './contracts.js';
+import { type Backend,type ResolveReopen,type Version,type Project,type EditPlan,invariant,now } from './contracts.js';
 import { sha256,containedFile,readJson,atomicJson } from './files.js';
 import { run } from './process.js';
 import { exportState } from './projects.js';
-export interface RenderReceipt {schema:'acq-edit/render-v1';projectId:string;backend:Backend;clipId:string;parentId:string|null;jobId?:string;media:string;nativeProject:string;nativeFingerprint:string;planPath:string;expected:{frames:number;width:number;height:number;fps:string};nativeInspectionPath:string;nativeRendered:true;inputMediaVerification?:{phase:'after-render-verification';files:Array<{role:'source'|'graphic';id:string;path:string;expectedSha256:string;actualSha256:string}>};recutVerificationPath?:string;recutVerificationSha256?:string}
+export interface RenderReceipt {schema:'acq-edit/render-v1';projectId:string;backend:Backend;clipId:string;parentId:string|null;jobId?:string;media:string;nativeProject:string;nativeFingerprint:string;planPath:string;expected:{frames:number;width:number;height:number;fps:string};nativeInspectionPath:string;nativeRendered:true;nativeReopen?:ResolveReopen;inputMediaVerification?:{phase:'after-render-verification';files:Array<{role:'source'|'graphic';id:string;path:string;expectedSha256:string;actualSha256:string}>};recutVerificationPath?:string;recutVerificationSha256?:string}
+/** A saved host target is bound to the exact inspected version, never a startup placeholder. */
+export function verifyNativeReopen(p:Project,value:unknown,state:any,inspectionHash:string):ResolveReopen|undefined {
+ if(value===undefined)return;
+ const v=value as ResolveReopen;
+ invariant(p.backend==='resolve'&&v!==null&&typeof v==='object'&&!Array.isArray(v),'Native reopen metadata requires Resolve');
+ invariant(Object.keys(v).sort().join(',')==='database,expectedFingerprint,inspectionSha256,nativeProjectId,timelineId','Unexpected native reopen fields');
+ invariant(typeof v.nativeProjectId==='string'&&v.nativeProjectId.length>0&&typeof v.timelineId==='string'&&v.timelineId.length>0,'Native reopen identities missing');
+ invariant(v.database&&typeof v.database==='object'&&!Array.isArray(v.database)&&Object.keys(v.database).every(k=>['DbType','DbName','IpAddress'].includes(k))&&typeof v.database.DbType==='string'&&v.database.DbType&&typeof v.database.DbName==='string'&&v.database.DbName&&(!('IpAddress' in v.database)||typeof v.database.IpAddress==='string'),'Native reopen database identity invalid');
+ invariant(typeof v.expectedFingerprint==='string'&&/^[a-f0-9]{64}$/.test(v.expectedFingerprint)&&v.inspectionSha256===inspectionHash,'Native reopen inspection pin differs');
+ invariant(state?.project==='ACQ_'+p.id&&state.timeline===v.timelineId,'Native reopen timeline differs from inspection');
+ return v;
+}
 export async function verifyRecutReceipt(store:Store,p:Project,r:RenderReceipt){
  const next=await readJson<EditPlan>(await containedFile(p.root,r.planPath));
  invariant(next.projectId===p.id&&next.backend===p.backend&&next.clipId===r.clipId,'Published plan identity/backend mismatch');
@@ -35,6 +47,7 @@ export async function publish(store:Store,projectId:string,receiptFile:string):P
  for(const f of [r.media,r.nativeProject,r.planPath,r.nativeInspectionPath])await containedFile(p.root,f);
  const planHash=await sha256(r.planPath),inspectionHash=await sha256(r.nativeInspectionPath);
  await verifyRecutReceipt(store,p,r);
+ const nativeReopen=verifyNativeReopen(p,r.nativeReopen,r.nativeReopen===undefined?undefined:await readJson(r.nativeInspectionPath),inspectionHash);
  invariant(await sha256(r.nativeProject)===r.nativeFingerprint,'Native project changed after its receipt');
  const renderedHash=await sha256(r.media);
  const probe=JSON.parse(await run('ffprobe',['-v','error','-count_frames','-show_streams','-of','json',r.media],{timeout:3600_000}));const video=probe.streams.find((s:any)=>s.codec_type==='video');
@@ -46,6 +59,7 @@ export async function publish(store:Store,projectId:string,receiptFile:string):P
  invariant(await sha256(archive.native!)===r.nativeFingerprint,'Native checkpoint changed during publication');
  invariant(archiveHashes.plan===planHash&&archiveHashes.inspection===inspectionHash&&archiveHashes.receipt===receiptHash,'Publication evidence changed after verification');
  const v:Version={id,clipId:c.id,number,media,sha256:sum,nativeProject:r.nativeProject,nativeCheckpoint:archive.native,nativeFingerprint:r.nativeFingerprint,planPath:archive.plan!,planSha256:archiveHashes.plan!,inspectionPath:archive.inspection!,inspectionSha256:archiveHashes.inspection!,receiptPath:archive.receipt!,receiptSha256:archiveHashes.receipt!,createdAt:now(),parentId:r.parentId,...(jobId?{jobId}:{})};
+ if(nativeReopen)v.nativeReopen=nativeReopen;
  if(archive.recut){invariant(archiveHashes.recut===r.recutVerificationSha256,'Recut verification changed during publication');v.recutVerificationPath=archive.recut;v.recutVerificationSha256=archiveHashes.recut;}
  await atomicJson(path.join(folder,'version.json'),v);store.publish(v);await exportState(store,p.id);return v;
 }
@@ -63,6 +77,12 @@ export async function verifyPublishedVersions(store:Store,jobId:string,ids:strin
   if(v.planSha256)invariant(await sha256(v.planPath)===v.planSha256,'Published plan changed');
   if(v.receiptSha256)invariant(await sha256(v.receiptPath)===v.receiptSha256,'Published receipt changed');
   if(v.inspectionPath&&v.inspectionSha256){await containedFile(p.root,v.inspectionPath);invariant(await sha256(v.inspectionPath)===v.inspectionSha256,'Published native inspection changed');}
+  if(v.nativeReopen){
+   invariant(v.receiptSha256&&v.inspectionPath&&v.inspectionSha256,'Native reopen metadata lacks archived provenance');
+   const receipt=await readJson<RenderReceipt>(v.receiptPath);
+   invariant(isDeepStrictEqual(v.nativeReopen,receipt.nativeReopen),'Published native reopen metadata changed');
+   verifyNativeReopen(p,v.nativeReopen,await readJson(v.inspectionPath),v.inspectionSha256);
+  }
   if(v.recutVerificationPath&&v.recutVerificationSha256){await containedFile(p.root,v.recutVerificationPath);invariant(await sha256(v.recutVerificationPath)===v.recutVerificationSha256,'Published recut verification changed');}
  }
 }

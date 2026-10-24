@@ -469,4 +469,6 @@ class Adapter:
   while p.IsRenderingInProgress():require(time.monotonic()<deadline,'Render timeout; reconcile original job');time.sleep(1)
   status=p.GetRenderJobStatus(job);save(str(media)+'.status.json',status);require(status.get('JobStatus')=='Complete','Native render did not complete')
   require(sha(native)==checkpoint_hash,'Native checkpoint changed during render')
-  verify_source_clocks(p.GetCurrentTimeline(),spec);require(fingerprint(self.snapshot(p))==packet['expectedFingerprint'],'Native timeline changed during render');return result_receipt(project,packet,spec,packet['nativeProject'],media,packet['inspection'])
+  verify_source_clocks(p.GetCurrentTimeline(),spec);final_state=self.snapshot(p);require(fingerprint(final_state)==packet['expectedFingerprint'],'Native timeline changed during render')
+  from resolve_project import inspection_result
+  return result_receipt(project,packet,spec,packet['nativeProject'],media,packet['inspection'],native_reopen=inspection_result(r,p,final_state)['reopen'])

@@ -84,13 +84,18 @@ def verify_native_render(media,spec):
  subprocess.run(['ffmpeg','-v','error','-xerror','-i',str(media),'-f','null','-'],check=True,capture_output=True)
  return {'frames':int(v['nb_read_frames']),'width':v['width'],'height':v['height'],'fullDecode':True}
 
-def result_receipt(project,packet,p,native,media,inspection,*,verification=None,expected_native_hash=None):
+def result_receipt(project,packet,p,native,media,inspection,*,verification=None,expected_native_hash=None,native_reopen=None):
  require(Path(native).is_file() and Path(media).is_file(),'Native project or export missing')
  # Adapters may supply the result of this same verifier when they need a final
  # native-state readback after decoding. This is internal, never a packet field.
  if verification is None:verification=verify_native_render(media,p)
  if expected_native_hash is not None:require(sha(native)==expected_native_hash,'Saved native project changed during render verification')
  receipt={'schema':'acq-edit/render-v1','projectId':project['id'],'backend':project['backend'],'clipId':p['clipId'],'parentId':packet.get('parentId'),'media':str(media),'nativeProject':str(native),'nativeFingerprint':sha(native),'planPath':packet['plan'],'expected':{'frames':sum(c['frames'] for c in p['cuts']),'width':p['width'],'height':p['height'],'fps':str(p['fps']['numerator'])+'/'+str(p['fps']['denominator'])},'nativeInspectionPath':str(inspection),**({'jobId':os.environ['ACQ_EDIT_JOB_ID']} if os.environ.get('ACQ_EDIT_JOB_ID') else {}),'nativeRendered':True,'mediaVerification':verification,'qualification':'mechanical-fixture' if read(p['editorial']['selectionPath']).get('testFixture') else 'editorial-workflow'}
+ if native_reopen is not None:
+  state=read(inspection)
+  require(project['backend']=='resolve' and state['project']=='ACQ_'+project['id'] and state['timeline']==native_reopen['timelineId'] and fingerprint(state)==native_reopen['expectedFingerprint'],'Native reopen identity/fingerprint differs from rendered inspection')
+  require(set(native_reopen)=={'nativeProjectId','database','timelineId','expectedFingerprint'},'Native reopen packet contains unexpected fields')
+  receipt['nativeReopen']={**native_reopen,'inspectionSha256':sha(inspection)}
  if receipt['qualification']=='editorial-workflow':
   from brain_receipts import verify_saved
   receipt['brainEvidence']=verify_saved(p['brain']['receiptPath'])

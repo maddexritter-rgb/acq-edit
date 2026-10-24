@@ -76,6 +76,8 @@ Render the constructed timeline with a separate packet and fresh output paths:
 
 Run `acq-edit native PROJECT_ID render RENDER_PACKET.json`, inspect the actual output, then `acq-edit publish PROJECT_ID RENDER_RECEIPT.json`. The publisher verifies and copies the new version into `20_DELIVER`; do not write there directly. For revision exports, `parentId` must identify the submitted version and the owning revision route must preserve its native state. The job runner supplies `ACQ_EDIT_JOB_ID`; do not fabricate job attribution. Every failed native operation follows `NATIVE_RECOVERY.md` before another attempt.
 
+New Resolve receipts and published versions include the native reopening target and its inspection hash as `nativeReopen`. Future revision submissions carry this metadata automatically. Use it through the guarded `native open` route in `RESOLVE_STATE.md` if the project was closed or a different version is selected; do not recreate the timeline from its plan.
+
 ## Native execution evidence and limits
 
 FilmCraft's ordinary placement command snaps audio record positions and duration to frames. The adapter therefore follows the canonical assembly helper's saved-project method: construct linked source clips, save a separate frame assembly, write exact audio sample/tick geometry to the new native project, reopen it, and verify source clocks and link groups before finishing. It saves/reopens again and exports through FilmCraft. No flattened dialogue/video or alternate editor supplies the final render.
