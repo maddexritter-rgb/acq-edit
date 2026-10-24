@@ -101,7 +101,7 @@ export function validatePlan(p:EditPlan,project:Project):void {
   for(const c of p.captions) invariant(c.startFrame>=0&&c.endFrame>c.startFrame&&c.endFrame<=end&&c.text.trim(),'Invalid caption range');
   if(p.captionVisibility!==undefined){
     const v=p.captionVisibility;
-    invariant(p.backend==='filmcraft'&&p.captionContract,'Native caption visibility requires FilmCraft caption ownership');
+    invariant((p.backend==='filmcraft'||p.backend==='resolve')&&p.captionContract,'Native caption visibility requires native caption ownership');
     invariant(v&&v.schema==='acq-edit/caption-visibility-v1'&&v.owner==='caption-clips'&&typeof v.reason==='string'&&v.reason.trim()&&typeof v.evidence==='string'&&v.evidence.trim(),'Invalid caption visibility handoff');
     invariant(Array.isArray(v.hiddenRanges)&&v.hiddenRanges.length>0,'Nonempty hidden caption ranges required');
     let previous=0;

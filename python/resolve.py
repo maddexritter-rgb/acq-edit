@@ -167,6 +167,7 @@ class Adapter:
    merge.Blend.SetExpression(f'iif(time >= {start} and time < {end}, 1, 0)');source=merge
   output.ConnectInput('Input',source)
  def revise(self,project,packet):
+  if packet.get('kind')=='caption-visibility':return self.revise_caption_visibility(project,packet)
   if packet.get('kind')=='text-hook-remove':return self.remove_hook(project,packet)
   if packet.get('kind')=='text-hook':return self.revise_hook(project,packet)
   if packet.get('kind')=='music-replacement':return self.revise_music(project,packet)
@@ -379,6 +380,37 @@ class Adapter:
    return {'nativeProject':str(native),'timelineId':revised.GetUniqueId(),'fingerprint':fingerprint(after),'status':'revised-native-render-pending','musicBindingProof':str(work/'native-readback.json')}
   finally:
    require(r.OpenPage(page),'Cannot restore Resolve page after music replacement')
+ def revise_caption_visibility(self,project,packet):
+  from caption_visibility import prepare
+  from caption_plan import validate
+  from resolve_captions import verify_timeline,verify_fonts
+  from resolve_caption_visibility import changes,apply,protected_snapshot
+  from resolve_graphics import inspect
+  require(project['backend']=='resolve','Caption visibility must use the selected Resolve backend')
+  previous,spec=prepare(project,packet);old_prepared,new_prepared=validate(project,previous),validate(project,spec)
+  r,p=self.selected(project);require(r.GetVersion()[:4]==[21,1,1,10],'Caption visibility requires qualified Resolve Studio 21.1.1 build 10')
+  require(not p.IsRenderingInProgress(),'Resolve is rendering; wait before caption visibility revision')
+  require(fingerprint(self.snapshot(p))==packet['expectedFingerprint'],'Native state changed; reconcile before caption visibility revision')
+  original=p.GetCurrentTimeline();verify_source_clocks(original,previous);verify_fonts(r,new_prepared);verify_timeline(original,previous,old_prepared)
+  wanted=changes(original,previous,spec,new_prepared)
+  original_detail=inspect(self,p);baseline=inspect(self,p,duplicate=True)
+  native=inside(project['root'],packet['nativeProject']);inspection=inside(project['root'],packet['inspection'])
+  require(not native.exists() and not inspection.exists(),'Caption visibility outputs exist; reconcile before retrying')
+  require(packet['title'] not in {p.GetTimelineByIndex(i).GetName() for i in range(1,p.GetTimelineCount()+1)},'Caption visibility timeline name exists')
+  duplicate=original.DuplicateTimeline(packet['title']);require(duplicate and p.SetCurrentTimeline(duplicate),'Cannot preserve caption parent')
+  pin_new_copy(original,duplicate,previous);verify_timeline(duplicate,previous,old_prepared)
+  require(inspect(self,p,duplicate=True)==baseline,'Caption copy changed protected native state or metadata')
+  copied=changes(duplicate,previous,spec,new_prepared);require(copied==wanted,'Duplicated caption visibility targets changed')
+  protected=protected_snapshot(self,p,copied)
+  apply(duplicate,copied);verify_timeline(duplicate,spec,new_prepared);verify_source_clocks(duplicate,spec)
+  require(protected_snapshot(self,p,copied)==protected,'Caption visibility changed protected native state or metadata')
+  after=self.snapshot(p)
+  require(p.SetCurrentTimeline(original) and inspect(self,p)==original_detail,'Caption visibility changed parent timeline')
+  require(p.SetCurrentTimeline(duplicate) and self.snapshot(p)==after,'New caption timeline changed during parent verification')
+  pm=r.GetProjectManager();require(pm.SaveProject(),'Cannot save caption visibility revision')
+  require(self.snapshot(p)==after,'Caption visibility changed during native save')
+  require(pm.ExportProject(p.GetName(),str(native),False),'Cannot checkpoint caption visibility revision');save(inspection,after)
+  return {'nativeProject':str(native),'timelineId':duplicate.GetUniqueId(),'fingerprint':fingerprint(after),'status':'revised-native-render-pending'}
  def remove_hook(self,project,packet):
   from hook_removal import prepare
   from resolve_hooks import verify_timeline

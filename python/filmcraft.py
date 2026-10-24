@@ -272,6 +272,7 @@ class Adapter:
  def revise_caption_visibility(self,project,packet):
   from caption_visibility import prepare,targets,apply,verify_protected
   from caption_plan import validate,verify_native
+  require(project['backend']=='filmcraft','Caption visibility must use the selected FilmCraft backend')
   previous,spec=prepare(project,packet);old_prepared,new_prepared=validate(project,previous),validate(project,spec)
   native=inside(project['root'],packet['nativeProject']);parent_hash=sha(native)
   observed=self.inspect(project,{'nativeProject':str(native),'session':packet['inspectSession']})

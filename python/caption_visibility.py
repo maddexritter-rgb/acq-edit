@@ -7,7 +7,7 @@ def ranges(spec):
     if 'captionVisibility' not in spec:
         return []
     value = spec['captionVisibility']
-    require(spec['backend'] == 'filmcraft', 'Native caption visibility is currently FilmCraft-only; no backend switch or burned overlay fallback')
+    require(spec['backend'] in ['filmcraft','resolve'], 'Native caption visibility requires FilmCraft or Resolve; no backend switch or burned overlay fallback')
     require(spec.get('captionContract'), 'Caption visibility requires the caption-clips native ownership contract')
     require(isinstance(value, dict) and set(value) == {'schema', 'owner', 'hiddenRanges', 'reason', 'evidence'}
             and value['schema'] == 'acq-edit/caption-visibility-v1' and value['owner'] == 'caption-clips', 'Explicit caption-clips visibility handoff required')
@@ -56,7 +56,7 @@ def prepare(project, packet):
     previous_path = inside(project['root'], packet['previousPlan'])
     require(sha(previous_path) == packet['previousPlanSha256'], 'Previous caption plan changed')
     previous, current = plan(project, {'plan': str(previous_path)}), plan(project, packet)
-    require(previous['backend'] == current['backend'] == 'filmcraft', 'This caption visibility revision requires FilmCraft')
+    require(previous['backend'] == current['backend'] == project['backend'] and project['backend'] in ['filmcraft','resolve'], 'Caption visibility requires the fixed native backend')
     require(previous.get('captionContract') and current.get('captionContract'), 'Owned native captions required')
     require(not previous.get('hookContract') and not current.get('hookContract'), 'Remove the owned hook before changing its caption context')
     require({k:v for k,v in previous.items() if k != 'captionVisibility'} == {k:v for k,v in current.items() if k != 'captionVisibility'},

@@ -26,6 +26,8 @@ def linear_expression(points, clock):
 
 
 def card_nodes(spec, prepared, cut, render_start):
+    from caption_visibility import ranges
+    hidden = ranges(spec)
     ft = TICKS * spec['fps']['denominator'] / spec['fps']['numerator']
     result = []
     for index, card in enumerate(prepared['cards']):
@@ -44,6 +46,11 @@ def card_nodes(spec, prepared, cut, render_start):
         offset = linear_expression(points(motion, lambda v: (v['Vec2']['y']-spec['height']/2)/spec['height']), clock)
         alpha = linear_expression(points(opacity, lambda v: v['Float']/100), clock)
         gate = f'iif(time >= {render_start+start-cut["recordFrame"]!r} and time < {render_start+end-cut["recordFrame"]!r}, ({alpha}), 0)'
+        windows = [(max(start,r['startFrame']),min(end,r['endFrame'])) for r in hidden
+                   if r['startFrame'] < end and r['endFrame'] > start]
+        if windows:
+            conditions = [f'(time >= {render_start+a-cut["recordFrame"]!r} and time < {render_start+b-cut["recordFrame"]!r})' for a,b in windows]
+            gate = f'iif({" or ".join(conditions)}, 0, ({gate}))'
         for role in ROLES:
             shadow = prepared['profile']['resolve_caption_shadows'].get(role)
             x, y = style['center']

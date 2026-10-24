@@ -58,6 +58,50 @@ class ResolveCaptionTests(unittest.TestCase):
   with self.assertRaisesRegex(RuntimeError,'Unsupported caption style'):self.derive()
   del self.card['style']['position'];self.card['style']['syntheticQuoteItalic']=True
   with self.assertRaisesRegex(RuntimeError,'Unsupported caption style'):self.derive()
+ def test_visibility_gates_each_shadow_at_record_clock_and_preserves_arrival(self):
+  prepared=self.derive();self.spec['captionContract']={'fixture':True}
+  prior=copy.deepcopy(self.spec)
+  self.spec['captionVisibility']={'schema':'acq-edit/caption-visibility-v1','owner':'caption-clips','reason':'Synthetic window','evidence':'Fixture','hiddenRanges':[{'startFrame':16,'endFrame':17},{'startFrame':24,'endFrame':30}]}
+  env={'__builtins__':{},'iif':lambda c,a,b:a if c else b,'max':max}
+  for cut,start in zip(self.spec['cuts'],[0,50]):
+   old=card_nodes(prior,prepared,cut,start);new=card_nodes(self.spec,prepared,cut,start)
+   for a,b in zip(old,new):
+    self.assertEqual({k:v for k,v in a.items() if k!='blend'},{k:v for k,v in b.items() if k!='blend'})
+    for frame in range(cut['frames']):
+     record=cut['recordFrame']+frame;time=start+frame
+     original=eval(a['blend'],env,{'time':time});actual=eval(b['blend'],env,{'time':time})
+     self.assertEqual(actual,0 if 16<=record<17 or 24<=record<30 else original)
+ def test_visibility_protection_retains_other_blends_and_graph_fields(self):
+  from resolve_caption_visibility import protected_graph
+  raw='Composition { Tools = { ACQ_CaptionMerge_0_text = Merge { Inputs = { Blend = Input { Expression = "OLD", Value = 1 }, Background = Input { SourceOp = "MediaIn1", Source = "Output" } } }, Other = Merge { Inputs = { Blend = Input { Value = 1 } } } } }'
+  original=protected_graph(raw,['ACQ_CaptionMerge_0_text'])
+  self.assertEqual(original,protected_graph(raw.replace('"OLD"','"NEW"'),['ACQ_CaptionMerge_0_text']))
+  self.assertNotEqual(original,protected_graph(raw.replace('Value = 1 } } }','Value = 0 } } }'),['ACQ_CaptionMerge_0_text']))
+  self.assertNotEqual(original,protected_graph(raw.replace('"MediaIn1"','"Other"'),['ACQ_CaptionMerge_0_text']))
+  with self.assertRaisesRegex(RuntimeError,'not a Merge'):protected_graph(raw,['Unknown'])
+ def test_visibility_targets_refuse_locked_stale_and_noop_revisions(self):
+  from resolve_caption_visibility import changes,apply
+  prepared=self.derive();previous=copy.deepcopy(self.spec);self.spec['captionContract']={'fixture':True}
+  self.spec['captionVisibility']={'schema':'acq-edit/caption-visibility-v1','owner':'caption-clips','reason':'Fixture','evidence':'Fixture','hiddenRanges':[{'startFrame':0,'endFrame':30}]}
+  timeline=MagicMock();timeline.GetIsTrackLocked.return_value=True
+  with self.assertRaisesRegex(RuntimeError,'locked'):changes(timeline,previous,self.spec,prepared)
+  timeline.GetIsTrackLocked.return_value=False;items=[]
+  for cut in self.spec['cuts']:
+   item=MagicMock();comp=item.GetFusionCompByIndex.return_value;comp.GetAttrs.return_value={'COMPN_RenderStart':0};nodes={}
+   for row in card_nodes(previous,prepared,cut,0):
+    tool=MagicMock();tool.Blend.GetExpression.return_value=row['blend'];tool.Blend.SetExpression.side_effect=lambda expression,t=tool:setattr(t.Blend.GetExpression,'return_value',expression);nodes[row['mergeName']]=tool
+   comp.FindTool.side_effect=nodes.get;items.append(item)
+  timeline.GetItemListInTrack.return_value=items
+  targets=changes(timeline,previous,self.spec,prepared);self.assertEqual(len(targets),6)
+  apply(timeline,targets)
+  with self.assertRaisesRegex(RuntimeError,'changed before revision'):changes(timeline,previous,self.spec,prepared)
+  with self.assertRaisesRegex(RuntimeError,'do not affect'):changes(timeline,self.spec,self.spec,prepared)
+ def test_visibility_adapters_refuse_another_backend_before_host_access(self):
+  from resolve import Adapter as Resolve
+  from filmcraft import Adapter as FilmCraft
+  for adapter,backend in [(Resolve({}),'filmcraft'),(FilmCraft({}),'resolve')]:
+   with self.assertRaisesRegex(RuntimeError,'selected .* backend'):
+    adapter.revise_caption_visibility({'backend':backend},{})
  def test_common_json_read_is_utf8_even_in_resolve_like_ascii_locale(self):
   file=self.root/'unicode.json';file.write_text('{"caption":"“Hello”"}',encoding='utf-8')
   code='import sys;sys.path.insert(0,sys.argv[1]);from common import read;assert len(read(sys.argv[2])["caption"])==7'

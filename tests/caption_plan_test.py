@@ -156,8 +156,8 @@ class CaptionPlanTests(unittest.TestCase):
             self.spec['captionVisibility']['hiddenRanges'] = rows
             with self.assertRaises(RuntimeError): ranges(self.spec)
         self.spec['captionVisibility']['hiddenRanges'] = [{'startFrame':0,'endFrame':30}]
-        self.spec['backend']='resolve'
-        with self.assertRaisesRegex(RuntimeError,'FilmCraft-only'): ranges(self.spec)
+        self.spec['backend']='premiere'
+        with self.assertRaisesRegex(RuntimeError,'FilmCraft or Resolve'): ranges(self.spec)
         self.spec['backend']='filmcraft'
         self.native['project']['items']['1']['kind']['Sequence']['video_tracks'][2]['locked'] = True
         with self.assertRaisesRegex(RuntimeError,'locked'): targets(self.native,previous,self.spec,prepared,254016000000//25)

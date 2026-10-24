@@ -19,7 +19,8 @@ test('caption visibility publication validates owner, engine and exact frame ran
  }
  for(const change of [{owner:'text-hook'},{reason:''},{evidence:null}])assert.throws(()=>validatePlan({...plan,captionVisibility:{...plan.captionVisibility,...change}},project),/handoff/);
  assert.throws(()=>validatePlan({...plan,captionContract:undefined},project),/ownership/);
- assert.throws(()=>validatePlan({...plan,backend:'resolve'},{...project,backend:'resolve'}),/ownership/);
+ validatePlan({...plan,backend:'resolve'},{...project,backend:'resolve'});
+ assert.throws(()=>validatePlan({...plan,backend:'premiere'},{...project,backend:'premiere'}),/ownership/);
 });
 test('caption visibility can be absent on a restored plan',()=>{
  const {project,plan}=fixture();delete plan.captionVisibility;validatePlan(plan,project);
