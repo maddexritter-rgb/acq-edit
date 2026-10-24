@@ -51,6 +51,31 @@ Placement starts at asset frame zero. The requested duration must fit inside bot
 
 FilmCraft reserves V1 for picture and V2 for captions, then places successive assets on V3, V4 and so on. Resolve captions are composed inside the source clips; its successive assets use V2, V3 and so on. Separate tracks preserve overlapping assets. Both adapters read back exact source identity, source offset, record start and duration after placement. A matching alpha pixel format is not proof of a good visual matte; inspect the actual output.
 
+## Replace an existing graphic
+
+FilmCraft supports `native PROJECT_ID revise PACKET` with `kind: "graphic-replacement"`. Render the replacement asset through its owning graphics skill first. Keep the old asset immutable, use a new project-owned path, and preserve the existing placement, duration and array order. The replacement must pass the same alpha/canvas/rate/full-decode checks as construction. The plan's other fields must be identical.
+
+```json
+{
+  "kind": "graphic-replacement",
+  "nativeProject": "<project>/10_WORK/parent.fcproj",
+  "expectedFingerprint": "<fresh native inspect fingerprint>",
+  "previousPlan": "<project>/10_WORK/published-plan.json",
+  "previousPlanSha256": "<published plan hash>",
+  "plan": "<project>/10_WORK/replacement-plan.json",
+  "graphicIndices": [0],
+  "outputProject": "<project>/10_WORK/revision.fcproj",
+  "inspection": "<project>/10_WORK/revision-inspection.json",
+  "inspectSession": "<project>/10_WORK/replacement-inspect",
+  "session": "<project>/10_WORK/replacement-session",
+  "reopenSession": "<project>/10_WORK/replacement-reopen"
+}
+```
+
+All destinations/sessions must be fresh. Indices are zero-based positions in the pinned graphics array. The adapter inspects the current native project, verifies exact source/placement bindings, and works on a copy. It imports one new media item per target and executes native `clip.replaceFromBin`, restoring the existing clip name and retaining its label. Native clip identity, placement, effects/keyframes, track state, unrelated bin items and all other timeline data remain protected. The saved project comparison permits only selected source-item replacements, the new imported bin items/ID allocation and the copy's document name. The copy is reopened and checked again before returning a fingerprint for ordinary native render/publication.
+
+Linked, grouped, locked, reversed, retimed, frame-held and multicamera targets are rejected before copying. Adding/removing/reordering graphics, changing timing, or replacing a native text layer requires its own supported operation. FilmCraft exports also recheck the graphics' source/placement bindings against the plan. Resolve and Premiere do not yet implement this replacement packet; never switch engines or rebuild an approved timeline to satisfy it.
+
 ## Observed qualification — 2026-10-23
 
 Remotion 4.0.538 rendered a 25-frame, 640×360, 25 fps title asset with alpha ranging from fully transparent to fully opaque. FilmCraft and Resolve Studio 21.1.1 each imported two overlapping placements at frames 5 and 15 over an existing 50-frame synthetic two-cut/caption plan. Each asset occupied its own native track. Native source/range readback and complete 50-frame H264/AAC exports passed. FilmCraft also reopened its saved project before export.
@@ -61,4 +86,6 @@ After successful rendering, Resolve saved and reopened the motion timeline. Sour
 
 The reopened follow-up timeline rendered 50 decoded video frames identical to its pre-reopen render. Audio differed at −74.61 dB difference RMS relative to signal, retaining the separate audio qualification failure. This does not establish identical audio or human approval.
 
-The final exports came from their respective native editors. No Remotion final-video export, cross-editor conversion, real footage or human approval was involved. Advanced animation benchmarks, graphic replacement revisions preserving manual effects, Premiere composition, longer assets, other frame rates and real editorial review remain open. The earlier Resolve audio-variance finding is unchanged.
+The final exports came from their respective native editors. No Remotion final-video export, cross-editor conversion, real footage or human approval was involved. Advanced animation benchmarks, Resolve/Premiere graphic replacement, Premiere composition, longer assets, other frame rates and real editorial review remain open. The earlier Resolve audio-variance finding is unchanged.
+
+A subsequent FilmCraft fixture rendered a new Remotion title and replaced only the first of the two overlapping graphics. The parent had a native custom clip name and 72% opacity. Native replacement, complete protected-project comparison, save/reopen and the 50-frame export passed. The custom name/opacity, second overlay, cuts, captions, audio and original parent files remained intact. Decoded audio was byte-identical. The 25 frames outside the replaced asset's interval differed at 57.75 dB PSNR despite unchanged protected native state; no cause or perceptual equivalence is inferred. Sampled rendered frames visibly showed the changed title/accent and retained caption. This is direct-adapter synthetic evidence; agent-driven graphic revisions, real reference quality and human acceptance remain open.

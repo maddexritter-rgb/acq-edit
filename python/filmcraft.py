@@ -110,6 +110,7 @@ class Adapter:
    placed=c.tool('sequence_inspect')['video'][track]['items'];require(len(placed)==1,'Unexpected native graphic coverage');graphic=placed[0]
    require(graphic['item']==item and graphic['start']==asset['startFrame']*ft and graphic['duration']==asset['frames']*ft and graphic['sourceIn']==0,'Native graphic source/timing readback mismatch')
  def revise(self,project,packet):
+  if packet.get('kind')=='graphic-replacement':return self.revise_graphics(project,packet)
   if packet.get('kind')=='panel-framing':return self.revise_panels(project,packet)
   if packet.get('kind')=='tracking-framing':return self.revise_tracking(project,packet)
   if packet.get('kind')=='spoken-recut':
@@ -209,12 +210,39 @@ class Adapter:
   require(protected_revision(read(target),operations)==baseline and sha(native)==parent_hash,'Reopened panel revision or parent changed')
   save(inspection,reopened)
   return {'nativeProject':str(target),'fingerprint':reopened['fingerprint'],'status':'revised-native-render-pending'}
+ def revise_graphics(self,project,packet):
+  from graphics_revision import prepare,filmcraft_targets,verify_filmcraft_replacement
+  previous,spec,indices=prepare(project,packet);native=inside(project['root'],packet['nativeProject']);parent_hash=sha(native)
+  observed=self.inspect(project,{'nativeProject':str(native),'session':packet['inspectSession']})
+  require(observed['fingerprint']==packet['expectedFingerprint'],'Native state changed; reconcile user edits before replacing graphics')
+  require(sha(native)==parent_hash,'Parent changed during graphic inspection')
+  before=read(native);targets=filmcraft_targets(before,previous,indices)
+  target=inside(project['root'],packet['outputProject']);inspection=inside(project['root'],packet['inspection'])
+  require(not target.exists() and not inspection.exists(),'Graphic revision outputs exist; reconcile before retrying')
+  shutil.copy2(native,target);c=Filmcraft(self.config['filmcraft'],inside(project['root'],packet['session']),str(target))
+  try:
+   for index,clip in zip(indices,targets):
+    asset=spec['graphics'][index];require(sha(asset['path'])==asset['sha256'],'Replacement graphic changed')
+    item=c.tool('media_import',{'paths':[asset['path']]})['items'][0]
+    c.run('edit.deselectAll');c.run('project.select',{'items':[item]});c.run('edit.label',{'label':clip['label']})
+    result=c.run('clip.replaceFromBin',{'clips':[clip['id']],'item':item,'keepSourceIn':True})
+    require(result['clips']==[clip['id']] and not result['short'] and not result.get('sourceInClamped'),'Native replacement changed another clip or lacks source coverage')
+    c.run('clip.rename',{'clip':clip['id'],'name':clip['name']})
+   c.run('file.save');verify_filmcraft_replacement(before,read(target),previous,spec,indices,target.stem)
+   require(sha(native)==parent_hash,'Parent changed during graphic replacement')
+  finally:c.close()
+  reopened=self.inspect(project,{'nativeProject':str(target),'session':packet['reopenSession']})
+  verify_filmcraft_replacement(before,read(target),previous,spec,indices,target.stem)
+  require(sha(native)==parent_hash,'Parent changed during graphic reopen');save(inspection,reopened)
+  return {'nativeProject':str(target),'fingerprint':reopened['fingerprint'],'status':'revised-native-render-pending'}
  def render(self,project,packet):
   p=plan(project,packet);native=inside(project['root'],packet['nativeProject']);media=inside(project['root'],packet['media']);require(not media.exists(),'Never overwrite renders');media.parent.mkdir(parents=True,exist_ok=True)
   c=Filmcraft(self.config['filmcraft'],inside(project['root'],packet['session']),str(native))
   try:
    state=c.tool('sequence_inspect');require(fingerprint({'state':state,'fileHash':sha(native)})==packet['expectedFingerprint'],'Native state changed before export');save(inside(project['root'],packet['inspection']),state)
    verify_filmcraft_framing(native,p,TICKS*p['fps']['denominator']//p['fps']['numerator'])
+   from graphics_revision import filmcraft_items
+   filmcraft_items(read(native),p)
    if p.get('captionContract'):
     from caption_plan import validate,verify_native
     verify_native(native,p,validate(project,p),TICKS*p['fps']['denominator']//p['fps']['numerator'])
