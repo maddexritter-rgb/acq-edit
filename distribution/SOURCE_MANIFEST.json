@@ -10,6 +10,7 @@
     "horizontal-to-vertical",
     "caption-clips",
     "text-hook",
+    "slop-detector",
     "music",
     "render",
     "watch",
@@ -3743,6 +3744,22 @@
       "source_sha256": "0d7779ce5d606a375a371a65e9b5ce844002f8d1021cfa56cbfd129551df1d49",
       "distribution_sha256": "0d7779ce5d606a375a371a65e9b5ce844002f8d1021cfa56cbfd129551df1d49",
       "bytes": 7328,
+      "transforms": []
+    },
+    {
+      "path": "slop-detector/SKILL.md",
+      "source": "canonical-skills/slop-detector/SKILL.md",
+      "source_sha256": "41c0f044fe1bd35cde691f873114e90a0bd4ac56394baf47cc76d0e5b5e0bf39",
+      "distribution_sha256": "41c0f044fe1bd35cde691f873114e90a0bd4ac56394baf47cc76d0e5b5e0bf39",
+      "bytes": 9349,
+      "transforms": []
+    },
+    {
+      "path": "slop-detector/agents/openai.yaml",
+      "source": "canonical-skills/slop-detector/agents/openai.yaml",
+      "source_sha256": "a0b1479875da9c04265b8327c362159fdc94da62d37ad2f90e38a55d8606bbb4",
+      "distribution_sha256": "a0b1479875da9c04265b8327c362159fdc94da62d37ad2f90e38a55d8606bbb4",
+      "bytes": 256,
       "transforms": []
     },
     {

@@ -1,0 +1,11 @@
+{
+  "externalRoutes": [
+    {"source":"edit/references/native-export.md","target":"monday","status":"external-opt-in","reason":"Frame.io/Monday delivery requires a separately installed integration and explicit batch authorization; it is outside local clip creation and review."},
+    {"source":"edit/references/scoped-brand-policy.md","target":"monday","status":"external-opt-in","reason":"The referenced delivery batch is an explicitly authorized external service workflow, not a local editing dependency."},
+    {"source":"assembly-design/references/retired-cut-skill-source.md","target":"cut","status":"historical-only","reason":"This file is explicitly retired research. Assembly Design owns current cutting; the retired executor must not be invoked."},
+    {"source":"live-clip/AUTOPILOT.md","target":"highlight","status":"unavailable-optional","reason":"Autonomous live-stream clipping is not a qualified toolkit route; its private guest-policy integration remains unavailable."},
+    {"source":"live-clip/SKILL.md","target":"highlight","status":"unavailable-optional","reason":"The optional live-stream workflow requires its guest-policy integration before use; ordinary footage intake does not invoke it."},
+    {"source":"source-library/SKILL.md","target":"copy","status":"external-opt-in","reason":"The conditional video-ideas/planning workflow is separate from source retrieval and native clip construction."},
+    {"source":"slop-detector/SKILL.md","target":"slack-voice","status":"external-opt-in","reason":"Slack-specific drafting is a conditional writing workflow. Hook-copy cleanup does not require it and does not authorize messaging."}
+  ]
+}

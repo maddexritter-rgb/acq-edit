@@ -7,6 +7,7 @@ import os
 import tempfile
 from pathlib import Path, PurePosixPath
 from portable_patches import private_references
+from skill_dependencies import verify as verify_dependencies, INVENTORY
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = 'docs/AGENT_WORKFLOW.md'
@@ -75,6 +76,9 @@ def prepare(root, assets):
                'executionContract':{'path':CONTRACT,'sha256':sha(contract),'entrypoints':entrypoints},
                'runtime': str(dest), 'assets': str(assets), 'blockedReferences': blocked,
                'files': {name: sha(data) for name, data in files.items()}}
+    if 'owners' in manifest:
+        dependencies = verify_dependencies(root)
+        receipt['dependencies'] = {'path':INVENTORY, **dependencies}
     return files, receipt
 
 
@@ -146,7 +150,8 @@ def materialize(root, assets):
     finally:
         lock.unlink()
     return {'materializedFiles': len(files), 'runtime': str(dest),
-            'receipt': str(dest / RECEIPT), 'unresolvedOptionalReferences': receipt['blockedReferences']}
+            'receipt': str(dest / RECEIPT), 'unresolvedOptionalReferences': receipt['blockedReferences'],
+            'externalSkillRoutes':receipt.get('dependencies',{}).get('externalRoutes',[])}
 
 
 def verify(root):
@@ -161,7 +166,8 @@ def verify(root):
     verify_existing(dest,expected)
     return {'ready':True,'verifiedFiles':len(files),'routedEntrypoints':len(expected['executionContract']['entrypoints']),
             'executionContractSha256':expected['executionContract']['sha256'],
-            'unresolvedOptionalReferences':expected['blockedReferences'],'nativeWorkflowQualified':False}
+            'unresolvedOptionalReferences':expected['blockedReferences'],
+            'externalSkillRoutes':expected.get('dependencies',{}).get('externalRoutes',[]),'nativeWorkflowQualified':False}
 
 
 def main():

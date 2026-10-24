@@ -1,0 +1,835 @@
+{
+  "schema": "acq-edit/skill-dependencies-v1",
+  "manifestSha256": "b38192324dd996168187620a351d00f09957536af541969eb5439b4ac6b66fc9",
+  "policySha256": "fb9f0da2c3535c7a29cf5ae8af08ae4cd391e1c53e8ec690aca8ddb2175c630b",
+  "owners": [
+    "edit",
+    "assembly-design",
+    "long-form-ingest",
+    "find-precedents",
+    "source-intel",
+    "footage-fetch",
+    "horizontal-to-vertical",
+    "caption-clips",
+    "text-hook",
+    "slop-detector",
+    "music",
+    "render",
+    "watch",
+    "clip-review-room",
+    "revision-planner",
+    "transcript-edit",
+    "clip-review-tracker",
+    "audit-script",
+    "audit-audio",
+    "audit-captions",
+    "audit-visual",
+    "mozi-sf-audit",
+    "scorecard-audit",
+    "book-doodle",
+    "b-roll-injector",
+    "broll-cutaway",
+    "cinematic",
+    "vertical-livestream-card",
+    "promo",
+    "saas-animation-video",
+    "ad-edit",
+    "listicle-short",
+    "live-clip",
+    "testimonial-edit",
+    "source-library",
+    "alex",
+    "premiere-to-resolve",
+    "editorial-brain-ingest"
+  ],
+  "edges": [
+    {
+      "source": "_shared/music_index.py",
+      "target": "music",
+      "lines": [
+        5
+      ],
+      "sourceSha256": "cd8c914516c5c747e093cc687cb90674d0e1271b3897d061a11f963dd55b2f7e",
+      "status": "packaged"
+    },
+    {
+      "source": "_shared/music_semantic_index.py",
+      "target": "music",
+      "lines": [
+        5
+      ],
+      "sourceSha256": "71369bb9cccad3c80d1a7e92d8817fbdf8c8731a419e0e2330251b44e7b5a1ff",
+      "status": "packaged"
+    },
+    {
+      "source": "_shared/pick_music.py",
+      "target": "music",
+      "lines": [
+        5
+      ],
+      "sourceSha256": "aad7f235d40f813b48298b2117a20a0fcd92487950b6946ff9c4a1436369f891",
+      "status": "packaged"
+    },
+    {
+      "source": "alex/SKILL.md",
+      "target": "audit-script",
+      "lines": [
+        13
+      ],
+      "sourceSha256": "3fff099f0b7eb1223c961572d7de3799a24fb45a5ea34b4560133684f0f19c75",
+      "status": "packaged"
+    },
+    {
+      "source": "assembly-design/SKILL.md",
+      "target": "editorial-brain-ingest",
+      "lines": [
+        29
+      ],
+      "sourceSha256": "e6c3fbd51e59c1c3469ee9cecca07f940909368ff4314667ccc90e66d49d8375",
+      "status": "packaged"
+    },
+    {
+      "source": "assembly-design/SKILL.md",
+      "target": "find-precedents",
+      "lines": [
+        157
+      ],
+      "sourceSha256": "e6c3fbd51e59c1c3469ee9cecca07f940909368ff4314667ccc90e66d49d8375",
+      "status": "packaged"
+    },
+    {
+      "source": "assembly-design/SKILL.md",
+      "target": "long-form-ingest",
+      "lines": [
+        609
+      ],
+      "sourceSha256": "e6c3fbd51e59c1c3469ee9cecca07f940909368ff4314667ccc90e66d49d8375",
+      "status": "packaged"
+    },
+    {
+      "source": "assembly-design/references/audio-precision.md",
+      "target": "horizontal-to-vertical",
+      "lines": [
+        315
+      ],
+      "sourceSha256": "a68657d346ec4910ec2d566bed810d9999cf71adb893d83e61f1aa28411361f8",
+      "status": "packaged"
+    },
+    {
+      "source": "assembly-design/references/editorial-memory.md",
+      "target": "find-precedents",
+      "lines": [
+        3
+      ],
+      "sourceSha256": "5bc9424b04fd62a48894e11fa9281e50ef5ab05186e4bf117054ae67d9e05733",
+      "status": "packaged"
+    },
+    {
+      "source": "assembly-design/references/marker-revisions.md",
+      "target": "editorial-brain-ingest",
+      "lines": [
+        57
+      ],
+      "sourceSha256": "c8169b2ad200dffc8b8d8f286d7066a142d8c083b4ff87fe5f60d4fde3546611",
+      "status": "packaged"
+    },
+    {
+      "source": "assembly-design/references/pre-render-construction.md",
+      "target": "caption-clips",
+      "lines": [
+        23
+      ],
+      "sourceSha256": "8386b4f06047d39e5b5d88481037b3a4eddb166cbecfdf715318fc8639aa45fa",
+      "status": "packaged"
+    },
+    {
+      "source": "assembly-design/references/pre-render-construction.md",
+      "target": "horizontal-to-vertical",
+      "lines": [
+        17,
+        124
+      ],
+      "sourceSha256": "8386b4f06047d39e5b5d88481037b3a4eddb166cbecfdf715318fc8639aa45fa",
+      "status": "packaged"
+    },
+    {
+      "source": "assembly-design/references/retired-cut-skill-source.md",
+      "target": "cut",
+      "lines": [
+        139,
+        142,
+        155,
+        156,
+        270
+      ],
+      "sourceSha256": "7a4cb22979c853c43280db23ca280724a7c2eb16643c18c22eab2c11fbf5a044",
+      "status": "historical-only",
+      "reason": "This file is explicitly retired research. Assembly Design owns current cutting; the retired executor must not be invoked."
+    },
+    {
+      "source": "assembly-design/references/retired-cut-skill-source.md",
+      "target": "listicle-short",
+      "lines": [
+        150
+      ],
+      "sourceSha256": "7a4cb22979c853c43280db23ca280724a7c2eb16643c18c22eab2c11fbf5a044",
+      "status": "packaged"
+    },
+    {
+      "source": "audit-script/SKILL.md",
+      "target": "assembly-design",
+      "lines": [
+        159
+      ],
+      "sourceSha256": "fdb8bf3d7bad62bd35d5c1ba8f9d91c3648feaf05fc4b6f2de6b3b50487cfc0b",
+      "status": "packaged"
+    },
+    {
+      "source": "broll-cutaway/SKILL.md",
+      "target": "watch",
+      "lines": [
+        22
+      ],
+      "sourceSha256": "0fbd2645dfef05cbde8596ded62df1ff70b3dec36def0129d0d0da35bba5bbad",
+      "status": "packaged"
+    },
+    {
+      "source": "broll-cutaway/scripts/fetch_broll.py",
+      "target": "watch",
+      "lines": [
+        6
+      ],
+      "sourceSha256": "a65d2d45c5618018a033a27c679573c99c0bfd92f69af47983cc5bcdea656a00",
+      "status": "packaged"
+    },
+    {
+      "source": "caption-clips/scripts/chin_layout.py",
+      "target": "horizontal-to-vertical",
+      "lines": [
+        14
+      ],
+      "sourceSha256": "8a1be2f3d188efe90d542165dcaefbadcf76c37bab65810c4caa59afb711a716",
+      "status": "packaged"
+    },
+    {
+      "source": "caption-clips/scripts/premiere_mogrt_cards.py",
+      "target": "edit",
+      "lines": [
+        16
+      ],
+      "sourceSha256": "de0330411bd562d8b17a74f7d1613ce4575439be5a155bd39e1b2be355fdf7a7",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/RUNBOOK.md",
+      "target": "ad-edit",
+      "lines": [
+        365
+      ],
+      "sourceSha256": "8100ae1fdd2a6386f05e54bd487569ba0b3bc52b3ff1815c90eebce91a17d0e1",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/RUNBOOK.md",
+      "target": "assembly-design",
+      "lines": [
+        206,
+        284
+      ],
+      "sourceSha256": "8100ae1fdd2a6386f05e54bd487569ba0b3bc52b3ff1815c90eebce91a17d0e1",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/RUNBOOK.md",
+      "target": "book-doodle",
+      "lines": [
+        358
+      ],
+      "sourceSha256": "8100ae1fdd2a6386f05e54bd487569ba0b3bc52b3ff1815c90eebce91a17d0e1",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/RUNBOOK.md",
+      "target": "caption-clips",
+      "lines": [
+        363
+      ],
+      "sourceSha256": "8100ae1fdd2a6386f05e54bd487569ba0b3bc52b3ff1815c90eebce91a17d0e1",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/RUNBOOK.md",
+      "target": "footage-fetch",
+      "lines": [
+        166
+      ],
+      "sourceSha256": "8100ae1fdd2a6386f05e54bd487569ba0b3bc52b3ff1815c90eebce91a17d0e1",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/RUNBOOK.md",
+      "target": "horizontal-to-vertical",
+      "lines": [
+        362
+      ],
+      "sourceSha256": "8100ae1fdd2a6386f05e54bd487569ba0b3bc52b3ff1815c90eebce91a17d0e1",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/RUNBOOK.md",
+      "target": "live-clip",
+      "lines": [
+        249
+      ],
+      "sourceSha256": "8100ae1fdd2a6386f05e54bd487569ba0b3bc52b3ff1815c90eebce91a17d0e1",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/RUNBOOK.md",
+      "target": "long-form-ingest",
+      "lines": [
+        205
+      ],
+      "sourceSha256": "8100ae1fdd2a6386f05e54bd487569ba0b3bc52b3ff1815c90eebce91a17d0e1",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/RUNBOOK.md",
+      "target": "music",
+      "lines": [
+        364
+      ],
+      "sourceSha256": "8100ae1fdd2a6386f05e54bd487569ba0b3bc52b3ff1815c90eebce91a17d0e1",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/SKILL.md",
+      "target": "assembly-design",
+      "lines": [
+        36,
+        104
+      ],
+      "sourceSha256": "614fe5d4831ff588112600dc140f7fa0380255a51d1ecb76db50c20f626f2e11",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/SKILL.md",
+      "target": "text-hook",
+      "lines": [
+        116
+      ],
+      "sourceSha256": "614fe5d4831ff588112600dc140f7fa0380255a51d1ecb76db50c20f626f2e11",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/references/filmcraft.md",
+      "target": "caption-clips",
+      "lines": [
+        42
+      ],
+      "sourceSha256": "58a71f5615a5a9dea585a2eeb538a37e97a52bac324f41fe694af068c5f8c919",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/references/filmcraft.md",
+      "target": "horizontal-to-vertical",
+      "lines": [
+        40
+      ],
+      "sourceSha256": "58a71f5615a5a9dea585a2eeb538a37e97a52bac324f41fe694af068c5f8c919",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/references/l1_draft_finishing.md",
+      "target": "horizontal-to-vertical",
+      "lines": [
+        18,
+        32
+      ],
+      "sourceSha256": "416abbba13b869aa3ed25d82ba3761edf6a805dc8f55dc4e7943b472dcb51364",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/references/l1_qa_cuts.md",
+      "target": "assembly-design",
+      "lines": [
+        249
+      ],
+      "sourceSha256": "facb4634a8c9e478178933b5e788302c690b6bbe09cba2e1f5acc7c5276e91aa",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/references/l1_qa_cuts.md",
+      "target": "audit-script",
+      "lines": [
+        255
+      ],
+      "sourceSha256": "facb4634a8c9e478178933b5e788302c690b6bbe09cba2e1f5acc7c5276e91aa",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/references/l1_qa_cuts.md",
+      "target": "caption-clips",
+      "lines": [
+        260
+      ],
+      "sourceSha256": "facb4634a8c9e478178933b5e788302c690b6bbe09cba2e1f5acc7c5276e91aa",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/references/l1_qa_cuts.md",
+      "target": "horizontal-to-vertical",
+      "lines": [
+        259
+      ],
+      "sourceSha256": "facb4634a8c9e478178933b5e788302c690b6bbe09cba2e1f5acc7c5276e91aa",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/references/l1_qa_cuts.md",
+      "target": "source-intel",
+      "lines": [
+        230
+      ],
+      "sourceSha256": "facb4634a8c9e478178933b5e788302c690b6bbe09cba2e1f5acc7c5276e91aa",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/references/native-export.md",
+      "target": "monday",
+      "lines": [
+        55
+      ],
+      "sourceSha256": "d5489f159cf9791522cb07f05c9be458522e736e03eb5ea77dcdc7a5e752139f",
+      "status": "external-opt-in",
+      "reason": "Frame.io/Monday delivery requires a separately installed integration and explicit batch authorization; it is outside local clip creation and review."
+    },
+    {
+      "source": "edit/references/podcast_mining.md",
+      "target": "assembly-design",
+      "lines": [
+        92
+      ],
+      "sourceSha256": "ef533001519a0ad14634968c712bb08630ac6214f82bce7a5d506da06e8938aa",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/references/podcast_mining.md",
+      "target": "audit-script",
+      "lines": [
+        134
+      ],
+      "sourceSha256": "ef533001519a0ad14634968c712bb08630ac6214f82bce7a5d506da06e8938aa",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/references/podcast_mining.md",
+      "target": "horizontal-to-vertical",
+      "lines": [
+        130
+      ],
+      "sourceSha256": "ef533001519a0ad14634968c712bb08630ac6214f82bce7a5d506da06e8938aa",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/references/premiere_execution_contract.md",
+      "target": "assembly-design",
+      "lines": [
+        95
+      ],
+      "sourceSha256": "df86e037b5ea115b2385d26db91ab7b792c7fa42a8cd2ccb3b9c7f436b407b11",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/references/premiere_execution_contract.md",
+      "target": "music",
+      "lines": [
+        35
+      ],
+      "sourceSha256": "df86e037b5ea115b2385d26db91ab7b792c7fa42a8cd2ccb3b9c7f436b407b11",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/references/qa_playbook.md",
+      "target": "caption-clips",
+      "lines": [
+        159
+      ],
+      "sourceSha256": "b439d739dccc85f48e15db699f99396dc8d711a377110aa8c0ccb4ba3c721242",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/references/qa_playbook.md",
+      "target": "horizontal-to-vertical",
+      "lines": [
+        130,
+        131,
+        133
+      ],
+      "sourceSha256": "b439d739dccc85f48e15db699f99396dc8d711a377110aa8c0ccb4ba3c721242",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/references/qa_playbook.md",
+      "target": "render",
+      "lines": [
+        230,
+        231
+      ],
+      "sourceSha256": "b439d739dccc85f48e15db699f99396dc8d711a377110aa8c0ccb4ba3c721242",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/references/scoped-brand-policy.md",
+      "target": "assembly-design",
+      "lines": [
+        62
+      ],
+      "sourceSha256": "479db34b07d13ec91f2939bb05ab1059191694daf4195a6e447dbb1c12525806",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/references/scoped-brand-policy.md",
+      "target": "caption-clips",
+      "lines": [
+        65
+      ],
+      "sourceSha256": "479db34b07d13ec91f2939bb05ab1059191694daf4195a6e447dbb1c12525806",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/references/scoped-brand-policy.md",
+      "target": "find-precedents",
+      "lines": [
+        25
+      ],
+      "sourceSha256": "479db34b07d13ec91f2939bb05ab1059191694daf4195a6e447dbb1c12525806",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/references/scoped-brand-policy.md",
+      "target": "horizontal-to-vertical",
+      "lines": [
+        64
+      ],
+      "sourceSha256": "479db34b07d13ec91f2939bb05ab1059191694daf4195a6e447dbb1c12525806",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/references/scoped-brand-policy.md",
+      "target": "monday",
+      "lines": [
+        67
+      ],
+      "sourceSha256": "479db34b07d13ec91f2939bb05ab1059191694daf4195a6e447dbb1c12525806",
+      "status": "external-opt-in",
+      "reason": "The referenced delivery batch is an explicitly authorized external service workflow, not a local editing dependency."
+    },
+    {
+      "source": "edit/references/scoped-brand-policy.md",
+      "target": "music",
+      "lines": [
+        66
+      ],
+      "sourceSha256": "479db34b07d13ec91f2939bb05ab1059191694daf4195a6e447dbb1c12525806",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/references/stage_memory.md",
+      "target": "find-precedents",
+      "lines": [
+        12
+      ],
+      "sourceSha256": "0e098a8ba3d72158ff7440c337b9260e48c11fbff050e515a0d14453fdb38ab4",
+      "status": "packaged"
+    },
+    {
+      "source": "edit/references/timed-execution.md",
+      "target": "assembly-design",
+      "lines": [
+        47
+      ],
+      "sourceSha256": "e0313317a9ee18b163dabb26ab0011354fb20de1b05f6bf810a33fb19284b506",
+      "status": "packaged"
+    },
+    {
+      "source": "editorial-brain-ingest/references/premiere-cut-study.md",
+      "target": "assembly-design",
+      "lines": [
+        66
+      ],
+      "sourceSha256": "274d365b1505b57688591f3177104444f7c8ae7d1b607115f7ba276917b34bee",
+      "status": "packaged"
+    },
+    {
+      "source": "editorial-brain-ingest/references/premiere-cut-study.md",
+      "target": "find-precedents",
+      "lines": [
+        65
+      ],
+      "sourceSha256": "274d365b1505b57688591f3177104444f7c8ae7d1b607115f7ba276917b34bee",
+      "status": "packaged"
+    },
+    {
+      "source": "editorial-brain-ingest/references/source-to-clips-study.md",
+      "target": "assembly-design",
+      "lines": [
+        185
+      ],
+      "sourceSha256": "82c2d59fc1dc3c9f4a03b926d1adb968ff2e7a81f0a8f5c6730c091a4c78dfba",
+      "status": "packaged"
+    },
+    {
+      "source": "editorial-brain-ingest/references/source-to-clips-study.md",
+      "target": "find-precedents",
+      "lines": [
+        170
+      ],
+      "sourceSha256": "82c2d59fc1dc3c9f4a03b926d1adb968ff2e7a81f0a8f5c6730c091a4c78dfba",
+      "status": "packaged"
+    },
+    {
+      "source": "find-precedents/SKILL.md",
+      "target": "clip-review-tracker",
+      "lines": [
+        160
+      ],
+      "sourceSha256": "b11e5f1ee4a494da367331d1ec6613970dc4bfd970476b06b7ecb75761f1580e",
+      "status": "packaged"
+    },
+    {
+      "source": "find-precedents/SKILL.md",
+      "target": "editorial-brain-ingest",
+      "lines": [
+        32
+      ],
+      "sourceSha256": "b11e5f1ee4a494da367331d1ec6613970dc4bfd970476b06b7ecb75761f1580e",
+      "status": "packaged"
+    },
+    {
+      "source": "find-precedents/references/assembly-cards.md",
+      "target": "editorial-brain-ingest",
+      "lines": [
+        109
+      ],
+      "sourceSha256": "659baaac5a98484f09cb6afb5ff649ad5faa1fe8fd409f2d45747f1efc527872",
+      "status": "packaged"
+    },
+    {
+      "source": "horizontal-to-vertical/references/native-camera-decisions.md",
+      "target": "assembly-design",
+      "lines": [
+        3
+      ],
+      "sourceSha256": "46bd7e7689b6df79bbbf33aeb6f8897342014e63364dd992663cf4fb22e2856e",
+      "status": "packaged"
+    },
+    {
+      "source": "listicle-short/SKILL.md",
+      "target": "assembly-design",
+      "lines": [
+        23,
+        177,
+        178
+      ],
+      "sourceSha256": "092f239dd6123f41e2896e35a1ce4a2444c3cad71d18c1ca4b181d8b7030ae05",
+      "status": "packaged"
+    },
+    {
+      "source": "live-clip/AUTOPILOT.md",
+      "target": "highlight",
+      "lines": [
+        27
+      ],
+      "sourceSha256": "d5d644334b4dc9d61cf85d9bbe6299199d568da4508f0cf2adcad069a0e88816",
+      "status": "unavailable-optional",
+      "reason": "Autonomous live-stream clipping is not a qualified toolkit route; its private guest-policy integration remains unavailable."
+    },
+    {
+      "source": "live-clip/RUNBOOK.md",
+      "target": "edit",
+      "lines": [
+        1
+      ],
+      "sourceSha256": "dc043849ecc01ed0ddefd66a4bd0a5be0daca8b9c2763e6c86d7dc52fa0a3612",
+      "status": "packaged"
+    },
+    {
+      "source": "live-clip/SKILL.md",
+      "target": "edit",
+      "lines": [
+        11,
+        41
+      ],
+      "sourceSha256": "632e9fd9e17110d95d6939c1f72cbe97d1fc6be1c2b12587549291f4a65215a8",
+      "status": "packaged"
+    },
+    {
+      "source": "live-clip/SKILL.md",
+      "target": "highlight",
+      "lines": [
+        49
+      ],
+      "sourceSha256": "632e9fd9e17110d95d6939c1f72cbe97d1fc6be1c2b12587549291f4a65215a8",
+      "status": "unavailable-optional",
+      "reason": "The optional live-stream workflow requires its guest-policy integration before use; ordinary footage intake does not invoke it."
+    },
+    {
+      "source": "long-form-ingest/SKILL.md",
+      "target": "assembly-design",
+      "lines": [
+        137
+      ],
+      "sourceSha256": "173510b2ba417fc02074c38eb5b2b6bf73316fb1030c742b67d04a861a30af37",
+      "status": "packaged"
+    },
+    {
+      "source": "mozi-sf-audit/SKILL.md",
+      "target": "watch",
+      "lines": [
+        90
+      ],
+      "sourceSha256": "3439962a8afea26299e4c01dd952a51410bea6f2b1d850c3f8b5157ae646bc10",
+      "status": "packaged"
+    },
+    {
+      "source": "music/SKILL.md",
+      "target": "render",
+      "lines": [
+        57
+      ],
+      "sourceSha256": "5488bcc38ab6117f4d411b416eb1e86c102344742590535f48decbc60925b52c",
+      "status": "packaged"
+    },
+    {
+      "source": "premiere-to-resolve/SKILL.md",
+      "target": "footage-fetch",
+      "lines": [
+        14
+      ],
+      "sourceSha256": "47089cf1423e82b7869da60e50b7cf16994e98ad08e3714d9a424c21ddeb720e",
+      "status": "packaged"
+    },
+    {
+      "source": "promo/SKILL.md",
+      "target": "saas-animation-video",
+      "lines": [
+        30
+      ],
+      "sourceSha256": "c56a2331d76172fa7eb4be43a645ba04e53c42b0a16d94a7f83c7fce0ce922e3",
+      "status": "packaged"
+    },
+    {
+      "source": "revision-planner/SKILL.md",
+      "target": "mozi-sf-audit",
+      "lines": [
+        198
+      ],
+      "sourceSha256": "2cefd4e627490156aabfcec511426ac6bbfeb762e997d91413194d4510277a7d",
+      "status": "packaged"
+    },
+    {
+      "source": "revision-planner/references/patch-recipes.md",
+      "target": "caption-clips",
+      "lines": [
+        37
+      ],
+      "sourceSha256": "64e324d8d7974e38d930043fe1aa9e664fb83b717caf6893b2a2bac8e609845a",
+      "status": "packaged"
+    },
+    {
+      "source": "saas-animation-video/SKILL.md",
+      "target": "clip-review-tracker",
+      "lines": [
+        191
+      ],
+      "sourceSha256": "6761066686105f0d690d0520e566c113a6f298b9b3695a653f0d4c9c76bb9936",
+      "status": "packaged"
+    },
+    {
+      "source": "saas-animation-video/SKILL.md",
+      "target": "mozi-sf-audit",
+      "lines": [
+        200
+      ],
+      "sourceSha256": "6761066686105f0d690d0520e566c113a6f298b9b3695a653f0d4c9c76bb9936",
+      "status": "packaged"
+    },
+    {
+      "source": "saas-animation-video/SKILL.md",
+      "target": "promo",
+      "lines": [
+        81
+      ],
+      "sourceSha256": "6761066686105f0d690d0520e566c113a6f298b9b3695a653f0d4c9c76bb9936",
+      "status": "packaged"
+    },
+    {
+      "source": "slop-detector/SKILL.md",
+      "target": "slack-voice",
+      "lines": [
+        26
+      ],
+      "sourceSha256": "41c0f044fe1bd35cde691f873114e90a0bd4ac56394baf47cc76d0e5b5e0bf39",
+      "status": "external-opt-in",
+      "reason": "Slack-specific drafting is a conditional writing workflow. Hook-copy cleanup does not require it and does not authorize messaging."
+    },
+    {
+      "source": "source-library/SKILL.md",
+      "target": "assembly-design",
+      "lines": [
+        18
+      ],
+      "sourceSha256": "75f1122a11ac0d4f1df8747576e894590958a99d8492de13ab96698d7fca5672",
+      "status": "packaged"
+    },
+    {
+      "source": "source-library/SKILL.md",
+      "target": "copy",
+      "lines": [
+        18
+      ],
+      "sourceSha256": "75f1122a11ac0d4f1df8747576e894590958a99d8492de13ab96698d7fca5672",
+      "status": "external-opt-in",
+      "reason": "The conditional video-ideas/planning workflow is separate from source retrieval and native clip construction."
+    },
+    {
+      "source": "source-library/SKILL.md",
+      "target": "long-form-ingest",
+      "lines": [
+        18
+      ],
+      "sourceSha256": "75f1122a11ac0d4f1df8747576e894590958a99d8492de13ab96698d7fca5672",
+      "status": "packaged"
+    },
+    {
+      "source": "testimonial-edit/SKILL.md",
+      "target": "assembly-design",
+      "lines": [
+        20,
+        23,
+        85
+      ],
+      "sourceSha256": "b615c1795b40f58b8a1a40b25695029a56667aa8ce0774467246a865373cbb6e",
+      "status": "packaged"
+    },
+    {
+      "source": "testimonial-edit/agent_tasks/1_cutlist_task.txt",
+      "target": "assembly-design",
+      "lines": [
+        3
+      ],
+      "sourceSha256": "06e64350a2b460fdde5f2440602a890c5819e81a94e93f7aae087d26fc842991",
+      "status": "packaged"
+    },
+    {
+      "source": "text-hook/SKILL.md",
+      "target": "slop-detector",
+      "lines": [
+        39
+      ],
+      "sourceSha256": "1d982e178513d6714327e701cec8df7cf9c92a4a3bf031f4db9f7e5e07fee802",
+      "status": "packaged"
+    }
+  ]
+}

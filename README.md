@@ -63,3 +63,5 @@ python3 -m unittest discover -s tests -p '*_test.py'
 [Architecture](docs/ARCHITECTURE.md) · [Agent workflow](docs/AGENT_WORKFLOW.md) · [Engine setup](docs/ENGINES.md) · [Acceptance matrix](docs/ACCEPTANCE.md) · [Third-party notices](THIRD_PARTY_NOTICES.md)
 
 `distribution/SOURCE_MANIFEST.json` records canonical source hashes, distribution hashes, and explicit portability transformations. `PORTABILITY_REPORT.json` records excluded assets and unresolved optional references. Canonical source and older repositories are never modified by this toolkit.
+
+[The dependency inventory](docs/SKILL_DEPENDENCIES.md) covers 38 packaged owners and explicitly classified external routes. Installation and distribution audits reject unknown missing skill dependencies or stale inventory records.

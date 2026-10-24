@@ -54,3 +54,7 @@ That newly built executable subsequently passed the real Codex build and browser
 ## Portable procedure update
 
 The later [portability update](PORTABILITY.md) replaces thirteen packaged workstation-specific paths or execution handoffs while retaining canonical hashes. A fresh runtime verifies 681 files and 37 entrypoints. The earlier eleven normalized-path warnings are resolved; improved shell-path detection now explicitly flags the optional live-stream launcher. This is a dependency warning, not a failed basic installation or proof that all optional workflows are qualified. Existing runtimes are preserved; install the update in a fresh checkout.
+
+## Skill dependency verification
+
+The later dependency update packages 38 owners and 683 files, including the required hook-copy cleanup skill. Installation verifies and pins the [explicit skill route inventory](SKILL_DEPENDENCIES.md) before exposing the runtime. Doctor reports scoped external routes separately from legacy path warnings. Unknown missing skills and stale inventory/policy records fail explicitly. Earlier 37-owner qualification results describe those historical snapshots; use a fresh checkout for the new package.

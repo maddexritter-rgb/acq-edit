@@ -1,0 +1,4 @@
+interface:
+  display_name: "Slop Detector"
+  short_description: "Remove AI writing formulas while keeping your voice"
+  default_prompt: "Use $slop-detector to rewrite this copy, removing AI writing patterns while preserving its meaning, facts, and voice."

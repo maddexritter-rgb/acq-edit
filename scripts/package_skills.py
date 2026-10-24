@@ -3,7 +3,7 @@
 import argparse,ast,hashlib,json,re
 from pathlib import Path
 from portable_patches import portable_text,portable_distribution,private_references
-OWNERS='edit assembly-design long-form-ingest find-precedents source-intel footage-fetch horizontal-to-vertical caption-clips text-hook music render watch clip-review-room revision-planner transcript-edit clip-review-tracker audit-script audit-audio audit-captions audit-visual mozi-sf-audit scorecard-audit book-doodle b-roll-injector broll-cutaway cinematic vertical-livestream-card promo saas-animation-video ad-edit listicle-short live-clip testimonial-edit source-library alex premiere-to-resolve editorial-brain-ingest'.split()
+OWNERS='edit assembly-design long-form-ingest find-precedents source-intel footage-fetch horizontal-to-vertical caption-clips text-hook slop-detector music render watch clip-review-room revision-planner transcript-edit clip-review-tracker audit-script audit-audio audit-captions audit-visual mozi-sf-audit scorecard-audit book-doodle b-roll-injector broll-cutaway cinematic vertical-livestream-card promo saas-animation-video ad-edit listicle-short live-clip testimonial-edit source-library alex premiere-to-resolve editorial-brain-ingest'.split()
 EXT={'.md','.py','.js','.mjs','.cjs','.ts','.tsx','.jsx','.json','.sh','.css','.html','.toml','.yaml','.yml','.txt','.svg'}
 SKIP={'node_modules','.git','__pycache__','.venv','venv','training','corpus','dataset','deliveries','outputs','results','runtime','.cache','artifacts','evidence','fixtures','logs'}
 SECRET=re.compile(r'(?:sk-(?:proj-|ant-)?[A-Za-z0-9_-]{24,}|sb_secret_[A-Za-z0-9_-]{20,}|xox[baprs]-[A-Za-z0-9-]{15,}|AIza[A-Za-z0-9_-]{30,}|eyJ[A-Za-z0-9_-]{15,}\.[A-Za-z0-9_-]{15,}\.[A-Za-z0-9_-]{10,})')
