@@ -80,11 +80,81 @@ test('YouTube ignores user config and refuses a downloader path outside its stag
  const f=await fixture(t);const tools={...f.tools,execute:async(command,args)=>{
   assert.equal(command,'yt-dlp');assert(args.includes('--ignore-config'));const manifest=args[args.indexOf('--print-to-file')+2];await writeFile(manifest,f.file+'\n');return '';
  }};
- await assert.rejects(importUrl(f.store,'p','https://youtu.be/example','youtube','drive',tools),/outside project/);assert.equal(f.store.sources('p').length,0);
+ await assert.rejects(importUrl(f.store,'p','https://youtu.be/HOfdboHvshg','youtube','drive',tools),/outside project/);assert.equal(f.store.sources('p').length,0);
+});
+async function youtubeFixture(f,{metadata={},probe}={}){
+ const info={id:'HOfdboHvshg',extractor_key:'Youtube',webpage_url:'https://www.youtube.com/watch?v=HOfdboHvshg',is_live:false,live_status:'not_live',duration:52,title:'Sample',channel:'Fixture',channel_id:'channel-id',formats:[{url:'private extractor URL'}],http_headers:{authorization:'not-for-receipt'},...metadata};
+ const calls=[];let infoPath;
+ const tools={...f.tools,execute:async(command,args)=>{
+  calls.push({command,args});
+  if(command==='ffprobe'){if(probe)await probe(infoPath);return JSON.stringify({streams:[{codec_type:'video'}]})}
+  assert.equal(command,'yt-dlp');assert(args.includes('--write-info-json'));assert(args.includes('--no-write-playlist-metafiles'));
+  const template=args[args.indexOf('-o')+1],candidate=template.replace('%(ext)s','mkv');infoPath=path.join(path.dirname(candidate),'source.info.json');
+  await copyFile(f.file,candidate);await writeFile(infoPath,JSON.stringify(info));await writeFile(args[args.indexOf('--print-to-file')+2],candidate+'\n');return '';
+ }};
+ return {tools,calls,info,get infoPath(){return infoPath}};
+}
+test('YouTube binds exact video metadata to the verified copy and reopens without downloading again',async t=>{
+ const f=await fixture(t),y=await youtubeFixture(f);
+ const source=await importUrl(f.store,'p','https://youtu.be/HOfdboHvshg?si=share&t=20&list=ignored','youtube','drive',y.tools);
+ const receipt=JSON.parse(await readFile(source.verificationPath,'utf8'));
+ assert.equal(receipt.verification,'youtube-extractor-identity-and-local-sha256');assert.equal(receipt.remote.videoId,'HOfdboHvshg');
+ assert.equal(receipt.remote.metadataSha256,await sha256(y.infoPath));assert.equal(receipt.remote.metadataSha256,f.store.intake(source.id).youtubeInfoSha256);
+ assert.equal(receipt.remote.webpageUrl,'https://www.youtube.com/watch?v=HOfdboHvshg');assert.equal(receipt.remote.duration,52);
+ assert(!JSON.stringify(receipt).includes('private extractor URL'));assert(!JSON.stringify(receipt).includes('not-for-receipt'));
+ assert.equal(y.calls[0].args.at(-1),'https://www.youtube.com/watch?v=HOfdboHvshg');
+ const bytes=await readFile(source.path),receiptBytes=await readFile(source.verificationPath);
+ const reopened=f.reopen();await recoverIntake(reopened,source.id,y.tools);assert.equal(y.calls.length,2);assert.equal(reopened.sources('p').length,1);
+ assert.deepEqual(await readFile(source.path),bytes);assert.deepEqual(await readFile(source.verificationPath),receiptBytes);
+});
+test('YouTube accepts explicit short/embed/archive video URLs but refuses channel or ambiguous links before transfer',async t=>{
+ const f=await fixture(t);let calls=0;const tools={execute:async()=>{calls++;throw Error('unexpected download')},freeBytes:async()=>100};
+ for(const url of ['https://www.youtube.com/@channel','https://youtube.com/playlist?list=one','https://youtube.com/watch?v=HOfdboHvshg&v=anotherid00','https://youtu.be/short','https://youtube.com/redirect?q=https://youtu.be/HOfdboHvshg','https://user:pass@youtu.be/HOfdboHvshg']){
+  await assert.rejects(importUrl(f.store,'p',url,'youtube','drive',tools));
+ }
+ assert.equal(calls,0);assert.equal(f.store.intakes('p').length,0);
+ for(const prefix of ['https://www.youtube.com/shorts/','https://m.youtube.com/embed/','https://youtube.com/live/']){
+  await assert.rejects(importUrl(f.store,'p',prefix+'HOfdboHvshg','youtube','drive',tools),/free space/);
+  assert.equal(f.store.intakes('p').at(-1).youtubeVideoId,'HOfdboHvshg');
+ }
+ assert.equal(calls,0);
+});
+test('YouTube rejects another video, playlist, live source or invalid metadata before copying',async t=>{
+ const f=await fixture(t);
+ for(const metadata of [{id:'otherid0000'},{extractor_key:'Generic'},{_type:'playlist'},{webpage_url:'https://youtu.be/otherid0000'},{is_live:true,live_status:'is_live'},{live_status:'post_live'},{duration:0}]){
+  const y=await youtubeFixture(f,{metadata});await assert.rejects(importUrl(f.store,'p','https://youtu.be/HOfdboHvshg','youtube','drive',y.tools),/YouTube/);
+  assert.equal(y.calls.length,1);assert.equal(f.store.sources('p').length,0);
+ }
+ assert.deepEqual(await readdir(path.join(f.root,'00_SOURCE')),[]);
+});
+test('YouTube metadata changed during probing cannot register the source',async t=>{
+ const f=await fixture(t),y=await youtubeFixture(f,{probe:async file=>{const info=JSON.parse(await readFile(file,'utf8'));info.title='changed after pin';await writeFile(file,JSON.stringify(info))}});
+ await assert.rejects(importUrl(f.store,'p','https://youtu.be/HOfdboHvshg','youtube','drive',y.tools),/metadata changed/);
+ const i=f.store.intakes('p').at(-1);assert.equal(i.state,'failed');assert.equal(f.store.sources('p').length,0);
+ assert.equal(await sha256(i.target+'.partial'),i.expectedSha256);
+});
+test('YouTube interrupted verification recovers pinned bytes and metadata without replay',async t=>{
+ const f=await fixture(t);let fail=true;const y=await youtubeFixture(f,{probe:async()=>{if(fail)throw Error('interrupted verification')}});
+ await assert.rejects(importUrl(f.store,'p','https://youtu.be/HOfdboHvshg','youtube','drive',y.tools),/interrupted verification/);
+ const i=f.store.intakes('p').at(-1),original=await readFile(y.infoPath);fail=false;
+ await writeFile(y.infoPath,JSON.stringify({...y.info,title:'mutated'}));await assert.rejects(recoverIntake(f.store,i.id,y.tools),/metadata changed/);
+ await writeFile(y.infoPath,original);const source=await recoverIntake(f.store,i.id,y.tools);
+ assert.equal(y.calls.filter(c=>c.command==='yt-dlp').length,1);assert.equal(f.store.sources('p').length,1);assert.equal(source.sha256,i.expectedSha256);
+});
+test('YouTube missing or symlinked metadata fails without registering a source',async t=>{
+ const f=await fixture(t);
+ for(const link of [false,true]){
+  const tools={...f.tools,execute:async(command,args)=>{
+   assert.equal(command,'yt-dlp');const candidate=args[args.indexOf('-o')+1].replace('%(ext)s','mkv');await copyFile(f.file,candidate);
+   if(link)await symlink(f.file,path.join(path.dirname(candidate),'source.info.json'));
+   await writeFile(args[args.indexOf('--print-to-file')+2],candidate+'\n');return '';
+  }};
+  await assert.rejects(importUrl(f.store,'p','https://youtu.be/HOfdboHvshg','youtube','drive',tools),/metadata/);assert.equal(f.store.sources('p').length,0);
+ }
 });
 test('insufficient disk and invalid remote URLs fail without a transfer',async t=>{
  const f=await fixture(t);let calls=0;const tools={execute:async()=>{calls++;throw Error('unexpected execution')},freeBytes:async()=>100};
- await assert.rejects(importUrl(f.store,'p','https://youtu.be/example','youtube','drive',tools),/free space/);assert.equal(calls,0);
+ await assert.rejects(importUrl(f.store,'p','https://youtu.be/HOfdboHvshg','youtube','drive',tools),/free space/);assert.equal(calls,0);
  const count=f.store.intakes('p').length;
  for(const url of ['https://drive.google.com/drive/folders/folder','https://user:pass@drive.google.com/file/d/id/view','https://evil.test/file/d/id/view'])await assert.rejects(importUrl(f.store,'p',url,'drive','drive',tools));
  assert.equal(f.store.intakes('p').length,count);

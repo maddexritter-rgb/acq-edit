@@ -12,6 +12,7 @@ export interface Intake {
  directory:string;candidate?:string;target?:string;expectedSha256?:string;bytes?:number;sourceId?:string;
  ownerPid:number|null;childPid:number|null;childPending?:boolean;createdAt:string;updatedAt:string;error:string|null;
  batchId?:string;driveExpected?:DriveFile;
+ youtubeVideoId?:string;youtubeInfoSha256?:string;
 }
 export interface DriveFile {id:string;name:string;parentId:string;folders:string[];bytes:number;md5:string}
 export type NativeAction='compile'|'captions'|'hooks'|'reference'|'inspect'|'open'|'build'|'revise'|'render';

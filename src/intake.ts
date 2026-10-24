@@ -24,9 +24,18 @@ async function begin(store:Store,projectId:string,kind:Intake['kind'],input:stri
  const intake: Intake = {id,projectId,kind,input,origin,directory,state:kind==='local'?'verifying':'downloading',ownerPid:process.pid,childPid:null,createdAt:now(),updatedAt:now(),error:null,...extra};
  store.addIntake(intake);await mkdir(directory,{recursive:true,mode:0o700});await record(store,id);return intake;
 }
+function youtubeId(url:string){
+ const p=new URL(url);
+ invariant(p.protocol==='https:'&&!p.username&&!p.password&&!p.port&&['youtube.com','www.youtube.com','youtu.be','m.youtube.com'].includes(p.hostname),'Expected a YouTube HTTPS URL without embedded credentials');
+ const id=p.hostname==='youtu.be'?p.pathname.match(/^\/([A-Za-z0-9_-]{11})\/?$/)?.[1]
+  :p.pathname==='/watch'&&p.searchParams.getAll('v').length===1?p.searchParams.get('v')
+  :p.pathname.match(/^\/(?:shorts|live|embed)\/([A-Za-z0-9_-]{11})\/?$/)?.[1];
+ invariant(id&&/^[A-Za-z0-9_-]{11}$/.test(id),'Provide one YouTube video link; channel, playlist and ambiguous URLs are not supported');
+ return id;
+}
 function parseUrl(url:string,kind:'youtube'|'drive',remote:string){
  const p=new URL(url);invariant(p.protocol==='https:'&&!p.username&&!p.password&&!p.port,'Expected an HTTPS footage URL without embedded credentials');
- if(kind==='youtube'){invariant(['youtube.com','www.youtube.com','youtu.be','m.youtube.com'].includes(p.hostname),'Expected a YouTube HTTPS URL');return {}}
+ if(kind==='youtube')return {youtubeVideoId:youtubeId(url)};
  invariant(p.hostname==='drive.google.com','Expected a Google Drive URL');
  const id=p.pathname.match(/^\/file\/d\/([A-Za-z0-9_-]+)(?:\/|$)/)?.[1]||p.searchParams.get('id');
  invariant(id&&/^[A-Za-z0-9_-]+$/.test(id),'Use a single Drive file link; folders are imported file by file');
@@ -51,12 +60,31 @@ async function driveProof(store:Store,i:Intake,candidate:string,tools:IntakeTool
  const h=createHash('md5');for await(const chunk of createReadStream(candidate))h.update(chunk);const md5=h.digest('hex');invariant(md5===m.md5Checksum.toLowerCase(),'Drive MD5 differs from downloaded bytes');
  return {kind:'drive-md5',fileId:i.fileId,name:m.name,bytes:size,md5,modifiedTime:m.modifiedTime,checkedAt:now()};
 }
+async function youtubeProof(store:Store,i:Intake){
+ const folder=path.join(i.directory,'download'),file=path.join(folder,'source.info.json');
+ invariant(await exists(file),'YouTube metadata is missing; retain this attempt and start a new download');
+ const entry=await lstat(file);invariant(entry.isFile()&&entry.size>0&&entry.size<=16*1024*1024,'Invalid YouTube metadata file');
+ await containedFile(folder,file);
+ const raw=await readFile(file),digest=createHash('sha256').update(raw).digest('hex');
+ invariant(!i.youtubeInfoSha256||i.youtubeInfoSha256===digest,'YouTube metadata changed during intake; preserve this attempt');
+ const m=JSON.parse(raw.toString('utf8')),id=i.youtubeVideoId||youtubeId(i.input);
+ invariant(m&&typeof m==='object'&&!Array.isArray(m)&&(!m._type||m._type==='video')&&m.extractor_key==='Youtube'&&m.id===id,'YouTube metadata does not identify the requested video');
+ invariant(typeof m.webpage_url==='string'&&youtubeId(m.webpage_url)===id,'YouTube metadata webpage differs from requested video');
+ invariant(m.is_live===false&&['not_live','was_live'].includes(m.live_status),'YouTube source is live, upcoming or not a processed recording');
+ invariant(typeof m.duration==='number'&&Number.isFinite(m.duration)&&m.duration>0,'YouTube metadata has no valid source duration');
+ const label=(value:unknown)=>typeof value==='string'?value.slice(0,2000):null;
+ // Retain a small identity receipt, not signed media URLs, headers or the full extractor response.
+ const proof={kind:'youtube-extractor-identity',videoId:id,webpageUrl:`https://www.youtube.com/watch?v=${id}`,title:label(m.title),channelId:label(m.channel_id),channel:label(m.channel),duration:m.duration,liveStatus:m.live_status,metadataPath:file,metadataSha256:digest};
+ if(!i.youtubeInfoSha256)await record(store,i.id,{youtubeVideoId:id,youtubeInfoSha256:digest});
+ return proof;
+}
 async function complete(store:Store,id:string,tools:IntakeTools):Promise<Source>{
  tools.signal?.throwIfAborted();
  let i=store.intake(id);const p=store.project(i.projectId);
  let candidate=i.kind==='local'?await realpath(i.input):await downloaded(store,i);
  const before=await stat(candidate);invariant(before.isFile()&&before.size>0,'Source must be a nonempty regular file');
  const remote=i.kind==='drive'?await driveProof(store,i,candidate,tools):undefined;
+ const youtube=i.kind==='youtube'?await youtubeProof(store,i):undefined;
  const hash=await sha256(candidate);invariant(!i.expectedSha256||i.expectedSha256===hash,'Intake candidate changed; preserve this attempt and start a new one');
  const extension=path.extname(candidate).toLowerCase();invariant(/^\.[a-z0-9]{1,12}$/.test(extension),'Source needs a normal media filename extension');
  const target=i.target||path.join(p.root,'00_SOURCE',id+'_'+safeName(path.basename(candidate,path.extname(candidate)))+extension);
@@ -74,10 +102,11 @@ async function complete(store:Store,id:string,tools:IntakeTools):Promise<Source>
  const probe=JSON.parse(await execute(store,id,'ffprobe',['-v','error','-show_format','-show_streams','-of','json',verifiedFile],tools));
  invariant(probe.streams?.some((s:any)=>s.codec_type==='video'||s.codec_type==='audio'),'No audio/video stream');
  const finalRemote=i.kind==='drive'?await driveProof(store,i,candidate,tools):undefined;
+ const finalYoutube=i.kind==='youtube'?await youtubeProof(store,i):undefined;
  invariant(!remote||(remote.md5===finalRemote?.md5&&remote.bytes===finalRemote.bytes),'Drive source changed during verification');
  tools.signal?.throwIfAborted();
  invariant(await sha256(verifiedFile)===hash,'Source copy changed during media verification');
- const verificationPath=path.join(i.directory,'verification.json');await atomicJson(verificationPath,{schema:'acq-edit/intake-verification-v1',intakeId:id,origin:i.origin,candidate,bytes:before.size,sha256:hash,remote:finalRemote||null,verification:remote?'remote-md5-and-local-sha256':'local-copy-sha256',probed:true,verifiedAt:now(),...(i.batchId?{batchId:i.batchId,folderManifestEntry:i.driveExpected}:{})});
+ const verificationPath=path.join(i.directory,'verification.json');await atomicJson(verificationPath,{schema:'acq-edit/intake-verification-v1',intakeId:id,origin:i.origin,candidate,bytes:before.size,sha256:hash,remote:finalRemote||finalYoutube||null,verification:remote?'remote-md5-and-local-sha256':youtube?'youtube-extractor-identity-and-local-sha256':'local-copy-sha256',probed:true,verifiedAt:now(),...(i.batchId?{batchId:i.batchId,folderManifestEntry:i.driveExpected}:{})});
  if(!alreadyLanded){invariant(!await exists(target),'Intake destination appeared during verification');await rename(partial,target)}
  await chmod(target,0o444);const source:Source={id,projectId:i.projectId,path:target,sha256:hash,bytes:before.size,origin:i.origin,probe,intakeId:id,verificationPath,verificationSha256:await sha256(verificationPath)};
  store.finishIntake(id,source);await record(store,id);await exportState(store,i.projectId);return source;
@@ -87,7 +116,7 @@ async function attempt(store:Store,i:Intake,tools:IntakeTools,download=false){
   if(download){
    const folder=path.join(i.directory,'download');await mkdir(folder,{mode:0o700});
    const budget=Math.floor((await available(store.project(i.projectId).root,tools)-reserve)/4);invariant(budget>0,'Insufficient free space for download and verified source copy');
-   if(i.kind==='youtube')await execute(store,i.id,'yt-dlp',['--ignore-config','--no-playlist','--no-simulate','--restrict-filenames','--no-overwrites','--no-progress','--match-filter','!is_live','--max-filesize',String(budget),'--print-to-file','after_move:filepath',path.join(i.directory,'completed-path.txt'),'-o',path.join(folder,'source.%(ext)s'),'--',i.input],tools,{timeout:4*3600_000});
+   if(i.kind==='youtube')await execute(store,i.id,'yt-dlp',['--ignore-config','--no-playlist','--no-simulate','--restrict-filenames','--no-overwrites','--no-progress','--write-info-json','--clean-info-json','--no-write-playlist-metafiles','--match-filter','!is_live','--max-filesize',String(budget),'--print-to-file','after_move:filepath',path.join(i.directory,'completed-path.txt'),'-o',path.join(folder,'source.%(ext)s'),'--',`https://www.youtube.com/watch?v=${i.youtubeVideoId}`],tools,{timeout:4*3600_000});
    else await execute(store,i.id,'rclone',['backend','copyid',i.remote+':',i.fileId!,folder+path.sep,'--checksum','--immutable','--max-transfer',String(budget),'--cutoff-mode','hard'],tools,{timeout:4*3600_000});
    await record(store,i.id,{state:'verifying'});
   }
