@@ -2346,8 +2346,8 @@
       "path": "footage-fetch/SKILL.md",
       "source": "canonical-skills/footage-fetch/SKILL.md",
       "source_sha256": "08d4da787c764b7f060fbe2a22f74fb9c97debdec0084cf892c5bcf0208d4fdf",
-      "distribution_sha256": "f4698b6b2ec47e935f9ed4c5c794c7120a16a6e84d7fd554148379144dbb8a0f",
-      "bytes": 7082,
+      "distribution_sha256": "80f60e6bc13510d1974e5e67114c8982bde3880cdfaa9eeebba079e50109257e",
+      "bytes": 6652,
       "transforms": [
         {
           "from": "canonical-root",
@@ -2356,6 +2356,10 @@
         {
           "from": "asset-library-root",
           "to": "__ACQ_ASSETS__"
+        },
+        {
+          "patch": "portable-skill-description",
+          "owner": "footage-fetch"
         }
       ]
     },
@@ -3796,12 +3800,16 @@
       "path": "render/SKILL.md",
       "source": "canonical-skills/render/SKILL.md",
       "source_sha256": "d3ad6bd631bc2f14dbb02fec71aab4de7bcde4bd4ed8dad8c5e4411710e8ffc1",
-      "distribution_sha256": "a127fc4438eb473b30a30654b3f2824a6614cca78243370a797b7ccf0cdb313d",
-      "bytes": 8069,
+      "distribution_sha256": "b42ef062450375bc6520e18462f58ca2d3da0e6ba79d33dc70dc713aacebe606",
+      "bytes": 7039,
       "transforms": [
         {
           "from": "canonical-root",
           "to": "__ACQ_SKILLS__"
+        },
+        {
+          "patch": "portable-skill-description",
+          "owner": "render"
         }
       ]
     },
@@ -4101,12 +4109,16 @@
       "path": "transcript-edit/SKILL.md",
       "source": "canonical-skills/transcript-edit/SKILL.md",
       "source_sha256": "97337382b3cca964999552040bcda4b04d02a9e703b47c72c04d6b4c00f050c3",
-      "distribution_sha256": "cdfccac132f49958981cf933acda60c4ac16dbcf2ab2cc079d970f1f431e0550",
-      "bytes": 7129,
+      "distribution_sha256": "247e65093dce180aeb1f961b868aad1430117fe9f2a01a66ffeb68884140c365",
+      "bytes": 6722,
       "transforms": [
         {
           "from": "canonical-root",
           "to": "__ACQ_SKILLS__"
+        },
+        {
+          "patch": "portable-skill-description",
+          "owner": "transcript-edit"
         }
       ]
     },
@@ -4893,12 +4905,16 @@
       "path": "vertical-livestream-card/SKILL.md",
       "source": "canonical-skills/vertical-livestream-card/SKILL.md",
       "source_sha256": "fe4fa8bc3452350de99ecf0b959c0d090b7b6b76903490d43a15a5d189220993",
-      "distribution_sha256": "4e2f340453aeb82f3ba3d5e2cefbab82b8e03a5fa1848dfc7905708c91d10818",
-      "bytes": 6502,
+      "distribution_sha256": "a631ec7c186e8646ae708b6618dc8f3ba68cbbc912c470dd674583558c8ae3f3",
+      "bytes": 6122,
       "transforms": [
         {
           "from": "canonical-root",
           "to": "__ACQ_SKILLS__"
+        },
+        {
+          "patch": "portable-skill-description",
+          "owner": "vertical-livestream-card"
         }
       ]
     },
@@ -4914,12 +4930,16 @@
       "path": "promo/SKILL.md",
       "source": "canonical-skills/promo/SKILL.md",
       "source_sha256": "aad8693e9146b9c4b71e49a4a311c874c0a18c282e2938515b270b6668d83cd3",
-      "distribution_sha256": "d15a7bdd3fbfc16e10d2ca6d6bd889d8c87ae70d56d3f1d7b68cac69a8bd19c2",
-      "bytes": 24181,
+      "distribution_sha256": "c56a2331d76172fa7eb4be43a645ba04e53c42b0a16d94a7f83c7fce0ce922e3",
+      "bytes": 23103,
       "transforms": [
         {
           "from": "canonical-root",
           "to": "__ACQ_SKILLS__"
+        },
+        {
+          "patch": "portable-skill-description",
+          "owner": "promo"
         }
       ]
     },
@@ -5252,12 +5272,16 @@
       "path": "saas-animation-video/SKILL.md",
       "source": "canonical-skills/saas-animation-video/SKILL.md",
       "source_sha256": "54eb024ef4e38049a1bcab22f59dc28cfa62ae670361bd21b851be914c63192b",
-      "distribution_sha256": "09658b5f4e3e0928666979919bbd735c4988af7f06b312c54ae4eef20195a93d",
-      "bytes": 9179,
+      "distribution_sha256": "6761066686105f0d690d0520e566c113a6f298b9b3695a653f0d4c9c76bb9936",
+      "bytes": 8637,
       "transforms": [
         {
           "from": "canonical-root",
           "to": "__ACQ_SKILLS__"
+        },
+        {
+          "patch": "portable-skill-description",
+          "owner": "saas-animation-video"
         }
       ]
     },

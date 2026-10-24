@@ -1,6 +1,6 @@
 ---
 name: vertical-livestream-card
-description: THE look for raw footage that is ALREADY 9:16 (a phone livestream, e.g. Alex poolside/couch streams) — floating card over a blurred duplicate of itself, physical elevation shadow, headroom-anchored face crop. NOT a 16:9→9:16 reframe (that's horizontal-to-vertical's job — this skill starts from footage that's already vertical and has nothing to reframe). Use whenever raw source is natively 9:16 phone-shot livestream footage and the deliverable is a stylized vertical short. Trigger keywords: livestream card, vertical livestream, phone stream footage, floating card look, card over blur, already vertical footage, native 9:16 source.
+description: "Design a floating-card presentation for footage already shot vertically, with a blurred duplicate background, elevation shadow and headroom-aware crop. Use for native vertical livestream or phone footage; horizontal reframing belongs to horizontal-to-vertical."
 ---
 
 # Vertical Livestream Card — the floating-card-over-blur look

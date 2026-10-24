@@ -1,6 +1,6 @@
 ---
 name: render
-description: THE manifest-driven, stage-cached rendering engine. Every clip is a recipe (`manifest.json` + source files for each layer — `cuts.json`, `reframe.json`, `captions.ass`, `music.json`); render builds it in ordered stages (`cut → reframe → grade → captions → mix → leadfix → deliver`); each stage's output is content-hashed into `10_WORK/stages/<stage>/<hash>.mp4`. Edit any source file and re-run — the engine detects which stage's inputs changed and rebuilds from THAT stage forward, cache-hitting everything above it. **The whole point: revisions on a delivered clip become surgical.** Caption typo → edit `captions.ass`, re-run → only the captions+mix+leadfix+deliver stages re-execute (≈5s for a 50s listicle). Cut adjustment → edit `cuts.json`, re-run → everything re-renders from cut down. **One pipeline per clip type** (`pipelines/listicle.json`, `pipelines/qa.json`, etc.) defines the stage chain; project `manifest.json` references a pipeline and supplies its config. Use whenever building or revising a clip — never hand-call individual stages, the engine is the entry point. Trigger keywords render, re-render, revise clip, apply revision, caption fix, recut, rebuild, stage cache, manifest, layered render, surgical revision.
+description: "Render or revise clips through the selected native editor, preserving project recipes, reusable stage assets and immutable published versions. Use for rendering, exports, rerenders and dependent-layer updates after an approved edit."
 ---
 
 # render — manifest-driven, stage-cached clip rendering

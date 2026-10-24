@@ -17,6 +17,8 @@ class MaterializationTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.assets = self.root / 'private assets'
+        (self.root / 'docs').mkdir()
+        (self.root / materialize.CONTRACT).write_text('Toolkit execution contract')
         self.source = self.root / 'distribution/skills'
         self.entries = []
         for name, content in [('edit/SKILL.md', 'Use __ACQ_SKILLS__ and __ACQ_ASSETS__'),
@@ -51,6 +53,46 @@ class MaterializationTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'hash mismatch'):
             self.build()
         self.assertFalse((self.root / '.local').exists())
+
+    def test_direct_skill_routing_preserves_yaml_and_body_and_pins_contract(self):
+        original='---\r\nname: caption-clips\r\ndescription: |\r\n  Prepare captions.\r\n---\r\n\n# Canonical captions\nUse the legacy host executor only in its mode.\n'
+        target=self.source/'caption-clips/SKILL.md';target.parent.mkdir();target.write_bytes(original.encode())
+        self.entries.append({'path':'caption-clips/SKILL.md','distribution_sha256':hashlib.sha256(target.read_bytes()).hexdigest()});self.write_manifest()
+        result=self.build();runtime=(self.root/'.local/skills/caption-clips/SKILL.md').read_bytes().decode()
+        prefix,body=original.split('---\r\n\n',1)
+        self.assertTrue(runtime.startswith(prefix+'---\r\n'))
+        self.assertTrue(runtime.endswith('\n'+body))
+        self.assertLess(runtime.index('#native-execution-routing'),runtime.index('# Canonical captions'))
+        self.assertIn('acq%20install%20spaces%20',runtime)
+        self.assertEqual(target.read_bytes(),original.encode())
+        receipt=json.loads(Path(result['receipt']).read_text())
+        self.assertEqual(set(receipt['executionContract']['entrypoints']),{'edit/SKILL.md','caption-clips/SKILL.md'})
+        self.assertEqual(receipt['executionContract']['sha256'],hashlib.sha256((self.root/materialize.CONTRACT).read_bytes()).hexdigest())
+        before=(self.root/'.local/skills/edit/SKILL.md').read_bytes()
+        (self.root/materialize.CONTRACT).write_text('Changed routing')
+        with self.assertRaisesRegex(RuntimeError,'different distribution'):self.build()
+        self.assertEqual((self.root/'.local/skills/edit/SKILL.md').read_bytes(),before)
+
+    def test_bad_frontmatter_or_missing_contract_never_exposes_runtime(self):
+        target=self.source/'edit/SKILL.md';target.write_text('---\nname: edit\nMissing closing delimiter')
+        self.entries[0]['distribution_sha256']=hashlib.sha256(target.read_bytes()).hexdigest();self.write_manifest()
+        with self.assertRaisesRegex(RuntimeError,'frontmatter'):self.build()
+        self.assertFalse((self.root/'.local').exists())
+        (self.root/materialize.CONTRACT).unlink()
+        with self.assertRaises(FileNotFoundError):self.build()
+        self.assertFalse((self.root/'.local').exists())
+
+    def test_health_check_is_read_only_and_detects_stage_or_contract_drift(self):
+        self.build();target=self.root/'.local/skills/edit/SKILL.md'
+        original=target.read_bytes();before=target.stat().st_mtime_ns
+        result=materialize.verify(self.root)
+        self.assertTrue(result['ready']);self.assertEqual(result['routedEntrypoints'],1)
+        self.assertFalse(result['nativeWorkflowQualified']);self.assertEqual(target.stat().st_mtime_ns,before)
+        target.write_text('local edits')
+        with self.assertRaisesRegex(RuntimeError,'changed or extra'):materialize.verify(self.root)
+        self.assertEqual(target.read_text(),'local edits');target.write_bytes(original)
+        (self.root/materialize.CONTRACT).write_text('changed')
+        with self.assertRaisesRegex(RuntimeError,'different distribution'):materialize.verify(self.root)
 
     def test_path_traversal_and_duplicate_refused_before_writes(self):
         for name in ['../outside', '/tmp/outside', 'edit/../outside', 'edit//SKILL.md', 'edit/SKILL.md']:

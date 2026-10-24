@@ -1,6 +1,6 @@
 ---
 name: footage-fetch
-description: Download raw footage FAST from Google Drive (folders OR single-file links) into properly-scaffolded per-download projects, with integrity verification. Use whenever Maddex drops a Google Drive link and wants the footage pulled to disk — "download this footage", "grab this drive folder", "pull these clips", "add this to the download queue", "digest this footage", "ingest this". Uses rclone (never the browser): parallel multi-thread transfers, by-ID single-file downloads, detached so the session can't kill them, disk-space guards, per-download project scaffolding, and MD5 verification. NOT for transcribing (that's long-form-ingest) or editing.
+description: "Import local footage, YouTube videos or authenticated Google Drive files and folders into verified project-owned sources. Use for footage intake, download queues, checksum verification and interrupted-transfer recovery."
 ---
 
 # Footage Fetch — fast, verified Google Drive downloads

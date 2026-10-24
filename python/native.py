@@ -1,29 +1,50 @@
 #!/usr/bin/env python3
-"""Dispatch to exactly one engine. Import only the chosen adapter."""
-import argparse,importlib,json,sys,fcntl,os
+"""Validate project identity before importing the one selected native adapter."""
+import argparse
+import importlib
+import json
+import sys
+import fcntl
+import os
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parent))
-from common import read,inside
-p=argparse.ArgumentParser();p.add_argument('action',choices=['doctor','compile','captions','inspect','build','revise','render']);p.add_argument('--backend',choices=['filmcraft','premiere','resolve'],required=True);p.add_argument('--config',required=True);p.add_argument('--project');p.add_argument('--packet');a=p.parse_args()
-try:
- config=read(a.config)
- if config.get('python'):os.environ['ACQ_EDIT_SHARED_PYTHON']=config['python']
- adapter=importlib.import_module(a.backend).Adapter(config) if a.action not in ['compile','captions'] else None
- if a.action=='doctor':result=adapter.doctor()
- else:
-  project=read(a.project)
-  if project['backend']!=a.backend:raise RuntimeError('Backend is fixed within a project')
-  packet=read(a.packet);inside(project['root'],a.packet)
-  lock=Path(project['root'])/'10_WORK/native.lock'
-  with lock.open('a') as f:
-   fcntl.flock(f,fcntl.LOCK_EX|fcntl.LOCK_NB)
-   if a.action=='compile':
-    from assembly_plan import compile_plan
-    result=compile_plan(project,packet)
-   elif a.action=='captions':
-    from caption_plan import prepare_plan
-    result=prepare_plan(project,packet)
-   else:result=getattr(adapter,a.action)(project,packet)
- print(json.dumps(result,indent=2))
-except Exception as e:
- print(json.dumps({'status':'failed','error':str(e),'retrySafe':False}),file=sys.stderr);sys.exit(1)
+from common import read,inside,require
+
+
+def execute(action,backend,config_path,project_path=None,packet_path=None):
+    config=read(config_path)
+    if config.get('python'):os.environ['ACQ_EDIT_SHARED_PYTHON']=config['python']
+    if action=='doctor':return importlib.import_module(backend).Adapter(config).doctor()
+    require(project_path and packet_path,'Native operations require a project and packet')
+    project=read(project_path)
+    require(project['backend']==backend,'Backend is fixed within a project')
+    packet=read(inside(project['root'],packet_path))
+    lock=Path(project['root'])/'10_WORK/native.lock'
+    with lock.open('a') as stream:
+        fcntl.flock(stream,fcntl.LOCK_EX|fcntl.LOCK_NB)
+        if action=='compile':
+            from assembly_plan import compile_plan
+            return compile_plan(project,packet)
+        if action=='captions':
+            from caption_plan import prepare_plan
+            return prepare_plan(project,packet)
+        adapter=importlib.import_module(backend).Adapter(config)
+        return getattr(adapter,action)(project,packet)
+
+
+def main():
+    parser=argparse.ArgumentParser()
+    parser.add_argument('action',choices=['doctor','compile','captions','inspect','build','revise','render'])
+    parser.add_argument('--backend',choices=['filmcraft','premiere','resolve'],required=True)
+    parser.add_argument('--config',required=True)
+    parser.add_argument('--project');parser.add_argument('--packet')
+    args=parser.parse_args()
+    try:
+        print(json.dumps(execute(args.action,args.backend,args.config,args.project,args.packet),indent=2))
+        return 0
+    except Exception as error:
+        print(json.dumps({'status':'failed','error':str(error),'retrySafe':False}),file=sys.stderr)
+        return 1
+
+
+if __name__=='__main__':sys.exit(main())

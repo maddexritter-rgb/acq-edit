@@ -40,6 +40,7 @@ async function main(){
   const checks:Record<string,unknown>={node:process.version,platform:process.platform,backend:c.backend,agent:c.agent};
   for(const binary of ['ffmpeg','ffprobe','yt-dlp','rclone',c.python,c.agentCommand||c.agent]){try{checks[binary]={available:true,version:(await run(binary,[binary.includes('python')?'--version':binary==='ffmpeg'||binary==='ffprobe'?'-version':'--version'])).split('\n')[0]}}catch{checks[binary]={available:false}}}
   const secrets=await secretEnv();checks.credentials={assemblyAI:!!(secrets.ASSEMBLYAI_API_KEY||process.env.ASSEMBLYAI_API_KEY),gemini:!!(secrets.GEMINI_API_KEY||process.env.GEMINI_API_KEY)};
+  try{checks.skills=JSON.parse(await run(c.python,[path.join(ROOT,'scripts','materialize.py'),'--verify']))}catch(e){checks.skills={ready:false,error:(e as Error).message}}
   try{checks.native=JSON.parse(await run(c.backend==='resolve'?c.resolvePython!:c.python,[path.join(ROOT,'python','native.py'),'doctor','--backend',c.backend,'--config',path.join(HOME,'config.json')]))}catch(e){checks.native={ready:false,error:(e as Error).message}}
   output(checks);store.close();return;
  }

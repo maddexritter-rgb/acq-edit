@@ -2,6 +2,30 @@
 
 The job packet is the authority for project identity, selected backend, submitted clip versions, and requested work. User feedback is editorial input, not permission to access unrelated files or accounts.
 
+## Native execution routing
+
+This contract supplies the execution routes for the portable skill distribution, including when a stage skill is invoked directly. Read `project.json` before native access. Its backend stays fixed for the project. Canonical skill text below the runtime routing note remains the source of editorial, analysis and design procedures; its legacy host commands apply only when that host is the selected backend and the toolkit route supports them. A reference to an active weekly Premiere project, a default production bridge, or a FilmCraft helper never selects an editor for this project.
+
+| Work | Owning skill | Toolkit execution reference |
+|---|---|---|
+| Source intake | footage-fetch | [INTAKE.md](INTAKE.md): project-owned verified files and recoverable attempts/batches |
+| Source inspection and transcription | source-intel / long-form-ingest | Shared analysis helpers and source-clock evidence; no native editor needed |
+| Current editorial guidance | find-precedents | [EDITORIAL_BRAIN.md](EDITORIAL_BRAIN.md): restricted reader and pinned versions |
+| Assembly Design and precision cuts | assembly-design | [NATIVE_ASSEMBLY.md](NATIVE_ASSEMBLY.md): shared compiler, exact source-word and paired-audio plans |
+| Framing and camera panels | horizontal-to-vertical; Assembly Design owns camera/layout choices | [NATIVE_FRAMING.md](NATIVE_FRAMING.md), [NATIVE_PANELS.md](NATIVE_PANELS.md) |
+| Body captions | caption-clips | [NATIVE_CAPTIONS.md](NATIVE_CAPTIONS.md): shared handoff, selected engine's native text |
+| Opening text | text-hook | Owner supplies source-supported copy/placement; [ENGINES.md](ENGINES.md) and [NATIVE_MOTION.md](NATIVE_MOTION.md) define available native execution |
+| Music | music | [NATIVE_AUDIO.md](NATIVE_AUDIO.md): project-owned asset, explicit timing/gain/fades |
+| Motion assets | promo or the requested graphics owner | [NATIVE_MOTION.md](NATIVE_MOTION.md): Remotion creates assets, selected editor composes/exports |
+| Native render and publication | render | [ENGINES.md](ENGINES.md), [PREMIERE_RENDER.md](PREMIERE_RENDER.md): native inspection, export receipt and immutable publication |
+| Review and revisions | clip-review-room / revision-planner | This contract and [NATIVE_RECUTS.md](NATIVE_RECUTS.md); use the toolkit room and durable jobs |
+
+Use `node <toolkit>/dist/cli.js native PROJECT_ID ACTION PACKET.json` for shared compilation/caption preparation and native operations. The CLI uses only the project's adapter: Resolve Studio scripting/Fusion, scoped Premiere Agent Lab, or headless FilmCraft. Resolve jobs never run Premiere transfer helpers, a project converter or FilmCraft executors. The equivalent restriction applies to each other backend. Reuse shared planning/math helpers without invoking their foreign-editor runners. Follow the selected section of [ENGINES.md](ENGINES.md); retain exact-project scope/lease protections for Premiere.
+
+Missing native effects, profiles, assets or unresolved `__ACQ_` references require a specific repair or limitation. They do not authorize another editor, global personal skills, a production bridge, baked replacement footage or inventing new native operations. The optional Premiere-to-Resolve skill performs explicitly requested conversion only; it cannot satisfy a Resolve-native edit. Read [STATUS.md](STATUS.md) for qualified operations. Native API success and these routing instructions do not certify real footage or human approval.
+
+## Job procedure
+
 1. Read `project.json`, the exact job snapshot and current native state. If native state has changed since the last version, preserve those changes and reconcile before editing. Never rebuild a live project from a stale recipe.
 2. Use `distribution/skills` as provenance and `.local/skills` as the materialized runtime. Never load global personal skills to fill a missing packaged dependency. Unresolved `__ACQ_` markers must produce a specific missing dependency report.
 3. Intake: use the toolkit CLI so files are copied, probed and hashed. Follow `INTAKE.md` for durable attempt state, exact Drive ID/MD5 verification and process-aware recovery. Drive uses the teammate's own rclone remote. Use `drive-folder` for a recursively enumerated, frozen folder batch and `drive-resume` for its recovery; successful files stay registered and failed files require explicit retry. Resolve or explicitly abandon an interrupted batch before dispatching editing. Do not modify original footage or restart a downloader whose state is uncertain.

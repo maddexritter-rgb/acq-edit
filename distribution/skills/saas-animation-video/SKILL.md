@@ -1,14 +1,6 @@
 ---
 name: saas-animation-video
-description: >
-  Orchestrator that turns "go make a saas animation video" into a finished 15-20s vertical
-  MP4. Chains 3 Remotion scene templates (SaasTextPopup → SaasGlassReveal → SaasDashboardTour)
-  following the "SaaS animation style" dominating Instagram/TikTok for tech brands in 2026
-  (the style editors charge $1-2k/video for). Takes a brand (name, colors, logo) + 3 feature
-  bullets + 6 dashboard tile titles → scaffolds a Remotion project, renders the MP4, logs it
-  into clip-review-tracker, optionally runs mozi-sf-audit. Triggers: "make a saas animation
-  video", "go make a saas video", "saas promo", "saas animation", "saas trailer for <brand>",
-  "build a saas intro", "create a saas promo with 3d dashboard".
+description: "Create a short vertical SaaS animation using Remotion text, glass-reveal and dashboard scenes. Use for a product demo, animated app introduction or a reusable SaaS motion asset."
 ---
 
 # SaaS Animation Video Orchestrator

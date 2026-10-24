@@ -8,12 +8,28 @@ import tempfile
 from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[1]
-HEADER = '''\n## ACQ Edit distribution execution contract\nRead the toolkit docs/AGENT_WORKFLOW.md before executing. The project backend is immutable.\nUse the local toolkit project paths and credentials; never use personal workstation paths.\nResolve routes to python/resolve.py; Premiere to scoped Agent Lab; FilmCraft to its headless adapter.\nUnresolved __ACQ_ markers indicate unavailable optional dependencies; report them explicitly.\nNo delivery to external accounts is implied. The review room publishes only local immutable versions.\n'''
+CONTRACT = 'docs/AGENT_WORKFLOW.md'
 RECEIPT = '.acq-materialization.json'
 
 
 def sha(data):
     return hashlib.sha256(data).hexdigest()
+
+
+def route_entrypoint(content, root):
+    """Keep YAML and canonical body intact; route before legacy execution recipes."""
+    from urllib.parse import quote
+    target=quote(str(root / CONTRACT),safe='/')
+    note=('\n## ACQ Edit execution route\n'
+          f'Read the [toolkit execution contract]({target}#native-execution-routing) before using this skill. '
+          'Use project.json for the fixed backend; the contract supplies its native execution route. '
+          'Keep the creative procedure below, but use only the selected backend\'s toolkit integration.\n\n')
+    lines=content.splitlines(keepends=True)
+    if lines and lines[0].strip()=='---':
+        end=next((i for i,line in enumerate(lines[1:],1) if line.strip()=='---'),None)
+        if end is None:raise RuntimeError('Skill frontmatter has no closing delimiter')
+        return ''.join(lines[:end+1])+note+''.join(lines[end+1:])
+    return note.lstrip('\n')+content
 
 
 def no_symlinks(base, relative):
@@ -34,7 +50,8 @@ def prepare(root, assets):
     manifest = json.loads(raw_manifest)
     if manifest.get('schema') != 'acq-edit/source-manifest-v1':
         raise RuntimeError('Unsupported source manifest schema')
-    files, blocked = {}, []
+    contract=no_symlinks(root,PurePosixPath(CONTRACT)).read_bytes()
+    files, blocked, entrypoints = {}, [], []
     for entry in manifest['files']:
         name = entry['path']
         relative = PurePosixPath(name)
@@ -47,11 +64,14 @@ def prepare(root, assets):
         content = data.decode().replace('__ACQ_SKILLS__', str(dest)).replace('__ACQ_ASSETS__', str(assets))
         if '__ACQ_LEGACY_HOME__' in content or '__ACQ_EXTERNAL_VOLUME__' in content:
             blocked.append(name)
+        if relative.name=='SKILL.md':
+            content=route_entrypoint(content,root)
+            entrypoints.append(name)
         files[name] = content.encode()
     if 'edit/SKILL.md' not in files:
         raise RuntimeError('Manifest does not include the edit owner')
-    files['edit/SKILL.md'] += HEADER.encode()
-    receipt = {'schema': 'acq-edit/materialization-v1', 'manifestSha256': sha(raw_manifest),
+    receipt = {'schema': 'acq-edit/materialization-v2', 'manifestSha256': sha(raw_manifest),
+               'executionContract':{'path':CONTRACT,'sha256':sha(contract),'entrypoints':entrypoints},
                'runtime': str(dest), 'assets': str(assets), 'blockedReferences': blocked,
                'files': {name: sha(data) for name, data in files.items()}}
     return files, receipt
@@ -128,11 +148,28 @@ def materialize(root, assets):
             'receipt': str(dest / RECEIPT), 'unresolvedOptionalReferences': receipt['blockedReferences']}
 
 
+def verify(root):
+    """Read-only health check, including the routing document pinned at install."""
+    root=root.absolute();dest=root/'.local/skills'
+    if (root/'.local').is_symlink():raise RuntimeError('Symlink .local root refused')
+    receipt_path=no_symlinks(dest,PurePosixPath(RECEIPT))
+    if not receipt_path.is_file():raise RuntimeError('Skill runtime is not installed with a receipt; use a fresh checkout installation')
+    receipt=json.loads(receipt_path.read_text())
+    if receipt.get('schema')!='acq-edit/materialization-v2':raise RuntimeError('Skill runtime predates direct-stage routing; preserved. Use a fresh checkout for upgrade.')
+    files,expected=prepare(root,Path(receipt['assets']))
+    verify_existing(dest,expected)
+    return {'ready':True,'verifiedFiles':len(files),'routedEntrypoints':len(expected['executionContract']['entrypoints']),
+            'executionContractSha256':expected['executionContract']['sha256'],
+            'unresolvedOptionalReferences':expected['blockedReferences'],'nativeWorkflowQualified':False}
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--assets', type=Path, required=True)
+    group=parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('--assets', type=Path)
+    group.add_argument('--verify', action='store_true',help='Read-only runtime and execution-contract hash check')
     args = parser.parse_args()
-    print(json.dumps(materialize(ROOT, args.assets)))
+    print(json.dumps(verify(ROOT) if args.verify else materialize(ROOT, args.assets)))
 
 
 if __name__ == '__main__':

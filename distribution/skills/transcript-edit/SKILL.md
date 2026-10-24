@@ -1,6 +1,6 @@
 ---
 name: transcript-edit
-description: Descript-style word-level clip editing. Given a rendered clip, exports a plain-text transcript (prose + per-word view) the user can edit by deleting words/sentences. Re-renders the clip from source with ONLY the kept words — cuts snap to acoustic silences (via ffmpeg silencedetect), so no half-words, no mid-phoneme clicks, no "ob-vious" / "gives yo-" artifacts. ALWAYS use silence-snap (`--silence-map`) on any transcript-driven cut. Triggers: "edit the transcript", "cut out [word/filler]", "apply my edits to clip X", "remove filler words", "trim these words", "Descript-style edit", "word-level cut", "transcript-driven edit".
+description: "Prepare word-level revisions from an editable transcript and exact source words. Use for removing passages or filler words and applying transcript edits, with reviewed speech boundaries and dependent caption/framing updates."
 ---
 
 # Transcript-Edit — Descript-Style Word-Level Clip Cutting
