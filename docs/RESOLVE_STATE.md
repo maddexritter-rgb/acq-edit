@@ -18,7 +18,7 @@ Resolve snapshots also include item enabled state, media-pool source paths, nati
 
 ## Existing projects and receipts
 
-New snapshots declare `fusionFingerprintSchema: acq-edit/fusion-state-v2`. Version 1 introduced parsed graphs and the additional native state fields; version 2 narrowly normalizes the three cache/empty-preference forms above. Fingerprints from either an earlier schema or raw exports will differ. Do not rewrite historical inspection files or change a queued operation's expected fingerprint automatically. Inspect the current native timeline, compare it with the saved plan/version and reconcile any differences before preparing a new operation. Published versions and their review decisions remain unchanged.
+New snapshots declare `fusionFingerprintSchema: acq-edit/fusion-state-v3`. Version 1 introduced parsed graphs and the additional native state fields; version 2 narrowly normalizes the three cache/empty-preference forms above. Version 3 additionally normalizes the qualified owned-expression caches below. Fingerprints from either an earlier schema or raw exports will differ. Do not rewrite historical inspection files or change a queued operation's expected fingerprint automatically. Inspect the current native timeline, compare it with the saved plan/version and reconcile any differences before preparing a new operation. Published versions and their review decisions remain unchanged.
 
 Cache paths and other metadata are not broadly excluded. A duplicated timeline is a different native object with different IDs and may have different cache paths; its complete snapshot is expected to differ. Revision code still verifies that the allowed finishing change preserves source cut timing.
 
@@ -37,3 +37,14 @@ That reopened motion timeline rendered through Resolve again: all 50 decoded RGB
 Host page context mattered for the track mutation probe: `SetTrackEnable` and `SetTrackLock` returned success on the Deliver page without changing readback. The same API changes on the Edit page changed readback as expected. Read-only retrieval of those changed states subsequently worked on Deliver. The adapter does not add a track-mutation workflow on this evidence; any future writer must establish its context and verify native readback rather than trusting a boolean return.
 
 This evidence qualifies the observed mechanical state checks on Studio 21.1.1 build 10. It does not grant human approval, establish speech quality, qualify arbitrary third-party Fusion tools, or complete the Resolve agent-driven acceptance loop.
+
+## Version 3: owned caption expression caches
+
+Studio 21.1.1 build 10 materialized numeric `Value` caches beneath unchanged caption expressions during the first render. Direct pre/post `.comp` exports isolated the differences to the owned Text+ `Center` and Merge `Blend` inputs. Version 3 omits only these exact forms:
+
+- A TextPlus tool named `ACQ_Caption_<number>_<wide|tight|text>`, `Inputs.Center`, with an `Input` containing only a nonempty string `Expression` and a plain two-number point `Value` (array indices 1 and 2).
+- A Merge tool named `ACQ_CaptionMerge_<number>_<wide|tight|text>`, `Inputs.Blend`, with an `Input` containing only a nonempty string `Expression` and numeric `Value`.
+
+Only the cached `Value` is omitted. Expression strings, connections, additional fields, different node types/names, nonnumeric values and all other inputs remain protected. Unknown forms fail comparison rather than being removed. Regression tests cover both stable caches and these exclusions, including expression changes and Unicode captions.
+
+A fresh caption-owner build and subsequent native wording/color revision then passed before/after-render snapshot checks. The original review timeline's entire v2 snapshot was first verified unchanged, then a separate v3 baseline was recorded for future operations; historical receipts were not rewritten. The revised parent timeline and checkpoint hash were independently checked unchanged, and the original review timeline was restored against its new baseline. This adds direct render stability evidence, not a claim that every native state is observable.

@@ -66,8 +66,8 @@ class CaptionPlanTests(unittest.TestCase):
         original = copy.deepcopy(self.spec)
         self.spec['cuts'][0]['frames'] = 24
         with self.assertRaisesRegex(RuntimeError, 'stale cut clocks'): self.derive()
-        self.spec = original; self.spec['backend'] = 'resolve'
-        with self.assertRaisesRegex(RuntimeError, 'FilmCraft native adapter'): self.derive()
+        self.spec = original; self.spec['backend'] = 'premiere'
+        with self.assertRaisesRegex(RuntimeError, 'Premiere must use'): self.derive()
         self.spec['backend'] = 'filmcraft'; self.profile.write_text('{}')
         with self.assertRaisesRegex(RuntimeError, 'profile changed'): self.derive()
 

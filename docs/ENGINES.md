@@ -46,6 +46,8 @@ Install Studio 21.1 and enable **Preferences → System → General → External
 
 Native 21.1.1 testing established exclusive `endFrame` semantics for `AppendToTimeline`. The adapter checks actual durations and source offsets after each placement. Fractional source-audio trims use a version-gated native DRT construction/readback route on Studio 21.1.1 build 10; see `RESOLVE_PRECISION.md`. Variable/mixed frame rates, multicamera layouts and complex Fusion modifications still need qualification; do not label them supported because the frame-aligned fixture passes.
 
+Production body captions use the same pinned caption-clips handoff as FilmCraft with an explicit Resolve typography/shadow/motion profile. Native Fusion nodes execute the cards, hold timing and arrival; no FilmCraft engine is installed or invoked. Planned revisions and exports verify graph inputs, clocks, exact fonts and cut geometry. See `NATIVE_CAPTIONS.md` for the supported fields, native build/revision evidence and open audio/real-footage qualifications.
+
 The selected native project name is `ACQ_<project-id>`. The adapter refuses another open project. Create/open the dedicated project deliberately before execution. It never closes user work to make room for itself.
 
 ## Agent integrations

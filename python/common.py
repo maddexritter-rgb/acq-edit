@@ -10,10 +10,10 @@ def sha(path):
  with open(path,'rb') as f:
   for block in iter(lambda:f.read(1024*1024),b''):h.update(block)
  return h.hexdigest()
-def read(path):return json.loads(Path(path).read_text())
+def read(path):return json.loads(Path(path).read_text(encoding='utf-8'))
 def save(path,value):
  p=Path(path);p.parent.mkdir(parents=True,exist_ok=True)
- with p.open('x') as f:json.dump(value,f,indent=2)
+ with p.open('x',encoding='utf-8') as f:json.dump(value,f,indent=2)
 def inside(root,p):
  p=Path(p).resolve();require(p.is_relative_to(Path(root).resolve()),'Path outside selected project');return p
 def plan(project,packet):
@@ -25,7 +25,7 @@ def plan(project,packet):
  if selection.get('testFixture'):
   require(os.environ.get('ACQ_EDIT_TEST_FIXTURE')=='1','Synthetic plans require explicit ACQ_EDIT_TEST_FIXTURE=1 and cannot certify editorial acceptance')
  else:
-  require(p['backend']!='filmcraft' or not p.get('captions') or p.get('captionContract'),'Production FilmCraft body captions require the pinned caption-clips handoff; basic fixture text is not a production fallback')
+  require(p['backend'] not in ['filmcraft','resolve'] or not p.get('captions') or p.get('captionContract'),'Production FilmCraft/Resolve body captions require the pinned caption-clips handoff; basic fixture text is not a production fallback')
   from brain_receipts import verify_saved
   guidance=verify_saved(p['brain']['receiptPath'])
   if p['brain'].get('versionsPath'):

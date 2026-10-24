@@ -26,7 +26,7 @@ class Adapter:
   root=self.project_root/'10_WORK';root.mkdir(parents=True,exist_ok=True)
   with tempfile.TemporaryDirectory(prefix='fusion-inspect-',dir=root) as folder:
    for index in range(1,item.GetFusionCompCount()+1):
-    comp=item.GetFusionCompByIndex(index);require(comp,'Fusion comp missing');comp.GetAttrs();output=Path(folder)/f'{index}.comp';require(item.ExportFusionComp(str(output),index),'Cannot inspect native Fusion graph');results.append(fusion_hash(output.read_text()))
+    comp=item.GetFusionCompByIndex(index);require(comp,'Fusion comp missing');comp.GetAttrs();output=Path(folder)/f'{index}.comp';require(item.ExportFusionComp(str(output),index),'Cannot inspect native Fusion graph');results.append(fusion_hash(output.read_text(encoding='utf-8')))
   return results
  def snapshot(self,p):
   t=p.GetCurrentTimeline();require(t,'No current timeline');tracks={};track_state={}
@@ -41,8 +41,15 @@ class Adapter:
   r,p=self.selected(project);state=self.snapshot(p);return {'state':state,'fingerprint':fingerprint(state),'version':r.GetVersionString()}
  def build(self,project,packet):
   self.project_root=Path(project['root']);spec=plan(project,packet)
+  caption_prepared=None
+  if spec.get('captionContract'):
+   from caption_plan import validate
+   caption_prepared=validate(project,spec)
   for key in ['nativeProject','inspection']:require(not inside(project['root'],packet[key]).exists(),'Native build checkpoint/inspection exists; reconcile before retrying')
   r=self.connect();pm=r.GetProjectManager();current=pm.GetCurrentProject();name='ACQ_'+project['id']
+  if caption_prepared:
+   from resolve_captions import verify_fonts
+   verify_fonts(r,caption_prepared)
   precise=any(value*spec['fps']['numerator']%(spec['sampleRate']*spec['fps']['denominator']) for cut in spec['cuts'] for value in [cut['audioInSample'],cut['audioSamples']])
   if precise:require(r.GetVersion()[:4]==[21,1,1,10],'Native sample geometry is qualified only for Resolve Studio 21.1.1 build 10; review the installed archive/API before changing this gate')
   if precise:require(all(c.get('audioSourceId') and 'audioRecordSample' in c for c in spec['cuts']),'Native precision needs compiled paired-source cuts')
@@ -91,13 +98,16 @@ class Adapter:
     actual=ai.GetProperties()
     for key,value in audio_props.items():require(actual.get(key)==value,'Native audio treatment readback mismatch: '+key)
    cards=[c for c in spec.get('captions',[]) if c['startFrame']<cut['recordFrame']+cut['frames'] and c['endFrame']>cut['recordFrame']]
-   if cards or shot:self.compose(vi,cut,cards,spec,shot)
+   if cards or shot:self.compose(vi,cut,cards,spec,shot,caption_prepared)
   for index,graphic in enumerate(spec.get('graphics',[])):
    require(sha(graphic['path'])==graphic['sha256'],'Graphic hash mismatch');media=pool.ImportMedia([graphic['path']]);require(media,'Graphic import failed')
    while timeline.GetTrackCount('video')<index+2:require(timeline.AddTrack('video'),'Cannot add graphics track')
    placed=pool.AppendToTimeline([{'mediaPoolItem':media[0],'startFrame':0,'endFrame':graphic['frames'],'recordFrame':graphic['startFrame'],'mediaType':1,'trackIndex':index+2}]);require(placed and len(placed)==1,'Graphics placement failed');item=placed[0]
    require(item.GetStart(True)==graphic['startFrame'] and item.GetDuration(True)==graphic['frames'] and item.GetLeftOffset(True)==0 and Path(item.GetMediaPoolItem().GetClipProperty('File Path')).resolve()==Path(graphic['path']).resolve(),'Native graphic source/timing readback mismatch')
   self.music(timeline,pool,sources,spec)
+  if caption_prepared:
+   from resolve_captions import verify_timeline
+   verify_timeline(timeline,spec,caption_prepared)
   require(pm.SaveProject(),'Native save failed');state=self.snapshot(p);save(inside(project['root'],packet['inspection']),state);native=inside(project['root'],packet['nativeProject']);require(not native.exists(),'Native checkpoint exists');require(pm.ExportProject(name,str(native),False),'Native DRP checkpoint failed')
   return {'nativeProject':str(native),'fingerprint':fingerprint(state),'timelineId':timeline.GetUniqueId(),'status':'native-built-awaiting-render'}
  def music(self,timeline,pool,sources,spec):
@@ -112,7 +122,7 @@ class Adapter:
    fades={'FadeIn':timing['fadeInSamples'],'FadeOut':timing['fadeOutSamples']}
    require(item.SetFades(fades),'Native music fades failed');actual=item.GetFades()
    require(all(actual.get(key)==value for key,value in fades.items()),'Native music fade readback mismatch')
- def compose(self,item,cut,cards,spec,shot=None):
+ def compose(self,item,cut,cards,spec,shot=None,caption_prepared=None):
   require(item.GetFusionCompCount()==0,'Existing Fusion comp must be merged rather than replaced');comp=item.AddFusionComp();require(comp,'Fusion unavailable');nodes=comp.GetToolList(False);source=next((n for n in nodes.values() if n.GetAttrs()['TOOLS_RegID']=='MediaIn'),None);output=next((n for n in nodes.values() if n.GetAttrs()['TOOLS_RegID']=='MediaOut'),None);require(source and output,'Fusion media endpoints missing')
   if shot:
    crop=comp.AddTool('Crop');resize=comp.AddTool('BetterResize');require(crop and resize,'Native Fusion framing nodes unavailable')
@@ -120,6 +130,10 @@ class Adapter:
    for key,value in fusion_crop(spec,shot).items():crop.SetInput(key,value);require(crop.GetInput(key)==value,'Native crop readback mismatch: '+key)
    for key,value in {'KeepAspect':0,'Width':spec['width'],'Height':spec['height']}.items():resize.SetInput(key,value);require(resize.GetInput(key)==value,'Native resize readback mismatch: '+key)
    crop.ConnectInput('Input',source);resize.ConnectInput('Input',crop);source=resize
+  if caption_prepared:
+   from resolve_captions import construct
+   construct(comp,source,output,cut,spec,caption_prepared)
+   return
   for index,card in enumerate(cards):
    text=comp.AddTool('TextPlus');merge=comp.AddTool('Merge');require(text and merge,'Fusion text/merge unavailable');text.SetAttrs({'TOOLS_Name':f'ACQ_Caption_{index}'});style=card['style'];text.SetInput('UseFrameFormatSettings',0);text.SetInput('Width',spec['width']);text.SetInput('Height',spec['height']);text.SetInput('StyledText',card['text']);text.SetInput('Font',style.get('font','Arial'));text.SetInput('Size',style.get('fusionSize',style.get('size',64)/spec['width']));text.SetInput('Center',{1:.5,2:style.get('centerY',.22)})
    merge.ConnectInput('Background',source);merge.ConnectInput('Foreground',text)
@@ -144,7 +158,12 @@ class Adapter:
    return record(project,packet,prepared,built)
   r,p=self.selected(project);before=self.snapshot(p);require(fingerprint(before)==packet['expectedFingerprint'],'Native state changed; inspect and merge user edits')
   require(packet['kind'] in ['caption-style','music-gain','fixed-framing'],'Spoken recuts require a new reviewed Assembly Design plan and new timeline; no partial dependent-layer edits')
-  spec=plan(project,packet) if packet['kind']=='fixed-framing' else None
+  spec=plan(project,packet) if packet['kind']=='fixed-framing' or (packet['kind']=='caption-style' and packet.get('plan')) else None
+  caption_prepared=None
+  if spec and spec.get('captionContract'):
+   from caption_plan import validate
+   from resolve_captions import verify_fonts
+   caption_prepared=validate(project,spec);verify_fonts(r,caption_prepared)
   if spec:require(int(before['settings']['timelineResolutionWidth'])==spec['width'] and int(before['settings']['timelineResolutionHeight'])==spec['height'],'Framing revision cannot resize the approved timeline')
   original=p.GetCurrentTimeline();copy=original.DuplicateTimeline(packet['title']);require(copy and p.SetCurrentTimeline(copy),'Cannot preserve prior timeline before revision')
   for edit in packet['edits']:
@@ -165,9 +184,17 @@ class Adapter:
     wanted=item.GetProperties()['AudioVolume']+delta;require(-60<=wanted<=12,'Music gain exceeds supported range');require(item.SetProperties({'AudioVolumeEnabled':True,'AudioVolume':wanted}),'Music gain revision failed');require(abs(item.GetProperties()['AudioVolume']-wanted)<1e-6,'Music gain revision readback mismatch')
   after=self.snapshot(p)
   before_cuts=[(i['start'],i['end'],i['left'],i['source']) for kind in ['video','audio'] for track in before['tracks'][kind] for i in track];after_cuts=[(i['start'],i['end'],i['left'],i['source']) for kind in ['video','audio'] for track in after['tracks'][kind] for i in track];require(before_cuts==after_cuts,'Finishing revision changed cuts')
+  if caption_prepared:
+   from resolve_captions import verify_timeline
+   verify_timeline(copy,spec,caption_prepared)
   pm=r.GetProjectManager();require(pm.SaveProject(),'Save failed');native=inside(project['root'],packet['nativeProject']);require(not native.exists(),'Checkpoint exists');require(pm.ExportProject(p.GetName(),str(native),False),'Checkpoint failed');save(inside(project['root'],packet['inspection']),after);return {'nativeProject':str(native),'fingerprint':fingerprint(after),'status':'revised-native-render-pending'}
  def render(self,project,packet):
   spec=plan(project,packet);r,p=self.selected(project);state=self.snapshot(p);require(fingerprint(state)==packet['expectedFingerprint'],'Timeline changed before export');save(inside(project['root'],packet['inspection']),state)
+  if spec.get('captionContract'):
+   from caption_plan import validate
+   from resolve_captions import verify_timeline,verify_fonts
+   caption_prepared=validate(project,spec);verify_fonts(r,caption_prepared)
+   verify_timeline(p.GetCurrentTimeline(),spec,caption_prepared)
   native=inside(project['root'],packet['nativeProject']);checkpoint_hash=sha(native)
   require(not p.IsRenderingInProgress(),'Another Resolve render is active');media=inside(project['root'],packet['media']);require(not media.exists(),'Never overwrite render');media.parent.mkdir(parents=True,exist_ok=True)
   require('H.264 Master' in p.GetRenderPresetList() and p.LoadRenderPreset('H.264 Master'),'Built-in H.264 Master preset unavailable; cannot reset native export state')

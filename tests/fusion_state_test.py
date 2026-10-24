@@ -19,6 +19,21 @@ def graph(order=False,counter=9):
  return f'Composition {{ CurrentID = {counter}, RenderRange = {{ 0, 24 }}, Tools = {{'+','.join(tools)+'} }'
 
 class FusionStateTests(unittest.TestCase):
+ def test_owned_caption_expression_caches_are_not_editorial_changes(self):
+  before='Composition { Tools = { ACQ_Caption_2_text = TextPlus { Inputs = { Center = Input { Expression = "Point(0.5,time/100)" } } }, ACQ_CaptionMerge_2_text = Merge { Inputs = { Blend = Input { Expression = "iif(time>3,1,0)" } } } } }'
+  after=before.replace('Expression = "Point','Value = {0.5,0.25}, Expression = "Point').replace('Expression = "iif','Value = 0, Expression = "iif')
+  self.assertEqual(fusion_hash(before),fusion_hash(after))
+  self.assertNotEqual(fusion_hash(after),fusion_hash(after.replace('time/100','time/101')))
+  self.assertNotEqual(fusion_hash(after),fusion_hash(after.replace('time>3','time>4')))
+ def test_caption_cache_lookalikes_and_unknown_fields_remain_protected(self):
+  source='Composition { Tools = { ACQ_Caption_0_text = TextPlus { Inputs = { Center = Input { Value = {0.5,0.25}, Expression = "Point(0.5,time/100)" } } } } }'
+  for a in [source.replace('ACQ_Caption_0_text','UserText'),source.replace('TextPlus','CustomText'),
+            source.replace('Expression = "Point(0.5,time/100)"','Expression = ""'),source.replace('Expression =','SourceOp = "Curve", Expression ='),
+            source.replace('Expression =','FutureField = true, Expression ='),source.replace('{0.5,0.25}','{0.5,0.25,0}'),source.replace('Center =','Offset =')]:
+   with self.subTest(graph=a):self.assertNotEqual(fusion_hash(a),fusion_hash(a.replace('0.25','0.3')))
+ def test_unicode_caption_text_is_hashed_as_content(self):
+  source=graph().replace('A caption','“I can do this?”')
+  self.assertNotEqual(fusion_hash(source),fusion_hash(source.replace('“I can do this?”','I can do this?')))
  def test_reordered_tables_counter_and_cached_timeline_label_are_stable(self):
   before=graph();after=graph(True,13).replace('Timeline Audio [old]','Timeline Audio [current]')
   self.assertEqual(fusion_hash(before),fusion_hash(after))

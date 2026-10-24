@@ -13,7 +13,7 @@ HELPERS = ('filmcraft_caption_contract.py', 'filmcraft_shadow.py', 'caption_prof
 
 
 def derive(project, spec, reference):
-    require(spec['backend'] == 'filmcraft', 'This caption contract needs the FilmCraft native adapter; other backends must use their owning native caption route')
+    require(spec['backend'] in ['filmcraft', 'resolve'], 'This caption contract needs FilmCraft or Resolve; Premiere must use its owning native Graphics route')
     file = inside(project['root'], reference['path'])
     require(sha(file) == reference['sha256'], 'Caption handoff changed')
     handoff = read(file)
@@ -25,6 +25,21 @@ def derive(project, spec, reference):
     profile_file = inside(project['root'], profile_ref['path'])
     require(sha(profile_file) == profile_ref['sha256'], 'Caption profile changed')
     profile = read(profile_file)
+    if spec['backend'] == 'resolve':
+        require(profile.get('resolve_caption_motion') in ['none', 'measured_fast_settle'], 'Explicit supported Resolve caption arrival required')
+        # Reuse the pure caption-owner timing/curve helper, with an explicitly
+        # selected Resolve preset. No FilmCraft binary or project is involved.
+        profile = {**profile, 'filmcraft_caption_motion': profile['resolve_caption_motion']}
+        shadows = profile.get('resolve_caption_shadows')
+        require(isinstance(shadows, dict) and set(shadows) == {'id', 'wide', 'tight'} and isinstance(shadows['id'], str) and shadows['id'], 'Explicit Resolve shadow profile required')
+        for role in ['wide', 'tight']:
+            shadow = shadows[role]
+            require(isinstance(shadow, dict) and set(shadow) == {'offset', 'softness', 'opacity'}, 'Resolve shadows require offset, softness and opacity')
+            for key in ['offset', 'softness']:
+                values = shadow[key]
+                require(isinstance(values, list) and len(values) == 2 and all(type(v) in (int, float) and math.isfinite(v) for v in values), 'Invalid Resolve shadow coordinates')
+            require(all(0 <= v <= 100 for v in shadow['softness']) and all(-1 <= v <= 1 for v in shadow['offset']), 'Resolve shadow values outside supported range; softness uses native Text+ units')
+            require(type(shadow['opacity']) in (int, float) and 0 <= shadow['opacity'] <= 1, 'Invalid Resolve shadow opacity')
     for key in ['allow_quote_italics', 'guest_turn_italics']:
         require(type(profile.get(key)) == bool, 'Explicit caption profile setting required: ' + key)
     for key in ['caption_hold_through_seconds', 'caption_trailing_hold_seconds']:
@@ -46,13 +61,14 @@ def derive(project, spec, reference):
         require(type(card.get('speech_end')) in (int, float) and math.isfinite(card['speech_end']) and start / fps < card['speech_end'] <= duration / fps, 'Mapped speech release outside timeline')
         require(type(card.get('elapsed_frames', 0)) == int and card.get('elapsed_frames', 0) >= 0, 'Invalid caption continuation clock')
         style = card['style']
-        require(set(style) <= {'font', 'fontStyle', 'italicStyle', 'syntheticQuoteItalic', 'size', 'renderedFontPx', 'position', 'color'}, 'Unsupported caption style; preserve the owner request instead of dropping properties')
+        allowed = {'font', 'fontStyle', 'italicStyle', 'syntheticQuoteItalic', 'size', 'renderedFontPx', 'position', 'color'} if spec['backend'] == 'filmcraft' else {'font', 'fontStyle', 'italicStyle', 'fusionSize', 'center', 'color'}
+        require(set(style) <= allowed, 'Unsupported caption style; preserve the owner request instead of dropping properties')
         for key in ['font', 'fontStyle', 'color']:
             require(isinstance(style.get(key), str) and style[key].strip(), 'Explicit caption style required: ' + key)
         require(re.fullmatch(r'#[0-9a-fA-F]{6}', style['color']), 'Caption foreground color must use #RRGGBB')
-        for key in ['size', 'renderedFontPx']:
+        for key in (['size', 'renderedFontPx'] if spec['backend'] == 'filmcraft' else ['fusionSize']):
             require(type(style.get(key)) in (int, float) and math.isfinite(style[key]) and style[key] > 0, 'Positive measured caption size required')
-        position = style.get('position')
+        position = style.get('position' if spec['backend'] == 'filmcraft' else 'center')
         require(isinstance(position, list) and len(position) == 2 and all(type(v) in (int, float) and math.isfinite(v) for v in position), 'Measured native caption position required')
         require(type(style.get('syntheticQuoteItalic', False)) == bool, 'Explicit synthetic italic policy required')
         prior = start
@@ -75,7 +91,7 @@ def derive(project, spec, reference):
         captions.append({'startFrame': card['start_frame'], 'endFrame': card['end_frame'], 'text': card['text'], 'style': style})
     return {'cards': prepared, 'captions': captions, 'profile': profile,
             'helperHashes': {name: sha(SKILLS / 'caption-clips/scripts' / name) for name in HELPERS},
-            'shadowProfile': PROFILE_ID}
+            'shadowProfile': PROFILE_ID if spec['backend'] == 'filmcraft' else profile['resolve_caption_shadows']['id']}
 
 
 def validate(project, spec):

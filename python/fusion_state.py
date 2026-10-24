@@ -7,7 +7,7 @@ syntax fails closed instead of silently omitting a node, expression or input.
 import hashlib,json,re
 from decimal import Decimal
 
-SCHEMA='acq-edit/fusion-state-v2'
+SCHEMA='acq-edit/fusion-state-v3'
 TOKEN=re.compile(r'\s+|--[^\n]*|"(?:\\.|[^"\\])*"|[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?|[A-Za-z_][A-Za-z_0-9]*|[{}\[\]=,();]')
 IDENT=re.compile(r'[A-Za-z_][A-Za-z_0-9]*\Z')
 NUMBER=re.compile(r'[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?\Z')
@@ -95,6 +95,17 @@ def canonical_fusion(text):
   if views and views.get('tag')=='table' and views.get('constructor') is None and len(views['entries'])==1 and empty_table(field(views,'View1')):remove_field(preferences,'Views')
  tools=field(root,'Tools')
  if tools is None or tools.get('tag')!='table':raise FusionFormatError('Fusion Tools table absent')
+ # Studio 21.1.1 materializes these exact owned expression caches on first
+ # render. Expressions, connections, unknown fields and all other values remain.
+ for name,tool in tools['entries']:
+  owner=name.get('value','') if name['tag']=='string' else ''
+  parameter='Center' if tool.get('constructor')=='TextPlus' and re.fullmatch(r'ACQ_Caption_\d+_(wide|tight|text)',owner) else 'Blend' if tool.get('constructor')=='Merge' and re.fullmatch(r'ACQ_CaptionMerge_\d+_(wide|tight|text)',owner) else None
+  if not parameter:continue
+  value=field(field(tool,'Inputs'),parameter);expression=field(value,'Expression');cached=field(value,'Value')
+  if not value or value.get('constructor')!='Input' or not expression or expression.get('tag')!='string' or not expression['value'].strip() or cached is None:continue
+  if any(key.get('tag')!='string' or key.get('value') not in ['Expression','Value'] for key,_ in value['entries']):continue
+  valid=cached.get('tag')=='number' if parameter=='Blend' else cached.get('tag')=='table' and cached.get('constructor') is None and len(cached['entries'])==2 and {key.get('value') for key,_ in cached['entries']}=={'1','2'} and all(key.get('tag')=='number' and child.get('tag')=='number' for key,child in cached['entries'])
+  if valid:remove_field(value,'Value')
  for _,tool in tools['entries']:
   if tool.get('constructor') not in ['Loader','MediaIn']:continue
   custom=field(tool,'CustomData');metadata=field(custom,'MediaProps')
