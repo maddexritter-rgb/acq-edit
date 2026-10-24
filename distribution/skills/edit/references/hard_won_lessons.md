@@ -157,7 +157,7 @@ clipping = waveform, not a re-transcript. Prove it on the REAL delivered file be
 
 **INFRA GATES:**
 - **Disk**: 4K stage caches + `_segments` scratch fill the data volume fast (hit 97% / 0 bytes mid-render
-  this session → corrupt output). `df -h /System__ACQ_EXTERNAL_VOLUME__/Data` before a big batch; clear
+  this session → corrupt output). `df -h "<project-root>"` before a big batch; clear
   `v_new/*/10_WORK/stages/*/​*_segments` (regenerable) and `/tmp/*.mp4|wav|png` when low.
 - **Corrupt-cache trap** (FIXED 2026-06-11): a render that dies on out-of-space leaves a partial
   `.mp4` that EXISTS — the engine used to serve it as a valid cache HIT. The engine now probes each
@@ -369,7 +369,7 @@ from 4K master, head has room (not cut off). No seam wobble.
 **MECHANICS (every clip):** 4K (2160×3840) · no stray data/bin_data stream · video==audio duration ·
 no black/frozen frame · hard-end on a live frame. Then the 6-gate audit (step 9).
 
-**INFRA before a batch:** `df -h /System__ACQ_EXTERNAL_VOLUME__/Data` (4K caches fill it → out-of-space → corrupt
+**INFRA before a batch:** `df -h "<project-root>"` (4K caches fill it → out-of-space → corrupt
 output); clear `_segments` scratch + `/tmp` media when low.
 
 Report each clip's opener + any fix BEFORE delivery: e.g. `AFewBadDays — opens "Sometimes…" @40ms, music One More Light, 4K ✓`.

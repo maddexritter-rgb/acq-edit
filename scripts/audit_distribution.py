@@ -19,6 +19,10 @@ if manifest.exists():
  for entry in json.loads(manifest.read_text())['files']:
   p=ROOT/'distribution/skills'/entry['path']
   if hashlib.sha256(p.read_bytes()).hexdigest()!=entry['distribution_sha256']:hits.append(entry['path']+': manifest mismatch')
+  for change in entry.get('transforms',[]):
+   if change.get('patch')=='portable-execution-owner':
+    replacement=(ROOT/change['replacement']).resolve()
+    if not replacement.is_relative_to(ROOT/'scripts/portable_overrides') or not replacement.is_file() or hashlib.sha256(replacement.read_bytes()).hexdigest()!=change['replacementSha256']:hits.append(entry['path']+': portable replacement hash mismatch')
 premiere_manifest=ROOT/'integrations/premiere-source-manifest.json'
 if premiere_manifest.exists():
  overrides=json.loads((ROOT/'integrations/premiere-distribution-overrides.json').read_text())['files']

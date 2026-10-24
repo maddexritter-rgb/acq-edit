@@ -159,33 +159,16 @@ proxies, (b) the caption overlay .movs themselves (which sit as editable track i
 
 # PHASE 1 — CUTS-APPROVAL SEQUENCE (deliverable: ONE 16:9 sequence, then STOP)
 
-## STEP 0 — Reuse the weekly project + ingest + preflight (before anything renders)
-Before scaffolding, inspect `_PROJECTS/*_<YYYY-Www>_Weekly_Edit/_project.json`.
-Reuse the one matching package; if more than one matches, stop for path resolution.
-Only if none matches, run:
-```
-bash __ACQ_ASSETS__/scripts/new_project.sh <YYYY-Www>_Weekly_Edit
-```
-- New work lives in the one ACQ-wide ISO-week package under
-  `__ACQ_EXTERNAL_VOLUME__/ACQ_EDIT_PROJECTS/_PROJECTS/`; reuse it for every new
-  shoot that week. Keep source, work, and delivery separated by brand/shoot
-  inside `00_SOURCE`, `10_WORK`, and `20_DELIVER`. The only active `.prproj` is
-  `10_WORK/Premiere/ACQ_<YYYY-Www>_CURRENT.prproj`. Refuse to start if the drive
-  is absent. Existing projects stay at their current paths.
-  `_project.json` is the searchable weekly project record; the local index is
-  `~/Documents/ACQ_Edit_Index/projects.json`. Register each designed clip with a
-  week-unique brand/shoot/ordinal ID (such as `BRAND_SHOOT_C01`), title, source
-  path and decision-file path using
-  `project_library.py clip` before import. Register the saved weekly `.prproj`
-  once with `project_library.py premiere`, so active work is findable.
-- Drive sources: footage-fetch skill (rclone detached, `--order-by size,ascending` so small
-  files land first, MD5 verify). **Check BIG DAWG 4 free space FIRST**; pause a pull
-  that cannot fit rather than silently choosing a second project path.
-- Copy (never move) source into `00_SOURCE/<brand>/<shoot>/`. Put each shoot's
-  intermediates in `10_WORK/<brand>/<shoot>/`; keep the active Premiere file in
-  `10_WORK/Premiere/`. Stage milestones are duplicated sequences in that file,
-  not additional active projects. Keep any safety `.prproj` snapshot labeled
-  BACKUP_ONLY outside the active-project path.
+## STEP 0 — Reuse the toolkit project, ingest and preflight
+Read `project.json` for the exact project root and fixed backend. For new work use
+`node "__ACQ_TOOLKIT__/dist/cli.js" project "<title>"`; for existing work use
+`projects` and `open PROJECT_ID`. Never create a competing weekly production project.
+→ Use skill: footage-fetch for verified intake into this project's `00_SOURCE`.
+Keep intermediates under `10_WORK` and immutable published exports under `20_DELIVER`.
+Use the toolkit's clip registration and selected native adapter; the remaining
+Premiere-specific mechanics below apply only to a scoped Premiere project.
+→ Follow [native execution routing](__ACQ_TOOLKIT__/docs/AGENT_WORKFLOW.md#native-execution-routing).
+
 - Verify source is horizontal ≥1080p, real fps (a 5fps "wrong file" wasted a session once —
   `ffprobe` it and EYEBALL one frame).
 - Start `10_WORK/00_RUN_LEDGER.md` and log every step (a step with no row did not happen).

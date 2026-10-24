@@ -31,7 +31,11 @@ SRC = CFG["source"]
 W, H = CFG.get("canvas_w", 1080), CFG.get("canvas_h", 1920)
 FPS = 24
 OUT = CFG["out"]
-FONT = CFG.get("font", "__ACQ_LEGACY_HOME__/Library/Fonts/ProximaNova-Extrabold.ttf")
+FONT = CFG.get("font")
+if not isinstance(FONT, str) or not Path(FONT).expanduser().is_file():
+    raise SystemExit("Config font must name an existing licensed font file")
+FONT = str(Path(FONT).expanduser().resolve())
+ImageFont.truetype(FONT, 12)  # validate before rendering or creating output
 
 WHITE = (247, 247, 253, 255)
 P_TOP, P_BOT = (168, 110, 255), (126, 48, 254)

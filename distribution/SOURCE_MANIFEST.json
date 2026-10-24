@@ -373,8 +373,8 @@
       "path": "edit/RUNBOOK.md",
       "source": "canonical-skills/edit/RUNBOOK.md",
       "source_sha256": "f90de6d072ae2f7725736cfd59c66385ec353ae27035d968598fd50bc0f4178c",
-      "distribution_sha256": "941a71413ad1cad72b09ac116518ebfbf8588bc4a471591b4d3ea036a551238c",
-      "bytes": 29226,
+      "distribution_sha256": "8100ae1fdd2a6386f05e54bd487569ba0b3bc52b3ff1815c90eebce91a17d0e1",
+      "bytes": 28139,
       "transforms": [
         {
           "from": "canonical-root",
@@ -383,6 +383,9 @@
         {
           "from": "asset-library-root",
           "to": "__ACQ_ASSETS__"
+        },
+        {
+          "patch": "toolkit-project-scaffolding"
         }
       ]
     },
@@ -406,9 +409,13 @@
       "path": "edit/assets/README.md",
       "source": "canonical-skills/edit/assets/README.md",
       "source_sha256": "be74b1247d115327b4b36c0efcb91dc73935a36da47ae7ef5540718c08d3f705",
-      "distribution_sha256": "88a85560931d9585dfb9382930fe3656ced55076bc71d9e7ce661ecd2217f33a",
-      "bytes": 17405,
-      "transforms": []
+      "distribution_sha256": "53ec48f13e4c283b3c5d8cd66efc484ec3ecf80e2472599731cc4318d14fe3b4",
+      "bytes": 9986,
+      "transforms": [
+        {
+          "patch": "configured-asset-catalog"
+        }
+      ]
     },
     {
       "path": "edit/assets/text/Big Kinetic Type Opener/Fonts/Link for font.txt",
@@ -462,12 +469,15 @@
       "path": "edit/config/example_config.json",
       "source": "canonical-skills/edit/config/example_config.json",
       "source_sha256": "e187df38b9b1bc91b6c89796c6e45c162fac33a359853b55a587ea5a379b0c4e",
-      "distribution_sha256": "7a8c8dd6561ea61f64df29e991620b18f2ac9eefc3e091e297ded52b888d55f7",
-      "bytes": 1490,
+      "distribution_sha256": "6ba24842c474489acc00c939e316ad134d5512dd1679d590e86aec41950c28bc",
+      "bytes": 1693,
       "transforms": [
         {
           "from": "asset-library-root",
           "to": "__ACQ_ASSETS__"
+        },
+        {
+          "patch": "explicit-project-and-licensed-asset-examples"
         }
       ]
     },
@@ -668,12 +678,15 @@
       "path": "edit/references/hard_won_lessons.md",
       "source": "canonical-skills/edit/references/hard_won_lessons.md",
       "source_sha256": "0f712084ff47e01df4d7d6271dfd1ca0f3a17c4ef5e4d4abdc4f2222804dfb48",
-      "distribution_sha256": "65fffc30bad726e7c387e785626cd8db67e863fac64655bd7f210e781d408d40",
-      "bytes": 39409,
+      "distribution_sha256": "a1904fda56410e0987263422277fb841ccd817f914d45c1fb160cc774cbabd1f",
+      "bytes": 39371,
       "transforms": [
         {
           "from": "canonical-root",
           "to": "__ACQ_SKILLS__"
+        },
+        {
+          "patch": "project-storage-space-check"
         }
       ]
     },
@@ -1098,12 +1111,17 @@
       "path": "edit/scripts/cut_by_phrase.py",
       "source": "canonical-skills/edit/scripts/cut_by_phrase.py",
       "source_sha256": "5ec096d7bc63daaf46ce49dc361e1fdc9aa79b135251cb9edfefc47a741073fa",
-      "distribution_sha256": "9fdf25850eb879db0177a506d690f98e604993fdc1901af544980a6a01acc036",
-      "bytes": 2499,
+      "distribution_sha256": "0978b14d2f5b2cb8826b31a6488e95c1c5130cd57a2b2d3a3093d07cf2c43e35",
+      "bytes": 3043,
       "transforms": [
         {
           "from": "asset-library-root",
           "to": "__ACQ_ASSETS__"
+        },
+        {
+          "patch": "portable-execution-owner",
+          "replacement": "scripts/portable_overrides/edit/scripts/cut_by_phrase.py",
+          "replacementSha256": "0978b14d2f5b2cb8826b31a6488e95c1c5130cd57a2b2d3a3093d07cf2c43e35"
         }
       ]
     },
@@ -1587,12 +1605,15 @@
       "path": "assembly-design/references/CLIP_CUTTING_PLAYBOOK.md",
       "source": "canonical-skills/assembly-design/references/CLIP_CUTTING_PLAYBOOK.md",
       "source_sha256": "141172114c2eaff5ecda47e727bdae62c2b8834c67636425ab63a47f3c415c53",
-      "distribution_sha256": "2aeb4d4f1a40742b9f4d07dd8a7fffd678066f40f7163e5bb082a088b865f772",
-      "bytes": 38013,
+      "distribution_sha256": "7ce819a69b8f098d243533f1b9c9dc82d828aeb8ae0ffaaec4ef4996ceb61913",
+      "bytes": 38280,
       "transforms": [
         {
           "from": "canonical-root",
           "to": "__ACQ_SKILLS__"
+        },
+        {
+          "patch": "phrase-locator-native-handoff"
         }
       ]
     },
@@ -1664,9 +1685,13 @@
       "path": "assembly-design/references/editorial-precedents.md",
       "source": "canonical-skills/assembly-design/references/editorial-precedents.md",
       "source_sha256": "38f4ae09f1b21b3a0b658d9ecc80aad264f3610480d02e902429c1bab60e99a8",
-      "distribution_sha256": "4aa952fda5233739b6b94a90689721e1c826b4545f333c76e222c142b9a70480",
-      "bytes": 2339,
-      "transforms": []
+      "distribution_sha256": "0b88d4bb8558e1a5afb552e3604b90fc12f163379bb3b3770a547d233ebd626e",
+      "bytes": 2768,
+      "transforms": [
+        {
+          "patch": "portable-precedent-evidence"
+        }
+      ]
     },
     {
       "path": "assembly-design/references/editorial-worksheet.md",
@@ -2346,8 +2371,8 @@
       "path": "footage-fetch/SKILL.md",
       "source": "canonical-skills/footage-fetch/SKILL.md",
       "source_sha256": "08d4da787c764b7f060fbe2a22f74fb9c97debdec0084cf892c5bcf0208d4fdf",
-      "distribution_sha256": "80f60e6bc13510d1974e5e67114c8982bde3880cdfaa9eeebba079e50109257e",
-      "bytes": 6652,
+      "distribution_sha256": "01e2afe1b855d623991d1eee510139439895f468b35656b8ba386e148d7cc429",
+      "bytes": 1844,
       "transforms": [
         {
           "from": "canonical-root",
@@ -2360,6 +2385,11 @@
         {
           "patch": "portable-skill-description",
           "owner": "footage-fetch"
+        },
+        {
+          "patch": "portable-execution-owner",
+          "replacement": "scripts/portable_overrides/footage-fetch/SKILL.md",
+          "replacementSha256": "01e2afe1b855d623991d1eee510139439895f468b35656b8ba386e148d7cc429"
         }
       ]
     },
@@ -2367,9 +2397,15 @@
       "path": "footage-fetch/scripts/gdrive_pull.sh",
       "source": "canonical-skills/footage-fetch/scripts/gdrive_pull.sh",
       "source_sha256": "d9a0cac3c455c40f79641d25c5a2db92e84feef9ecf5f0f7ad3c63b7e8dd14a0",
-      "distribution_sha256": "d9a0cac3c455c40f79641d25c5a2db92e84feef9ecf5f0f7ad3c63b7e8dd14a0",
-      "bytes": 3603,
-      "transforms": []
+      "distribution_sha256": "2abc737eb35824848a7d5eaa7601f86ee41b8b72355033c49a68414698bc75f0",
+      "bytes": 692,
+      "transforms": [
+        {
+          "patch": "portable-execution-owner",
+          "replacement": "scripts/portable_overrides/footage-fetch/scripts/gdrive_pull.sh",
+          "replacementSha256": "2abc737eb35824848a7d5eaa7601f86ee41b8b72355033c49a68414698bc75f0"
+        }
+      ]
     },
     {
       "path": "horizontal-to-vertical/SKILL.md",
@@ -5310,12 +5346,15 @@
       "path": "ad-edit/references/example_config.json",
       "source": "canonical-skills/ad-edit/references/example_config.json",
       "source_sha256": "0bcd1e9bafa7140c0c566786a31aebc867f11153b4273f1a362541facd5119e8",
-      "distribution_sha256": "ee467000121b8f5876744f26347f22a9d2f7a2c6355ad81cc49f997e1809e0b5",
-      "bytes": 1266,
+      "distribution_sha256": "05650fbfcbd9bad6ac269a3eed12d55d6eb98eb1906f31d91f0b0b01f8dea806",
+      "bytes": 1672,
       "transforms": [
         {
           "from": "canonical-root",
           "to": "__ACQ_SKILLS__"
+        },
+        {
+          "patch": "explicit-project-and-licensed-asset-examples"
         }
       ]
     },
@@ -5323,12 +5362,15 @@
       "path": "ad-edit/references/example_config_heavy_broll.json",
       "source": "canonical-skills/ad-edit/references/example_config_heavy_broll.json",
       "source_sha256": "770a8a57530a79b434f99c933a7e00df68a1e0941b47331480819470200a8a0e",
-      "distribution_sha256": "9946085bad3b01e144fe40f9931226400854a275ea6a5293a46169265e6f89e5",
-      "bytes": 2770,
+      "distribution_sha256": "9e860f1938ab5dd8a063104a3e64faa4960c03cd5cc97c5b8ac3c7f039ff18ff",
+      "bytes": 2712,
       "transforms": [
         {
           "from": "asset-library-root",
           "to": "__ACQ_ASSETS__"
+        },
+        {
+          "patch": "explicit-project-and-licensed-asset-examples"
         }
       ]
     },
@@ -5416,9 +5458,13 @@
       "path": "ad-edit/scripts/make_graphics.py",
       "source": "canonical-skills/ad-edit/scripts/make_graphics.py",
       "source_sha256": "c52b62dd114445c4e32ee3b2400f40aeb82e90d4780dcf874bc3311fa7048f4a",
-      "distribution_sha256": "67ead4294c20ff6aa2b18ba42c7b3df0a019b6fc3d7f1e9ffeadcbc0c4f2396d",
-      "bytes": 4164,
-      "transforms": []
+      "distribution_sha256": "3402ca863fd98321520633ec1528347081c5c7cafd52b9ad00930ed48b565db1",
+      "bytes": 4399,
+      "transforms": [
+        {
+          "patch": "explicit-graphics-font"
+        }
+      ]
     },
     {
       "path": "ad-edit/scripts/make_matte.sh",
@@ -5432,9 +5478,13 @@
       "path": "ad-edit/scripts/render_ad.py",
       "source": "canonical-skills/ad-edit/scripts/render_ad.py",
       "source_sha256": "b1e415466e6defbca5ac198d7bdfd62a91d92a4c6c7f9ac88426463d62a12a71",
-      "distribution_sha256": "51c6c57ff2dcbb913502626c587762ea8614073b5f58872a8f9e80e30dfc2024",
-      "bytes": 57592,
-      "transforms": []
+      "distribution_sha256": "ddcb509abb4b49e91c6ca83f5927466674b4309212ba8d86c29136a3f92817df",
+      "bytes": 57800,
+      "transforms": [
+        {
+          "patch": "explicit-render-font"
+        }
+      ]
     },
     {
       "path": "ad-edit/scripts/validate_workshop_ad_plan.py",

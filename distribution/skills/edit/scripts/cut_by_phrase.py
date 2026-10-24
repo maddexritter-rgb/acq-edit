@@ -1,44 +1,67 @@
 #!/usr/bin/env python3
-"""cut_by_phrase.py <ep> <near_t0> <title> <music> <hook_phrase> <payoff_phrase>
-HAND-CUT: locate the HOOK phrase start + PAYOFF phrase end (word-precise) in the source word
-transcript near near_t0, then multicut + multifinish → 20_DELIVER. Editorial phrases chosen by hand,
-so the boundaries are exactly the strong hook and the clean payoff (the method that nailed CleanYourSocials)."""
-import sys, json, subprocess
+"""Locate exact hook/payoff word candidates without editing or rendering.
+
+Assembly Design owns the choice, source-word compilation and inspected speech edges.
+Use the toolkit native route for construction. This helper never invokes old
+project-local multicut/multifinish scripts or invents fixed audio padding.
+"""
+import argparse
+import hashlib
+import json
+import math
 from pathlib import Path
 
-HERE = Path("__ACQ_LEGACY_HOME__/Downloads/client/2026-06-05_PodcastEps77-79/10_WORK")
-DELIVER = HERE.parent / "20_DELIVER"
-CAL = Path("__ACQ_ASSETS__/content-skill-system/(1) Tik Tok/(1) Calm")
-ep, near, title, music, hook, payoff = sys.argv[1], float(sys.argv[2]), sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6]
-W = json.load(open(HERE / f"transcripts/{ep}_client.words.json"))["words"]
-def nz(w): return "".join(c for c in w.lower() if c.isalnum())
 
-def find_start(phrase, lo, hi):
-    toks = [nz(x) for x in phrase.split() if nz(x)]
-    for i, w in enumerate(W):
-        if lo <= w["start"] <= hi and i+len(toks) <= len(W) and all(nz(W[i+k]["word"]) == toks[k] for k in range(len(toks))):
-            return W[i]["start"]
-    return None
+def normalized(word):
+    return ''.join(c for c in word.lower() if c.isalnum())
 
-def find_end(phrase, lo, hi):
-    toks = [nz(x) for x in phrase.split() if nz(x)]
-    for i in range(len(W) - len(toks) + 1):
-        j = i + len(toks) - 1
-        if lo <= W[j]["end"] <= hi and all(nz(W[i+k]["word"]) == toks[k] for k in range(len(toks))):
-            return W[j]["end"] + 0.12
-    return None
 
-s = find_start(hook, near - 9, near + 14)
-e = find_end(payoff, (s or near) + 3, (s or near) + 150)
-if s is None or e is None or e <= s:
-    print(f"✗ {title}: PHRASE NOT FOUND hook_start={s} payoff_end={e}"); sys.exit(1)
-tt = title[0].upper() + title[1:]
-cut = HERE / f"renders/cut_{title}.mp4"; out = DELIVER / f"client_DTC_POD_{tt}_Maddex_20260606_V1.mp4"
-print(f"{title}: [{s:.2f} → {e:.2f}] {e-s:.0f}s", flush=True)
-subprocess.run(["python3", str(HERE/"multicut.py"), ep, f"{s}", f"{e}", str(cut), "switch"], capture_output=True, text=True)
-r = subprocess.run(["python3", str(HERE/"multifinish.py"), ep, f"{s}", f"{e}", str(cut), str(out), "--music", str(CAL/music)], capture_output=True, text=True)
-print("  " + ((r.stdout.strip().splitlines() or [""])[-1][-110:]))
-import json as _j
-w = _j.load(open(HERE/f"capwork/cut_{title}_norm.json"))["words"]
-print(f"  OPENS: {' '.join(x['word'] for x in w[:7])}")
-print(f"  ENDS:  {' '.join(x['word'] for x in w[-6:])}")
+def locate(words, phrase, lo, hi, edge):
+    tokens = [normalized(token) for token in phrase.split() if normalized(token)]
+    if not tokens:
+        raise ValueError('Phrase must contain spoken words')
+    matches = []
+    for start in range(len(words) - len(tokens) + 1):
+        end = start + len(tokens) - 1
+        clock = words[start]['start'] if edge == 'start' else words[end]['end']
+        if lo <= clock <= hi and all(normalized(words[start+i]['word']) == token for i, token in enumerate(tokens)):
+            matches.append({'wordStart': start, 'wordEnd': end, 'start': words[start]['start'], 'end': words[end]['end']})
+    return matches
+
+
+def candidates(words, near, hook, payoff):
+    if not math.isfinite(near) or near < 0:
+        raise ValueError('Near must be a finite nonnegative source time')
+    previous = -1
+    for word in words:
+        start, end = word['start'], word['end']
+        if (not isinstance(word['word'], str) or not all(isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x) for x in (start, end))
+                or start < 0 or end < start or start < previous):
+            raise ValueError('Expected ordered source words with finite second-based start/end clocks')
+        previous = start
+    hooks = locate(words, hook, max(0, near-9), near+14, 'start')
+    pairs = []
+    for opening in hooks:
+        for closing in locate(words, payoff, opening['start'], opening['start']+150, 'end'):
+            if closing['wordStart'] >= opening['wordEnd'] and closing['end'] > opening['start']:
+                pairs.append({'hook': opening, 'payoff': closing})
+    return pairs
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--transcript', type=Path, required=True, help='JSON with words containing word/start/end in source seconds')
+    parser.add_argument('--near', type=float, required=True)
+    parser.add_argument('--hook', required=True)
+    parser.add_argument('--payoff', required=True)
+    args = parser.parse_args()
+    raw = args.transcript.read_bytes()
+    pairs = candidates(json.loads(raw)['words'], args.near, args.hook, args.payoff)
+    print(json.dumps({'schema': 'acq-edit/phrase-locations-v1', 'locatorOnly': True,
+                      'transcript': str(args.transcript.resolve()), 'transcriptSha256': hashlib.sha256(raw).hexdigest(),
+                      'candidates': pairs, 'requiresSourceWordDesign': True}, indent=2))
+    return 0 if pairs else 1
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

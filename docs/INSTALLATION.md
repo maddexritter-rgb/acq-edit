@@ -50,3 +50,7 @@ A fresh GitHub clone at toolkit commit `69c3e2c`, with the updated installer, in
 Four added installer tests cover macOS SDK requirements, missing SDK refusal, immutable build provenance and refusal after source drift. The full Python suite passes 173 tests. This is a fresh source/toolchain build on the development Mac; installed system tools and agent authentication were reused. Clean-Mac and both-agent installation acceptance remain open.
 
 That newly built executable subsequently passed the real Codex build and browser caption-revision loop, including exact decoded audio, complete native caption-only comparison, immutable artifact hashes and late-feedback preservation. See `LIVE_AGENT_LOOP.md`. This adds native execution evidence without claiming clean-Mac or human acceptance.
+
+## Portable procedure update
+
+The later [portability update](PORTABILITY.md) replaces thirteen packaged workstation-specific paths or execution handoffs while retaining canonical hashes. A fresh runtime verifies 681 files and 37 entrypoints. The earlier eleven normalized-path warnings are resolved; improved shell-path detection now explicitly flags the optional live-stream launcher. This is a dependency warning, not a failed basic installation or proof that all optional workflows are qualified. Existing runtimes are preserved; install the update in a fresh checkout.

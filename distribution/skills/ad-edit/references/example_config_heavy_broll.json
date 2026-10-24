@@ -1,7 +1,7 @@
 {
-  "source": "cta_v9x16.mp4",
-  "transcript": "cta_raw.json",
-  "out": "CTA_ONLY_hunter-style.mp4",
+  "source": "00_SOURCE/<registered-source>.mp4",
+  "transcript": "10_WORK/<clip-transcript>.json",
+  "out": "10_WORK/<preview>.mp4",
   "crop_x": 0,
   "crop_y": 0,
   "crop_w": 1080,
@@ -13,7 +13,7 @@
   "cta_line2": "Click the link below",
   "cta_builtin": true,
   "disclaimer": true,
-  "music": "__ACQ_LEGACY_HOME__/ai ads/_ASSETS/music-library/tech-cinematic-alternative-2026-08/acq-swr-synthwave-08-noir-workshop.mp3",
+  "music": "__ACQ_ASSETS__/music/<selected-track>.wav",
   "music_db": -32,
   "sfx": [
     {
@@ -45,51 +45,68 @@
   "overlays": [
     {
       "type": "cutaway",
-      "src": "__ACQ_LEGACY_HOME__/ai ads/_ASSETS/broll/hunter-2026-08-17/l1-workshop/16x9/basic/v01_stage-authority_16x9_basic.mp4",
+      "src": "00_SOURCE/<registered-cutaway-1>.mp4",
       "at": "sales content",
       "dur": 4.32,
-      "badge": ["$100M", "WORKSHOP"],
+      "badge": [
+        "$100M",
+        "WORKSHOP"
+      ],
       "w": 918,
       "card_y": 440
     },
     {
       "type": "cutaway",
-      "src": "__ACQ_LEGACY_HOME__/ai ads/_ASSETS/broll/hunter-2026-08-17/workshop/general/16x9/basic/2026-05-31_acq-broll-workshop-clip-01_16x9_basic.mp4",
+      "src": "00_SOURCE/<registered-cutaway-2>.mp4",
       "at": "two days in person",
       "dur": 4.08,
-      "badge": ["TWO DAYS", "IN VEGAS"],
+      "badge": [
+        "TWO DAYS",
+        "IN VEGAS"
+      ],
       "w": 918,
       "card_y": 440
     },
     {
       "type": "cutaway",
-      "src": "__ACQ_LEGACY_HOME__/ai ads/_ASSETS/broll/hunter-2026-08-17/l1-workshop/16x9/basic/v05_speaker-and-room_16x9_basic.mp4",
+      "src": "00_SOURCE/<registered-cutaway-3>.mp4",
       "at": "the same team",
       "dur": 3.94,
-      "badge": ["THE TEAM", "THAT BUILT IT"],
+      "badge": [
+        "THE TEAM",
+        "THAT BUILT IT"
+      ],
       "w": 918,
       "card_y": 440
     },
     {
       "type": "cutaway",
-      "src": "__ACQ_LEGACY_HOME__/ai ads/_ASSETS/broll/hunter-2026-08-17/l1-workshop/16x9/basic/v09_brand-wall_16x9_basic.mp4",
+      "src": "00_SOURCE/<registered-cutaway-4>.mp4",
       "at": "portfolio that does",
       "dur": 3.34,
-      "badge": ["$250M+", "PORTFOLIO"],
+      "badge": [
+        "$250M+",
+        "PORTFOLIO"
+      ],
       "w": 918,
       "card_y": 440
     },
     {
       "type": "cutaway",
-      "src": "__ACQ_LEGACY_HOME__/ai ads/_ASSETS/broll/hunter-2026-08-17/l1-workshop/16x9/basic/v10_full-day-arc_16x9_basic.mp4",
+      "src": "00_SOURCE/<registered-cutaway-5>.mp4",
       "at": "whatever you sell",
       "dur": 4.0,
-      "badge": ["FOR OWNERS", "$1M+/YEAR"],
+      "badge": [
+        "FOR OWNERS",
+        "$1M+/YEAR"
+      ],
       "w": 918,
       "card_y": 440
     }
   ],
   "cta_y": 1120,
   "cta_fullscreen": false,
-  "speed": 1.1
+  "speed": 1.1,
+  "_portable_usage": "Example only. Resolve paths for the current project and configured licensed assets. Native composition/export uses the selected toolkit backend; legacy renderer examples do not authorize a different engine.",
+  "font": "__ACQ_ASSETS__/fonts/<licensed-font>.ttf"
 }

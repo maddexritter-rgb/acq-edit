@@ -10776,58 +10776,8 @@
   "excluded_total": 22858,
   "unresolved_external_references": [
     {
-      "path": "edit/RUNBOOK.md",
-      "references": 1,
-      "status": "requires-profile-or-portable-replacement"
-    },
-    {
-      "path": "edit/assets/README.md",
-      "references": 1,
-      "status": "requires-profile-or-portable-replacement"
-    },
-    {
-      "path": "edit/config/example_config.json",
-      "references": 1,
-      "status": "requires-profile-or-portable-replacement"
-    },
-    {
-      "path": "edit/references/hard_won_lessons.md",
-      "references": 1,
-      "status": "requires-profile-or-portable-replacement"
-    },
-    {
-      "path": "edit/scripts/cut_by_phrase.py",
-      "references": 1,
-      "status": "requires-profile-or-portable-replacement"
-    },
-    {
-      "path": "assembly-design/references/editorial-precedents.md",
+      "path": "live-clip/scripts/start_liveclip_autopilot.sh",
       "references": 3,
-      "status": "requires-profile-or-portable-replacement"
-    },
-    {
-      "path": "footage-fetch/SKILL.md",
-      "references": 1,
-      "status": "requires-profile-or-portable-replacement"
-    },
-    {
-      "path": "ad-edit/references/example_config.json",
-      "references": 1,
-      "status": "requires-profile-or-portable-replacement"
-    },
-    {
-      "path": "ad-edit/references/example_config_heavy_broll.json",
-      "references": 1,
-      "status": "requires-profile-or-portable-replacement"
-    },
-    {
-      "path": "ad-edit/scripts/make_graphics.py",
-      "references": 1,
-      "status": "requires-profile-or-portable-replacement"
-    },
-    {
-      "path": "ad-edit/scripts/render_ad.py",
-      "references": 1,
       "status": "requires-profile-or-portable-replacement"
     }
   ],

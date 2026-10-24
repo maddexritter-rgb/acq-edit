@@ -6,6 +6,7 @@ import json
 import os
 import tempfile
 from pathlib import Path, PurePosixPath
+from portable_patches import private_references
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = 'docs/AGENT_WORKFLOW.md'
@@ -61,8 +62,8 @@ def prepare(root, assets):
         data = no_symlinks(source_root, relative).read_bytes()
         if sha(data) != entry['distribution_sha256']:
             raise RuntimeError('Distribution hash mismatch: ' + name)
-        content = data.decode().replace('__ACQ_SKILLS__', str(dest)).replace('__ACQ_ASSETS__', str(assets))
-        if '__ACQ_LEGACY_HOME__' in content or '__ACQ_EXTERNAL_VOLUME__' in content:
+        content = data.decode().replace('__ACQ_SKILLS__', str(dest)).replace('__ACQ_ASSETS__', str(assets)).replace('__ACQ_TOOLKIT__', str(root))
+        if private_references(content):
             blocked.append(name)
         if relative.name=='SKILL.md':
             content=route_entrypoint(content,root)

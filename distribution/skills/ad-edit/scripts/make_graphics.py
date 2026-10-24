@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """make_graphics.py — on-brand overlay graphics for paid ads.
 
-  python3 make_graphics.py <outdir> [font.ttf]
+  python3 make_graphics.py <outdir> <licensed-font.ttf>
 
 Produces transparent PNGs sized for the 1080x1920 canvas:
   g_stat.png    big-number proof card      (sits below the chin)
@@ -19,8 +19,12 @@ PURPLE = (109, 32, 224, 255)
 P_LIGHT = (168, 110, 255, 255)
 CARD_BG = (17, 19, 32, 238)
 GOLD = (214, 155, 35, 255)
-FONT = sys.argv[2] if len(sys.argv) > 2 else \
-    "__ACQ_LEGACY_HOME__/Library/Fonts/ProximaNova-Extrabold.ttf"
+if len(sys.argv) != 3:
+    raise SystemExit("Usage: make_graphics.py OUTDIR LICENSED_FONT_FILE")
+FONT = str(Path(sys.argv[2]).expanduser().resolve())
+if not Path(FONT).is_file():
+    raise SystemExit("Configured font file is missing; provide a licensed font explicitly")
+ImageFont.truetype(FONT, 12)  # validate before creating any output
 OUT = pathlib.Path(sys.argv[1]); OUT.mkdir(parents=True, exist_ok=True)
 f = lambda s: ImageFont.truetype(FONT, s)
 

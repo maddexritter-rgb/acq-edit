@@ -1,3 +1,5 @@
+> Retrieve current guidance through [the editorial brain contract](__ACQ_TOOLKIT__/docs/EDITORIAL_BRAIN.md). Private historical studies are not bundled. Use only returned evidence or explicitly supplied project-owned benchmarks; do not search a former workstation. Missing cited evidence is unavailable, not approved.
+
 # Editorial precedents and evidence confidence
 
 Use precedents as decision aids, never as templates to imitate. The current L1 research
@@ -6,13 +8,10 @@ missing or unmatched, and none was fully acoustically certified. Preserve those 
 
 ## Positive calibration
 
-For workshop/event batches and construction retries, read:
-
-`__ACQ_LEGACY_HOME__/Documents/Codex/2026-09-17/ed/outputs/WORKSHOP_TEN_GOOD_LOOKS_SOURCE_OF_TRUTH.md`
-
-Then read every exact selected-source dialogue and plan in:
-
-`__ACQ_LEGACY_HOME__/Documents/Codex/2026-09-17/ed/work/ten-clip-selected-v3/`
+For workshop/event batches and construction retries, inspect the exact
+user-supplied calibration artifact when provided, including its selected-source
+dialogue, plan and approval provenance. If those artifacts are absent, report that
+evidence as unavailable; a private historical path is not a portable dependency.
 
 Generalize the decisions: complete source-faithful arc, necessary question context,
 reasoning ladder, source-supported payoff and exact playback words. Do not copy unresolved
@@ -20,9 +19,9 @@ wording or infer approval from a timeline.
 
 ## L1 research router
 
-Start with the handoff index:
-
-`__ACQ_EXTERNAL_VOLUME__/alex/2026-09-14_OliverQA/10_WORK/paired_cuts/evaluation/cut_design_handoff/index.json`
+Start with the project-owned evidence returned by restricted brain retrieval.
+Use the returned confidence labels and source links; do not assume a private local
+research index exists or that its earlier case counts describe current coverage.
 
 Load a case only when its decision problem matches the current interaction:
 

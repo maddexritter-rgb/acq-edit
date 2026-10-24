@@ -1,35 +1,39 @@
 {
   "_comment": "Template config for multicam-podcast-clipper. Copy this to <project_root>/10_WORK/multicam_config.json and tune per-project. Episode paths are relative to project_root. Music folder + ANTHROPIC_API_KEY are read from env / global. Per-brand crops/colors/music vibes live in brand memory (e.g. project_client_podcast_shorts_2026-06-05.md), not here.",
-
-  "project_root": "__ACQ_LEGACY_HOME__/Downloads/<brand>/2026-06-07_<slug>",
+  "project_root": "<project-root>",
   "client_slug": "ALEX",
-  "context": "Two-person podcast (host + guest) — punchy conversational segments. Host carries the bulk of the talk; guest lands the contrast / punchline. Quotes / role-play / 'say this' lines render italic + yellow.",
-
+  "context": "Two-person podcast (host + guest) \u2014 punchy conversational segments. Host carries the bulk of the talk; guest lands the contrast / punchline. Quotes / role-play / 'say this' lines render italic + yellow.",
   "vocab": [
     "Alex"
   ],
-
-  "music_folder": "__ACQ_ASSETS__/content-skill-system/(1) Tik Tok/(1) Calm",
-
+  "music_folder": "__ACQ_ASSETS__/music",
   "speakers": {
     "host": {
       "_role": "the brand talent / primary speaker. Caption color = white (default_voice in spice preset).",
-      "reframe": { "zoom": 1.15, "cx": 0.50, "cy": 0.55 },
+      "reframe": {
+        "zoom": 1.15,
+        "cx": 0.5,
+        "cy": 0.55
+      },
       "diarize_bias": 1.15
     },
     "guest": {
       "_role": "the secondary speaker. Caption color = yellow #FED90F (voice_spans 'guest' tag).",
-      "reframe": { "zoom": 1.15, "cx": 0.50, "cy": 0.55 }
+      "reframe": {
+        "zoom": 1.15,
+        "cx": 0.5,
+        "cy": 0.55
+      }
     }
   },
-
   "episodes": {
     "Ep01": {
-      "wide":      "00_SOURCE/Ep01/wide.MP4",
-      "host_cam":  "00_SOURCE/Ep01/host.MP4",
+      "wide": "00_SOURCE/Ep01/wide.MP4",
+      "host_cam": "00_SOURCE/Ep01/host.MP4",
       "guest_cam": "00_SOURCE/Ep01/guest.MP4",
-      "host_wav":  "00_SOURCE/Ep01/host.wav",
+      "host_wav": "00_SOURCE/Ep01/host.wav",
       "guest_wav": "00_SOURCE/Ep01/guest.wav"
     }
-  }
+  },
+  "_portable_usage": "Example only. Resolve paths for the current project and configured licensed assets. Native composition/export uses the selected toolkit backend; legacy renderer examples do not authorize a different engine."
 }

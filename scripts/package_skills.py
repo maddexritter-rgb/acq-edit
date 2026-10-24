@@ -2,7 +2,7 @@
 """Export canonical procedures without touching their live source. Never copy account configuration."""
 import argparse,ast,hashlib,json,re
 from pathlib import Path
-from portable_patches import portable_text
+from portable_patches import portable_text,portable_distribution,private_references
 OWNERS='edit assembly-design long-form-ingest find-precedents source-intel footage-fetch horizontal-to-vertical caption-clips text-hook music render watch clip-review-room revision-planner transcript-edit clip-review-tracker audit-script audit-audio audit-captions audit-visual mozi-sf-audit scorecard-audit book-doodle b-roll-injector broll-cutaway cinematic vertical-livestream-card promo saas-animation-video ad-edit listicle-short live-clip testimonial-edit source-library alex premiere-to-resolve editorial-brain-ingest'.split()
 EXT={'.md','.py','.js','.mjs','.cjs','.ts','.tsx','.jsx','.json','.sh','.css','.html','.toml','.yaml','.yml','.txt','.svg'}
 SKIP={'node_modules','.git','__pycache__','.venv','venv','training','corpus','dataset','deliveries','outputs','results','runtime','.cache','artifacts','evidence','fixtures','logs'}
@@ -28,10 +28,11 @@ def main():
     if old in text:text=text.replace(old,new);transform.append({'from':'canonical-root' if 'skills' in old else 'asset-library-root','to':new})
    text,patches=portable_text(text,str(rel));transform.extend(patches)
    # Personal project paths are never working defaults in the portable distribution.
-   paths=sorted(set(re.findall(r'/(?:Users|Volumes)/[^\s\"\'`<>\)\],;]+',text)))
-   if paths:external.append({'path':str(rel),'references':len(paths),'status':'requires-profile-or-portable-replacement'})
    text=re.sub(r'/Users/[^/\s]+/', '__ACQ_LEGACY_HOME__/',text)
    text=re.sub(r'/Volumes/[^\n\"\'`]+',lambda m:'__ACQ_EXTERNAL_VOLUME__/'+m.group(0).split('/',3)[-1],text) if f.suffix=='.md' else text
+   text,patches=portable_distribution(text,str(rel));transform.extend(patches)
+   refs=private_references(text)
+   if refs:external.append({'path':str(rel),'references':len(refs),'status':'requires-profile-or-portable-replacement'})
    target=out/rel;target.parent.mkdir(parents=True,exist_ok=True);target.write_text(text)
    manifest.append({'path':str(rel),'source':'canonical-skills/'+str(rel),'source_sha256':source_hash,'distribution_sha256':hashlib.sha256(text.encode()).hexdigest(),'bytes':len(text.encode()),'transforms':transform})
  (out.parent/'SOURCE_MANIFEST.json').write_text(json.dumps({'schema':'acq-edit/source-manifest-v1','owners':OWNERS,'files':manifest},indent=2)+'\n')
