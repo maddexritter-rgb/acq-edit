@@ -25,7 +25,7 @@ class NativeDispatchTests(unittest.TestCase):
     def test_backend_mismatch_never_imports_an_adapter(self):
         with patch.object(native.importlib,'import_module') as load:
             for backend in ['filmcraft','premiere']:
-                for action in ['compile','captions','inspect','open','build','revise','render']:
+                for action in ['compile','captions','hooks','reference','inspect','open','build','revise','render']:
                     with self.subTest(backend=backend,action=action),self.assertRaisesRegex(RuntimeError,'Backend is fixed'):self.call(action,backend)
             load.assert_not_called()
         self.assertFalse((self.root/'10_WORK/native.lock').exists())
@@ -52,6 +52,15 @@ class NativeDispatchTests(unittest.TestCase):
         compile_plan=Mock(return_value={'compiled':True});prepare_plan=Mock(return_value={'captions':True})
         with patch.dict(sys.modules,{'assembly_plan':types.SimpleNamespace(compile_plan=compile_plan),'caption_plan':types.SimpleNamespace(prepare_plan=prepare_plan)}),patch.object(native.importlib,'import_module') as load:
             self.assertEqual(self.call('compile'),{'compiled':True});self.assertEqual(self.call('captions'),{'captions':True});load.assert_not_called()
+
+    def test_reference_preparation_is_shared_for_every_backend(self):
+        prepare=Mock(return_value={'humanApproved':False})
+        with patch.dict(sys.modules,{'reference_style':types.SimpleNamespace(prepare_plan=prepare)}),patch.object(native.importlib,'import_module') as load:
+            for backend in ['filmcraft','premiere','resolve']:
+                self.project.write_text(json.dumps({'id':'fixture','root':str(self.root),'backend':backend}))
+                self.assertEqual(self.call('reference',backend),{'humanApproved':False})
+            load.assert_not_called()
+        self.assertEqual(prepare.call_count,3)
 
 
 if __name__=='__main__':unittest.main()

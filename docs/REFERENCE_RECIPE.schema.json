@@ -1,1 +1,139 @@
-{"$schema":"https://json-schema.org/draft/2020-12/schema","title":"Reference style evidence","type":"object","required":["sourceSha256","durationSeconds","coverage","segments","unsupportedEffects"],"properties":{"sourceSha256":{"type":"string"},"durationSeconds":{"type":"number","exclusiveMinimum":0},"coverage":{"type":"object","required":["fullVideoViewed","audioListened","denseIntervals"],"properties":{"fullVideoViewed":{"type":"boolean"},"audioListened":{"type":"boolean"},"denseIntervals":{"type":"array"}}},"segments":{"type":"array","items":{"type":"object","required":["start","end","category","observation","basis","evidence"],"properties":{"start":{"type":"number"},"end":{"type":"number"},"category":{"enum":["cuts","pacing","captions","framing","motion","graphics","color","music","sound-effects"]},"observation":{"type":"string"},"basis":{"enum":["observed","inferred"]},"evidence":{"type":"array","items":{"type":"string"}}}}},"unsupportedEffects":{"type":"array","items":{"type":"string"}}}}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Reference style evidence",
+  "type": "object",
+  "required": [
+    "sourceSha256",
+    "durationSeconds",
+    "coverage",
+    "segments",
+    "unsupportedEffects"
+  ],
+  "properties": {
+    "sourceSha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "durationSeconds": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "coverage": {
+      "type": "object",
+      "required": [
+        "fullVideoViewed",
+        "audioListened",
+        "denseIntervals",
+        "evidence"
+      ],
+      "properties": {
+        "fullVideoViewed": {
+          "type": "boolean"
+        },
+        "audioListened": {
+          "type": "boolean"
+        },
+        "denseIntervals": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "start",
+              "end",
+              "evidence"
+            ],
+            "properties": {
+              "start": {
+                "type": "number",
+                "minimum": 0
+              },
+              "end": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "evidence": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        },
+        "audioAbsent": {
+          "type": "boolean"
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "segments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "start",
+          "end",
+          "category",
+          "observation",
+          "basis",
+          "evidence"
+        ],
+        "properties": {
+          "start": {
+            "type": "number"
+          },
+          "end": {
+            "type": "number"
+          },
+          "category": {
+            "enum": [
+              "cuts",
+              "pacing",
+              "captions",
+              "framing",
+              "motion",
+              "graphics",
+              "color",
+              "music",
+              "sound-effects"
+            ]
+          },
+          "observation": {
+            "type": "string"
+          },
+          "basis": {
+            "enum": [
+              "observed",
+              "inferred"
+            ]
+          },
+          "evidence": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      },
+      "minItems": 1
+    },
+    "unsupportedEffects": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "description": "Working watch-owned recipe. Incomplete coverage is recordable here; native reference preparation requires reported complete viewing, explicit audio coverage and all nine categories. Evidence strings refer to IDs supplied in the preparation packet. Validation does not certify viewing or human approval."
+}

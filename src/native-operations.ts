@@ -39,7 +39,7 @@ export async function executeNative(store:Store,config:Config,projectId:string,a
   // Commit uncertainty before invoking the process runner. A crash in this gap
   // must never be misclassified as proof that no editor command was dispatched.
   await record(store,id,{childPending:true,dispatchPhase:'launching'});
-  const result=await (tools.execute||run)(project.backend==='resolve'&&!['compile','captions','hooks'].includes(action)?config.resolvePython!:config.python,[path.join(ROOT,'python','native.py'),action,'--backend',project.backend,'--config',path.join(HOME,'config.json'),'--project',path.join(project.root,'project.json'),'--packet',packetPath],{timeout:4*3600_000,env,signal:tools.signal,onSpawn:pid=>{store.updateNativeOperation(id,{childPid:pid,childPending:false,dispatchPhase:'spawned'})}});
+  const result=await (tools.execute||run)(project.backend==='resolve'&&!['compile','captions','hooks','reference'].includes(action)?config.resolvePython!:config.python,[path.join(ROOT,'python','native.py'),action,'--backend',project.backend,'--config',path.join(HOME,'config.json'),'--project',path.join(project.root,'project.json'),'--packet',packetPath],{timeout:4*3600_000,env,signal:tools.signal,onSpawn:pid=>{store.updateNativeOperation(id,{childPid:pid,childPending:false,dispatchPhase:'spawned'})}});
   store.updateNativeOperation(id,{childPid:null,childPending:false,dispatchPhase:'returned'});
   await children(operation);
   invariant(await sha256(packetPath)===operation.packetSha256,'Native packet changed during execution');

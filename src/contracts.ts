@@ -14,7 +14,7 @@ export interface Intake {
  batchId?:string;driveExpected?:DriveFile;
 }
 export interface DriveFile {id:string;name:string;parentId:string;folders:string[];bytes:number;md5:string}
-export type NativeAction='compile'|'captions'|'hooks'|'inspect'|'open'|'build'|'revise'|'render';
+export type NativeAction='compile'|'captions'|'hooks'|'reference'|'inspect'|'open'|'build'|'revise'|'render';
 export interface NativeOperation {
  id:string;projectId:string;jobId:string|null;backend:Backend;action:NativeAction;
  packetPath:string;packetSha256:string;directory:string;
@@ -78,6 +78,7 @@ export interface EditPlan {
   fps:{numerator:number;denominator:number}; width:number;height:number; sampleRate:number;
   brain:{receiptPath:string;sha256:string;versionsPath?:string;versionsSha256?:string}; editorial:{selectionPath:string;sha256:string;compiledPath?:string;compiledSha256?:string;execution?:{decisionsPath:string;decisionsSha256:string;routingPath:string;routingSha256:string;phonemesPath?:string;phonemesSha256?:string};reviewed:boolean};
   sources:Source[]; cuts:{id:string;sourceId:string;audioSourceId?:string;audioRecordSample?:number;sourceInFrame:number;frames:number;recordFrame:number;audioInSample:number;audioSamples:number;wordIds:string[];boundaryEvidence:string}[];
+  referenceStyle?:{path:string;sha256:string};
   captionVisibility?:{schema:'acq-edit/caption-visibility-v1';owner:'caption-clips';hiddenRanges:{startFrame:number;endFrame:number}[];reason:string;evidence:string};
   captionContract?:{path:string;sha256:string;helperHashes:Record<string,string>};
   hookContract?:{path:string;sha256:string;helperSha256:string;basePlanFingerprint:string;baseReceipt:string;baseReceiptSha256:string;baseInspectionSha256?:string};
@@ -99,6 +100,7 @@ export function validatePlan(p:EditPlan,project:Project):void {
     end+=cut.frames;
   }
   for(const c of p.captions) invariant(c.startFrame>=0&&c.endFrame>c.startFrame&&c.endFrame<=end&&c.text.trim(),'Invalid caption range');
+  if(p.referenceStyle!==undefined) invariant(p.referenceStyle&&typeof p.referenceStyle.path==='string'&&p.referenceStyle.path.length>0&&/^[a-f0-9]{64}$/.test(p.referenceStyle.sha256),'Pinned reference-style contract required');
   if(p.captionVisibility!==undefined){
     const v=p.captionVisibility;
     invariant((p.backend==='filmcraft'||p.backend==='resolve')&&p.captionContract,'Native caption visibility requires native caption ownership');

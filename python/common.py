@@ -60,6 +60,9 @@ def plan(project,packet):
  for card in p.get('captions',[]):
   require(type(card.get('startFrame'))==int and type(card.get('endFrame'))==int and 0<=card['startFrame']<card['endFrame']<=end,'Caption timing lies outside the current cut plan')
   require(isinstance(card.get('text'),str) and card['text'].strip() and isinstance(card.get('style'),dict),'Caption text and native style required')
+ if 'referenceStyle' in p:
+  from reference_style import validate as validate_reference
+  validate_reference(project,p)
  if 'captionVisibility' in p:
   from caption_visibility import ranges
   ranges(p)
@@ -115,6 +118,9 @@ def result_receipt(project,packet,p,native,media,inspection,*,verification=None,
   from hook_plan import validate as validate_hook
   hook=validate_hook(project,p)
   receipt['hookEvidence']={'owner':'text-hook','recipeSha256':p['hookContract']['sha256'],'helperSha256':p['hookContract']['helperSha256'],'intervals':len(hook['intervals']),'editableText':True,'userApproved':False}
+ if 'referenceStyle' in p:
+  from reference_style import validate as validate_reference
+  receipt['referenceEvidence']={'contract':p['referenceStyle'],'snapshot':validate_reference(project,p)}
  if packet.get('recutVerification'):
   proof_path=inside(project['root'],packet['recutVerification']);proof=read(proof_path)
   require(proof.get('schema')=='acq-edit/recut-execution-v1' and proof['backend']==project['backend'] and proof['parentVersionId']==packet.get('parentId') and proof['parentPreserved'] is True,'Recut verification identity differs')

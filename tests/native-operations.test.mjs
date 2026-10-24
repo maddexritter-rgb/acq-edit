@@ -207,3 +207,13 @@ test('killed preflight owner is recoverable after restart without ever launching
  const proofs=await readdir(path.join(op.directory,'reconciliation-attempts'));assert.equal(proofs.length,1);
  assert.equal(JSON.parse(await readFile(path.join(op.directory,'reconciliation-attempts',proofs[0]))).originalOperation.state,'running');
 });
+
+test('reference preparation uses shared Python for every selected engine',async t=>{
+ for(const backend of ['resolve','premiere','filmcraft'])await t.test(backend,async t=>{
+  const f=await fixture(t,backend);f.config.resolvePython='/unused/resolve-python';
+  await executeNative(f.store,f.config,'p','reference',f.packet,{execute:async(cmd,args,options)=>{
+   assert.equal(cmd,f.config.python);assert.equal(args[1],'reference');assert.equal(args[3],backend);options.onSpawn(2147483647);return '{"humanApproved":false}';
+  }});
+  assert.equal(f.store.nativeOperations('p')[0].state,'succeeded');
+ });
+});

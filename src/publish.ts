@@ -8,7 +8,8 @@ import { type Backend,type NativeReopen,type ResolveReopen,type PremiereReopen,t
 import { sha256,containedFile,readJson,atomicJson } from './files.js';
 import { run } from './process.js';
 import { exportState } from './projects.js';
-export interface RenderReceipt {schema:'acq-edit/render-v1';projectId:string;backend:Backend;clipId:string;parentId:string|null;jobId?:string;media:string;nativeProject:string;nativeFingerprint:string;planPath:string;expected:{frames:number;width:number;height:number;fps:string};nativeInspectionPath:string;nativeRendered:true;nativeReopen?:NativeReopen;inputMediaVerification?:{phase:'after-render-verification';files:Array<{role:'source'|'graphic';id:string;path:string;expectedSha256:string;actualSha256:string}>};recutVerificationPath?:string;recutVerificationSha256?:string}
+import { verifyReferenceReceipt } from './reference-style.js';
+export interface RenderReceipt {schema:'acq-edit/render-v1';projectId:string;backend:Backend;clipId:string;parentId:string|null;jobId?:string;media:string;nativeProject:string;nativeFingerprint:string;planPath:string;expected:{frames:number;width:number;height:number;fps:string};nativeInspectionPath:string;nativeRendered:true;referenceEvidence?:unknown;nativeReopen?:NativeReopen;inputMediaVerification?:{phase:'after-render-verification';files:Array<{role:'source'|'graphic';id:string;path:string;expectedSha256:string;actualSha256:string}>};recutVerificationPath?:string;recutVerificationSha256?:string}
 /** A saved host target is bound to the exact inspected version, never a startup placeholder. */
 export function verifyNativeReopen(p:Project,value:unknown,state:any,inspectionHash:string):NativeReopen|undefined {
  if(value===undefined)return;
@@ -54,6 +55,8 @@ export async function publish(store:Store,projectId:string,receiptFile:string):P
  const c=store.clip(r.clipId);invariant(c.projectId===p.id&&c.currentVersionId===r.parentId,'Stale render receipt');
  for(const f of [r.media,r.nativeProject,r.planPath,r.nativeInspectionPath])await containedFile(p.root,f);
  const planHash=await sha256(r.planPath),inspectionHash=await sha256(r.nativeInspectionPath);
+ const boundPlan=await readJson<EditPlan>(r.planPath);
+ await verifyReferenceReceipt(p,boundPlan,r.referenceEvidence);
  await verifyRecutReceipt(store,p,r);
  const nativeReopen=verifyNativeReopen(p,r.nativeReopen,r.nativeReopen===undefined?undefined:await readJson(r.nativeInspectionPath),inspectionHash);
  invariant(await sha256(r.nativeProject)===r.nativeFingerprint,'Native project changed after its receipt');
@@ -69,6 +72,7 @@ export async function publish(store:Store,projectId:string,receiptFile:string):P
  const v:Version={id,clipId:c.id,number,media,sha256:sum,nativeProject:r.nativeProject,nativeCheckpoint:archive.native,nativeFingerprint:r.nativeFingerprint,planPath:archive.plan!,planSha256:archiveHashes.plan!,inspectionPath:archive.inspection!,inspectionSha256:archiveHashes.inspection!,receiptPath:archive.receipt!,receiptSha256:archiveHashes.receipt!,createdAt:now(),parentId:r.parentId,...(jobId?{jobId}:{})};
  if(nativeReopen)v.nativeReopen=nativeReopen;
  if(archive.recut){invariant(archiveHashes.recut===r.recutVerificationSha256,'Recut verification changed during publication');v.recutVerificationPath=archive.recut;v.recutVerificationSha256=archiveHashes.recut;}
+ await verifyReferenceReceipt(p,boundPlan,r.referenceEvidence);
  await atomicJson(path.join(folder,'version.json'),v);store.publish(v);await exportState(store,p.id);return v;
 }
 
