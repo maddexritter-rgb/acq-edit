@@ -15,8 +15,8 @@ def panel_spec(spec, cut, panel):
 
 def validate(project, spec, cut, layout, probes=None):
     probes = probes if probes is not None else {}
-    require(spec['backend'] == 'filmcraft',
-            'Native panel-layout execution is currently FilmCraft only; implement the selected backend, never convert or switch')
+    require(spec['backend'] in ['filmcraft', 'resolve'],
+            'Native panel-layout execution requires FilmCraft or Resolve; implement the selected backend, never convert or switch')
     require(set(layout) == {'mode', 'panels', 'cameraReceiptPath', 'cameraReceiptSha256'}, 'Incomplete panel layout')
     panels = layout['panels']
     require(isinstance(panels, list) and 2 <= len(panels) <= 4, 'Panel layouts require two to four explicit cameras')

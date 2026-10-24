@@ -27,45 +27,45 @@ def verify_linear_keys(keys,start,values):
    require(set(key[handle])=={1,2} and all(abs(key[handle][j]-expected[j])<1e-9 for j in [1,2]),'Native tracking easing changed')
 
 
-def write_tracking(comp,crop,shot):
+def write_tracking(comp,crop,shot,prefix="ACQ_Framing"):
  if shot['mode']!='tracked-crop':return
- require(not comp.FindTool('ACQ_FramingTrack'),'Owned tracking node exists; reconcile before construction')
+ require(not comp.FindTool(prefix+'Track'),'Owned tracking node exists; reconcile before construction')
  source=crop.Input.GetConnectedOutput();require(source,'Tracking source missing')
  transform=comp.AddTool('Transform');path=comp.XYPath();spline=comp.BezierSpline()
  require(transform and path and spline,'Native framing controls unavailable')
  # Native modifier naming on reopen follows the parent input. Match it now
  # without a custom-name flag; do not normalize away real graph changes.
- transform.SetAttrs({'TOOLS_Name':'ACQ_FramingTrack'});path.SetAttrs({'TOOLS_Name':'ACQ_FramingPath'});spline.SetAttrs({'TOOLS_Name':'ACQ_FramingPathX','TOOLB_NameSet':False})
+ transform.SetAttrs({'TOOLS_Name':prefix+'Track'});path.SetAttrs({'TOOLS_Name':prefix+'Path'});spline.SetAttrs({'TOOLS_Name':prefix+'PathX','TOOLB_NameSet':False})
  transform.Center=path;path.X=spline;path.Y.ConnectTo(None);path.SetInput('Y',.5)
  for key,value in {'Size':1,'Angle':0,'Aspect':1}.items():transform.SetInput(key,value)
  start=comp.GetAttrs()['COMPN_RenderStart']
  spline.SetKeyFrames({start+i:{1:x,'Flags':{'Linear':True}} for i,x in enumerate(track_positions(shot))},True)
  transform.ConnectInput('Input',source.GetTool());crop.ConnectInput('Input',transform)
- verify_comp(comp,crop,shot)
+ verify_comp(comp,crop,shot,prefix)
 
 
-def verify_comp(comp,crop,shot):
+def verify_comp(comp,crop,shot,prefix="ACQ_Framing"):
  fields=fusion_crop({},shot)
  require(crop.GetAttrs()['TOOLS_RegID']=='Crop','Owned framing crop type changed')
  require_static_fusion_crop(crop,fields)
  for key in fields:require(crop.GetInput(key)==fields[key],'Native framing property changed: '+key)
  if shot['mode']=='tracked-crop':
-  transform=comp.FindTool('ACQ_FramingTrack');require(transform and transform.GetAttrs()['TOOLS_RegID']=='Transform','Native tracking transform missing')
+  transform=comp.FindTool(prefix+'Track');require(transform and transform.GetAttrs()['TOOLS_RegID']=='Transform','Native tracking transform missing')
   require(not transform.Center.GetExpression(),'Tracking expression replaced native keys')
   output=transform.Center.GetConnectedOutput();require(output,'Native tracking path disconnected')
-  path=output.GetTool();require(path.GetAttrs()['TOOLS_RegID']=='XYPath' and path.GetAttrs()['TOOLS_Name']=='ACQ_FramingPath','Unexpected native tracking path')
+  path=output.GetTool();require(path.GetAttrs()['TOOLS_RegID']=='XYPath' and path.GetAttrs()['TOOLS_Name']==prefix+'Path','Unexpected native tracking path')
   require_static_fusion_crop(path,['Y']);require(path.GetInput('Y')==.5,'Tracking Y changed')
   require(not path.X.GetExpression(),'Tracking expression replaced native keys')
   output=path.X.GetConnectedOutput();require(output,'Native X tracking disconnected')
   spline=output.GetTool();attrs=spline.GetAttrs()
-  require(attrs['TOOLS_RegID']=='BezierSpline' and attrs['TOOLS_Name']=='ACQ_FramingPathX','Unexpected tracking driver; preserve manual edits')
+  require(attrs['TOOLS_RegID']=='BezierSpline' and attrs['TOOLS_Name']==prefix+'PathX','Unexpected tracking driver; preserve manual edits')
   start=comp.GetAttrs()['COMPN_RenderStart'];xs=track_positions(shot);verify_linear_keys(spline.GetKeyFrames(),start,xs)
   for key,value in {'Size':1,'Angle':0,'Aspect':1}.items():
    require_static_fusion_crop(transform,[key]);require(transform.GetInput(key)==value,'Native tracking transform changed: '+key)
   for i in sorted(set([0,len(xs)//2,len(xs)-1])):
    point=transform.GetInput('Center',start+i)
    require(abs(point[1]-xs[i])<1e-9 and point[2]==.5,'Native X tracking evaluation differs')
-  source=crop.Input.GetConnectedOutput();require(source and source.GetTool().GetAttrs()['TOOLS_Name']=='ACQ_FramingTrack','Crop lost tracking input')
+  source=crop.Input.GetConnectedOutput();require(source and source.GetTool().GetAttrs()['TOOLS_Name']==prefix+'Track','Crop lost tracking input')
   source=transform.Input.GetConnectedOutput();require(source and source.GetTool().GetAttrs()['TOOLS_RegID']=='MediaIn','Native tracking source changed')
 
 
@@ -79,6 +79,9 @@ def verify_timeline(timeline,spec):
   source=next(s for s in spec['sources'] if s['id']==cut['sourceId'])
   require(Path(item.GetMediaPoolItem().GetClipProperty('File Path')).resolve()==Path(source['path']).resolve(),'Native framing source changed')
   require(item.GetFusionCompCount()==1,'Expected one owned framing composition')
+  if shots[cut['id']]['mode']=='panel-layout':
+   from resolve_panels import verify
+   verify(item.GetFusionCompByIndex(1),spec,cut);continue
   comp=item.GetFusionCompByIndex(1);crop=comp.FindTool('ACQ_FramingCrop');resize=comp.FindTool('ACQ_FramingResize')
   require(crop and resize,'Owned framing graph missing');verify_comp(comp,crop,shots[cut['id']])
   for key,value in {'KeepAspect':0,'Width':spec['width'],'Height':spec['height']}.items():

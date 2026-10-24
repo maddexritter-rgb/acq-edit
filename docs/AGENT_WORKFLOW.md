@@ -16,7 +16,7 @@ Deferred feedback is included in each submission when notes changed during a pri
 
 New clips are registered with `clip PROJECT_ID "Source-supported short title"`. The returned clip ID remains stable across versions. Keep work under `10_WORK/jobs/JOB_ID`; use new filenames for every operation receipt. The job runner needs these files for restart recovery.
 
-For camera panels, use `NATIVE_PANELS.md`: Assembly Design pins camera choices/sync/layout to the current cuts, and horizontal-to-vertical supplies each panel's own crop or tracking. FilmCraft constructs native independent nests with one master dialogue mix. This transport currently rejects Resolve/Premiere and does not support panel-layout/framing revisions; report those gaps without switching engines, flattening panels or rebuilding approved work. Caption-only revisions preserve and reverify the nests.
+For camera panels, use `NATIVE_PANELS.md`: Assembly Design pins camera choices/sync/layout to the current cuts, and horizontal-to-vertical supplies each panel's own crop or tracking. FilmCraft constructs native independent nests; Resolve constructs independently timed Media Pool/Fusion inputs. Both retain one dialogue mix. This transport currently rejects Premiere and does not support panel-layout/framing revisions; report those gaps without switching engines, flattening panels or rebuilding approved work. Caption-only revisions preserve and reverify the native layout.
 
 ## References and motion
 

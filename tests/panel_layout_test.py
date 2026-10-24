@@ -77,7 +77,8 @@ class PanelLayoutTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'Tracking source range changed'): self.validate()
 
     def test_other_engines_and_rate_conversion_fail_explicitly(self):
-        for backend in ['resolve', 'premiere']:
+        self.spec['backend'] = 'resolve'; self.validate()
+        for backend in ['premiere']:
             self.spec['backend'] = backend
             with self.assertRaisesRegex(RuntimeError, 'never convert or switch'): self.validate()
         self.spec['backend'] = 'filmcraft'; self.video['avg_frame_rate'] = '30/1'

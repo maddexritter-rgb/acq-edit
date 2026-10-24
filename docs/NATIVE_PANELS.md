@@ -1,6 +1,6 @@
 # Native camera panels
 
-FilmCraft construction accepts `panel-layout` as a framing decision for a cut. Each panel remains a native source-linked sequence; a native layout sequence composes them, and the master contains that layout for the exact cut interval. Dialogue stays on the master's original audio track. Captions and imported graphics remain outside the panel nests. There is no intermediate stacked movie or editor conversion.
+FilmCraft and Resolve construction accept `panel-layout` as a framing decision for a cut. In FilmCraft, each panel remains a native source-linked sequence; a native layout sequence composes them, and the master contains that layout for the exact cut interval. Dialogue stays on the master's original audio track. Captions and imported graphics remain outside the panel nests. There is no intermediate stacked movie or editor conversion.
 
 Assembly Design owns camera choice, sync ranges and layout intervals. The packaged horizontal-to-vertical skill owns panel-specific crop/tracking and visual inspection; use its `references/native-split-setup.md` contract. The adapter consumes those decisions and never detects a subject or invents synchronization. Hashes prove which decisions were executed, not that camera sync or composition is editorially correct.
 
@@ -36,7 +36,7 @@ Each cut has two to four uniquely identified panels. Integer output rectangles m
 
 Each panel crop must match its own rectangle's aspect ratio, not the master frame. It can use the existing fixed-crop contract or a source-bound `tracked-crop` curve. Tracking's source ID/hash/in-frame/count must match that panel camera, which can differ from the dialogue cut. Nested panel layouts, output gaps, border/shadow effects, arbitrary opacity and retiming are not supported by this construction path.
 
-## Native construction and inspection
+## FilmCraft construction and inspection
 
 Each occurrence gets distinct `ACQ_Panel_<cut>_<panel>` sequences and its own `ACQ_Layout_<cut>` container. Panel sequences contain one original camera item and no audio. Their dimensions crop the source to the panel, and their parent nests use static native Motion to place them in the output. Tracking keys live inside each camera sequence at the camera's source clock. Separate occurrences do not share editable framing state.
 
@@ -46,7 +46,15 @@ Saved-native verification checks the master and nested clocks, source paths, dim
 
 Caption-only revisions retain and reverify the complete layout. `fixed-framing` and `tracking-framing` cannot edit a panel target. Panel-framing/layout revisions still need their own guarded native route; report that limitation rather than rebuilding the user's timeline or changing dialogue. Review text mentioning panels/layouts routes to both Assembly Design and horizontal-to-vertical without automatically requesting a spoken recut.
 
-Resolve and Premiere explicitly reject this shared panel-layout transport before native mutation. Their independent native implementations remain required for the pilot. Do not substitute FilmCraft output, a converter or a flattened panel file.
+Premiere explicitly rejects this shared panel-layout transport before native mutation. Its native implementation remains required for the pilot. Do not substitute another engine, a converter or a flattened panel file.
+
+## Resolve construction and inspection
+
+Resolve Studio 21.1.1 build 10 constructs a Fusion composition directly on each selected picture cut. Each camera is a native MediaIn bound to its imported Media Pool ID and original file, with independent source trim and composition clocks. Fixed Crop/BetterResize nodes or the native horizontal Transform/XYPath/BezierSpline route frame each camera. Merge nodes position the panels over a transparent output-sized canvas. Captions follow the composite, and imported graphics remain separate timeline tracks. The original dialogue cuts and links remain unchanged; panel inputs add no timeline audio. No Premiere or FilmCraft process executes this route.
+
+The adapter verifies source paths, persistent Media Pool IDs, native source dimensions, trim/global clocks, per-panel crop/tracking, connections, masks/bypass, output format, rectangles and the final caption/output chain. It removes only the unused default MediaIn in the newly created composition. Existing user graphs are never reconstructed. Construction writes the persistent native media identity and sets the output format after camera initialization, so save/close/reopen retains the complete fingerprint without weakening Fusion state checks.
+
+Caption-only revisions duplicate and reverify the native layout. Fixed-framing requests targeting native panels are rejected before timeline duplication, even when the new plan incorrectly claims a single fixed crop. Panel-layout/framing revisions remain unsupported. The native calls use Blackmagic’s installed scripting interfaces and the [Fusion scripting reference](https://documents.blackmagicdesign.com/UserManuals/Fusion8_Scripting_Guide.pdf), including tool deletion and composition preferences; live behavior was verified on the stated Studio version.
 
 ## Observed mechanical evidence — 2026-10-23
 
@@ -56,4 +64,8 @@ A second 75-frame fixture used two independent split occurrences around a full-f
 
 Every decoded panel frame in both fixtures retained the intended camera color at all panel corners. The top source marker followed the supplied horizontal curve with at most 0.75 output-pixel edge error and fixed vertical bounds; the lower marker's rectangle remained fixed. Split entry/exit and repeated-occurrence contact-sheet frames were viewed. These measurements establish synthetic geometry transport, not human headroom or real-camera synchronization.
 
-This is direct native-adapter evidence with synthetic media. It does not establish real multicamera synchronization, headroom/phone composition, agent-driven panel planning/revision, both-agent acceptance, Resolve/Premiere panel support or human approval.
+Resolve independently rendered a 75-frame 360×640/25 fps moving-marker fixture containing two split occurrences around a full-frame cut. Each camera used a different source clock; the top panel tracked horizontally and the bottom used a fixed crop. Save/close/reopen retained an identical complete native fingerprint. A caption-only revision rendered 75 frames, retaining the parent timeline/checkpoint and all inspected timeline fields after accounting for duplicated item identities. Exported Fusion graphs differed only in the requested caption wording and duplicate-specific Resolve cache paths.
+
+Every panel frame in both Resolve versions passed camera-color and moving-marker checks. Maximum marker-edge error was 0.75 pixels in the top panel and 1.0 pixel in the lower panel. Sampled entry/exit, middle and repeated-occurrence frames were visually inspected. Decoded audio was not byte-identical: the difference measured −77.44 dB relative to signal. This remains an open audio qualification; no listening or audibility conclusion is inferred. These fixtures use simple test captions and do not qualify the production caption handoff on panel layouts.
+
+This is direct native-adapter evidence with synthetic media. It does not establish real multicamera synchronization, headroom/phone composition, agent-driven panel planning/revision, both-agent acceptance, Premiere panel support or human approval.

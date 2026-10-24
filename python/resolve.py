@@ -99,7 +99,7 @@ class Adapter:
     actual=ai.GetProperties()
     for key,value in audio_props.items():require(actual.get(key)==value,'Native audio treatment readback mismatch: '+key)
    cards=[c for c in spec.get('captions',[]) if c['startFrame']<cut['recordFrame']+cut['frames'] and c['endFrame']>cut['recordFrame']]
-   if cards or shot:self.compose(vi,cut,cards,spec,shot,caption_prepared)
+   if cards or shot:self.compose(vi,cut,cards,spec,shot,caption_prepared,sources)
   for index,graphic in enumerate(spec.get('graphics',[])):
    require(sha(graphic['path'])==graphic['sha256'],'Graphic hash mismatch');media=pool.ImportMedia([graphic['path']]);require(media,'Graphic import failed')
    while timeline.GetTrackCount('video')<index+2:require(timeline.AddTrack('video'),'Cannot add graphics track')
@@ -124,9 +124,17 @@ class Adapter:
    fades={'FadeIn':timing['fadeInSamples'],'FadeOut':timing['fadeOutSamples']}
    require(item.SetFades(fades),'Native music fades failed');actual=item.GetFades()
    require(all(actual.get(key)==value for key,value in fades.items()),'Native music fade readback mismatch')
- def compose(self,item,cut,cards,spec,shot=None,caption_prepared=None):
+ def compose(self,item,cut,cards,spec,shot=None,caption_prepared=None,sources=None):
   require(item.GetFusionCompCount()==0,'Existing Fusion comp must be merged rather than replaced');comp=item.AddFusionComp();require(comp,'Fusion unavailable');nodes=comp.GetToolList(False);source=next((n for n in nodes.values() if n.GetAttrs()['TOOLS_RegID']=='MediaIn'),None);output=next((n for n in nodes.values() if n.GetAttrs()['TOOLS_RegID']=='MediaOut'),None);require(source and output,'Fusion media endpoints missing')
-  if shot:
+  if shot and shot['mode']=='panel-layout':
+   from resolve_panels import construct
+   require(sources,'Panel Media Pool source bindings required')
+   # The native pool inputs are the complete picture graph. Retaining the
+   # disconnected default Timeline input adds unused, unstable loader state.
+   original_name=source.GetAttrs()['TOOLS_Name'];source.Delete()
+   require(not comp.FindTool(original_name),'Unused timeline input was not removed')
+   source=construct(comp,spec,cut,shot,sources)
+  elif shot:
    crop=comp.AddTool('Crop');resize=comp.AddTool('BetterResize');require(crop and resize,'Native Fusion framing nodes unavailable')
    crop.SetAttrs({'TOOLS_Name':'ACQ_FramingCrop'});resize.SetAttrs({'TOOLS_Name':'ACQ_FramingResize'})
    for key,value in fusion_crop(spec,shot).items():crop.SetInput(key,value);require(crop.GetInput(key)==value,'Native crop readback mismatch: '+key)
@@ -169,6 +177,9 @@ class Adapter:
    from resolve_captions import verify_fonts
    caption_prepared=validate(project,spec);verify_fonts(r,caption_prepared)
   if spec:require(int(before['settings']['timelineResolutionWidth'])==spec['width'] and int(before['settings']['timelineResolutionHeight'])==spec['height'],'Framing revision cannot resize the approved timeline')
+  if packet['kind']=='fixed-framing':
+   from resolve_panels import preflight_fixed_revision
+   preflight_fixed_revision(p.GetCurrentTimeline(),spec,packet['edits'])
   original=p.GetCurrentTimeline();copy=original.DuplicateTimeline(packet['title']);require(copy and p.SetCurrentTimeline(copy),'Cannot preserve prior timeline before revision')
   for edit in packet['edits']:
    if packet['kind']=='caption-style':

@@ -97,7 +97,7 @@ def verify_comp(comp, cut, spec, prepared):
     tools = comp.GetToolList(False)
     owned = {tool.GetAttrs()['TOOLS_Name'] for tool in tools.values() if tool.GetAttrs()['TOOLS_Name'].startswith(('ACQ_Caption_', 'ACQ_CaptionMerge_'))}
     require(owned == expected_names, 'Native Fusion caption coverage differs')
-    source = comp.FindTool('ACQ_FramingResize')
+    source = comp.FindTool('ACQ_PanelComposite') or comp.FindTool('ACQ_FramingResize')
     if not source:
         source = next((t for t in tools.values() if t.GetAttrs()['TOOLS_RegID'] == 'MediaIn'), None)
     require(source, 'Caption background source absent')
