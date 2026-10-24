@@ -11,6 +11,9 @@ import {
 const parse = <T>(row: any): T | undefined => row ? JSON.parse(row.data) : undefined;
 const editorialFeedback = (f: Feedback) => ({ notes: f.notes, comments: f.comments });
 const activeStates = ['editing', 'rendering', 'reconciliation_required'];
+// Routing hints may improve between releases. Request identity is the exact
+// submitted versions/feedback, not the current classifier's suggested owners.
+const revisionKey = (projectId:string,snapshot:Submission[]) => hash({projectId,snapshot:snapshot.map(s=>({clipId:s.clipId,version:s.version,feedback:s.feedback,deferred:s.deferred||[]}))});
 
 export class Store {
   db: DatabaseSync;
@@ -205,8 +208,11 @@ export class Store {
         const text = [f, ...deferred.flatMap(d => [d.submitted, d.latest])].map(x => x.notes + ' ' + x.comments.map(c => c.text).join(' ')).join(' ');
         return { clipId: c.id, version: v, feedback: f, owners: routeRevision(text), deferred };
       });
-      const dedupe = hash({ projectId, snapshot });
-      const old = parse<Job>(this.db.prepare('SELECT data FROM jobs WHERE dedupe=?').get(dedupe));
+      const dedupe = revisionKey(projectId,snapshot);
+      const old = parse<Job>(this.db.prepare('SELECT data FROM jobs WHERE dedupe=?').get(dedupe))
+        // Retain jobs created by releases that included owners in the key.
+        // Never rewrite their frozen packet or replay them after an upgrade.
+        || this.jobs(projectId).find(j=>j.kind==='revision'&&revisionKey(projectId,j.snapshot)===dedupe);
       if (old) return old;
       const j: Job = { id: randomUUID(), projectId, state: 'queued', kind: 'revision', snapshot, request: '', dedupe, createdAt: now(), updatedAt: now(), error: null, agentSession: null };
       this.insertJob(j); return j;

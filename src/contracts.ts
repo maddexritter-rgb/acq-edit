@@ -49,15 +49,29 @@ export const hash=(value:unknown)=>createHash('sha256').update(JSON.stringify(va
 export function invariant(value:unknown,message:string):asserts value {if(!value) throw new Error(message)}
 export function backend(value:unknown):Backend {invariant(BACKENDS.includes(value as Backend),'Unknown backend');return value as Backend}
 export function routeRevision(text:string):string[] {
-  // Conservative dependency routing; the agent reads the full request and confirms scope.
-  const owners=new Set<string>(['edit']);
-  if(/\b(cuts?|recut|trim|shorten|remove|passages?|spoken|sentences?|word ending|reorder|hook replacement)\b/i.test(text)) ['assembly-design','horizontal-to-vertical','caption-clips','text-hook','music','promo'].forEach(x=>owners.add(x));
+  // Discovery hints only. revision-planner interprets the complete frozen request,
+  // including negation, ambiguity and deferred changes; this list grants no scope.
+  const owners=new Set<string>(['edit','revision-planner']);
+  const clauses=text.split(/[.!?;\n]|\band\b/i);
+  const speechAction=/\b(remove|delete|cut|trim|shorten|reorder|replace)\s+(?:(?:the|this|that|these|those|a|an|first|second|last|final|opening|closing|duplicate|spoken|whole|entire)\s+){0,4}(sentences?|passages?|paragraphs?|sections?|pauses?|filler|answers?|words?|intro|outro|ending|clip|video)\b/i;
+  const recut=clauses.some(clause=>{
+    // An explicit preservation instruction must not itself request a recut.
+    if(/\b(?:do not|don't|never)\s+(?:re[ -]?cut|cut|trim|shorten|remove|reorder|replace)\b/i.test(clause))return false;
+    if(/\bre[ -]?cut\b|\bword endings?\b|\b(?:change|replace|fix|improve)\s+(?:the\s+)?(?:spoken (?:hook|opening)|speech (?:joins?|boundaries)|cuts)\b/i.test(clause))return true;
+    const match=speechAction.exec(clause);
+    if(!match)return false;
+    // "Remove a word from the caption" belongs to captions. Mixed requests
+    // still reach revision-planner, which may add any genuinely needed owner.
+    return !/\b(captions?|subtitles?|headline|text hook|title card)\b/i.test(clause);
+  });
+  if(recut)['assembly-design','horizontal-to-vertical','caption-clips','text-hook','music','promo'].forEach(x=>owners.add(x));
   if(/caption|subtitle|font/i.test(text)) owners.add('caption-clips');
   if(/fram|crop|zoom|camera|\b(tracking|recenter|recentre|centered|centred)\b|\b(track|follow)\s+(the\s+)?(speaker|subject|face)\b/i.test(text)) owners.add('horizontal-to-vertical');
   if(/\b(split[ -]?screen|panels?|layouts?)\b/i.test(text)) {owners.add('assembly-design');owners.add('horizontal-to-vertical')}
   if(/music|audio|volume|sound/i.test(text)) owners.add('music');
-  if(/headline|text hook/i.test(text)) owners.add('text-hook');
+  if(/headline|\b(?:text hook|opening card|title card|hook replacement)\b/i.test(text)) owners.add('text-hook');
   if(/motion|animation|graphic/i.test(text)) owners.add('promo');
+  if(/\breferences?\b|\binspiration\b|\bmimic\b|\b(?:match|replicate|recreate)\b[^.!?;\n]{0,80}\b(?:style|look|edit|video|reel)\b|\b(?:like|similar to)\b[^.!?;\n]{0,50}\b(?:video|reel)\b/i.test(text)) owners.add('watch');
   return [...owners];
 }
 export interface MusicPlacement {

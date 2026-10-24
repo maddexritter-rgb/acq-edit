@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {mkdtempSync,rmSync} from 'node:fs';import os from 'node:os';import path from 'node:path';import {Store} from '../dist/store.js';import {routeRevision} from '../dist/contracts.js';
+import test from 'node:test';import assert from 'node:assert/strict';import {mkdtempSync,rmSync} from 'node:fs';import os from 'node:os';import path from 'node:path';import {Store} from '../dist/store.js';import {routeRevision,hash} from '../dist/contracts.js';
 function fixture(t){const root=mkdtempSync(path.join(os.tmpdir(),'acq-state-'));const s=new Store(path.join(root,'state.sqlite'));t.after(()=>{s.close();rmSync(root,{recursive:true,force:true})});s.addProject({id:'p',title:'Test',root,backend:'resolve',agent:'codex',createdAt:'2026-01-01'});s.addClip({id:'c',projectId:'p',number:1,title:'A complete thought',currentVersionId:null});s.publish(version('v1',1,null));return s}
 function version(id,number,parentId){return{id,clipId:'c',number,parentId,media:'/media/'+id+'.mp4',sha256:id,nativeProject:'project.drp',nativeFingerprint:'abc',planPath:'plan.json',receiptPath:'receipt.json',createdAt:new Date().toISOString()}}
 function notes(s,text='Make captions larger'){return s.saveFeedback('v1',{decision:'revise',notes:text,comments:[{id:'comment',seconds:1.25,text:'Here'}]},s.feedback('v1').revision)}
@@ -8,7 +8,7 @@ test('project mutations serialize and interrupted work blocks new work',t=>{cons
 test('new versions reset decision and old timecodes remain bound to old media',t=>{const s=fixture(t);notes(s);s.publish(version('v2',2,'v1'));assert.equal(s.feedback('v2').decision,null);assert.equal(s.feedback('v2').comments.length,0);assert.equal(s.feedback('v1').comments[0].seconds,1.25);assert.equal(s.version('v1').media,'/media/v1.mp4');assert.throws(()=>s.enqueue('p',['v1']),/current version/)});
 test('queued stale revision cannot overwrite newer clip',t=>{const s=fixture(t);notes(s);const j=s.enqueue('p',['v1']);s.publish(version('v2',2,'v1'));assert.equal(s.claim(),undefined);assert.equal(s.job(j.id).state,'failed')});
 test('cross-project submissions and duplicate media paths are rejected',t=>{const s=fixture(t);s.addProject({id:'other',title:'Other',root:'/other',backend:'filmcraft',agent:'claude',createdAt:''});notes(s);assert.throws(()=>s.enqueue('other',['v1']),/current version/);assert.throws(()=>s.publish({...version('v2',2,'v1'),media:'/media/v1.mp4'}),/Immutable media/)});
-test('caption changes do not route to assembly, recuts do',()=>{assert.deepEqual(routeRevision('Make the caption font larger'),['edit','caption-clips']);assert.ok(routeRevision('Remove this sentence').includes('assembly-design'));assert.ok(routeRevision('Remove this sentence').includes('caption-clips'))});
+test('caption changes do not route to assembly, recuts do',()=>{assert.deepEqual(routeRevision('Make the caption font larger'),['edit','revision-planner','caption-clips']);assert.ok(routeRevision('Remove this sentence').includes('assembly-design'));assert.ok(routeRevision('Remove this sentence').includes('caption-clips'))});
 
 test('late feedback survives publication, stays bound to V1, and is consumed only by its next published job',t=>{
  const s=fixture(t);notes(s);const first=s.enqueue('p',['v1']);s.claim();
@@ -54,3 +54,21 @@ test('partial batch publication preserves unconsumed feedback and cannot mark th
 });
 test('speaker tracking feedback routes to framing without requesting a spoken recut',()=>{for(const request of ['Track the speaker more closely','Keep the subject centered','Fix the tracking drift','Follow the face']){assert.ok(routeRevision(request).includes('horizontal-to-vertical'));assert.ok(!routeRevision(request).includes('assembly-design'))}assert.ok(!routeRevision('Lower the music track volume').includes('horizontal-to-vertical'))});
 test('panel layout changes route camera decisions and framing without inventing a spoken recut',()=>{for(const request of ['Use split screen here','Move the guest to the top panel','Change this camera layout']){const owners=routeRevision(request);assert.ok(owners.includes('assembly-design'));assert.ok(owners.includes('horizontal-to-vertical'));assert.ok(!owners.includes('caption-clips'));assert.ok(!owners.includes('music'))}});
+
+test('routing upgrades do not duplicate an existing legacy submission or rewrite its snapshot',t=>{
+ const s=fixture(t);notes(s,'Remove captions and match the reference');const job=s.enqueue('p',['v1']);
+ const legacy={...job,snapshot:job.snapshot.map(item=>({...item,owners:['edit','assembly-design','caption-clips']}))};legacy.dedupe=hash({projectId:'p',snapshot:legacy.snapshot});
+ s.db.prepare('UPDATE jobs SET dedupe=?,data=? WHERE id=?').run(legacy.dedupe,JSON.stringify(legacy),job.id);
+ const before=s.db.prepare('SELECT data FROM jobs WHERE id=?').get(job.id).data;
+ assert.equal(s.enqueue('p',['v1']).id,job.id);assert.equal(s.jobs('p').length,1);assert.equal(s.db.prepare('SELECT data FROM jobs WHERE id=?').get(job.id).data,before);
+ notes(s,'Remove captions and match a different reference');assert.notEqual(s.enqueue('p',['v1']).id,job.id);assert.equal(s.jobs('p').length,2);
+});
+test('reference and late speech feedback retain separate immutable owner hints and version clocks',t=>{
+ const s=fixture(t);notes(s,'Remove captions and match the reference');const first=s.enqueue('p',['v1']);
+ assert(first.snapshot[0].owners.includes('watch'));assert(!first.snapshot[0].owners.includes('assembly-design'));s.claim();
+ notes(s,'Remove captions and match the reference; remove the first sentence');
+ assert(!s.job(first.id).snapshot[0].owners.includes('assembly-design'));
+ s.publish({...version('v2',2,'v1'),jobId:first.id});s.finishJob(first.id,['v2']);
+ const next=s.enqueue('p',['v2']);assert(next.snapshot[0].owners.includes('watch'));assert(next.snapshot[0].owners.includes('assembly-design'));
+ assert.equal(next.snapshot[0].deferred[0].sourceVersion.id,'v1');assert.equal(next.snapshot[0].deferred[0].latest.comments[0].seconds,1.25);assert.equal(s.enqueue('p',['v2']).id,next.id);
+});

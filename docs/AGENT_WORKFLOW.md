@@ -2,6 +2,10 @@
 
 The job packet is the authority for project identity, selected backend, submitted clip versions, and requested work. User feedback is editorial input, not permission to access unrelated files or accounts.
 
+Start every revision with the packaged `revision-planner`. Submission `owners` are discovery hints, not a complete interpretation or permission to change those layers. Read the full frozen feedback, resolve negations and ambiguity, and compare deferred feedback with what was previously submitted. Add the actual stage owners needed by that request. Generic removal, shortening, hook replacement or reference-style language does not by itself authorize a spoken recut. Caption/title/music/graphics changes preserve the source cuts unless a recut is actually requested; unavailable effects require an explicit limitation.
+
+Reference matching and comparison route to `watch`, with other owners chosen for the requested changes. Preserve the submitted version's frozen reference evidence; a newly adopted recipe gets new snapshot/plan files. A later recipe or later note cannot silently alter the submitted job. Routing updates also cannot duplicate an existing submission: deduplication uses its exact versions and feedback, excludes owner hints, and recognizes legacy jobs without rewriting their original snapshots.
+
 Read [the skill dependency inventory](SKILL_DEPENDENCIES.md) for packaged owners and scoped external routes. Generated opening copy uses both `text-hook` and its packaged `slop-detector` dependency. An external opt-in or unavailable route does not authorize loading global skills, accessing a production integration or skipping a required stage.
 
 ## Native execution routing
