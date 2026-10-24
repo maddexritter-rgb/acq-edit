@@ -8,6 +8,7 @@ import {atomicJson,containedFile,readJson,sha256} from './files.js';
 import {run} from './process.js';
 import {intakeProcessAlive} from './intake.js';
 import {exportState} from './projects.js';
+import {verifyRuntime} from './runtime.js';
 
 async function record(store:Store,id:string,patch:Partial<NativeOperation>={}){const value=store.updateNativeOperation(id,patch);await atomicJson(path.join(value.directory,'operation.json'),value);await exportState(store,value.projectId);return value}
 async function children(operation:NativeOperation,allowUnknown=false){
@@ -20,7 +21,7 @@ async function children(operation:NativeOperation,allowUnknown=false){
   invariant(allowUnknown||!child.pending,'Native editor child launch outcome is unknown; inspect before reconciliation');
  }
 }
-export async function executeNative(store:Store,config:Config,projectId:string,action:NativeAction,packetFile:string,tools:{execute?:typeof run;signal?:AbortSignal}={}){
+export async function executeNative(store:Store,config:Config,projectId:string,action:NativeAction,packetFile:string,tools:{execute?:typeof run;verifyRuntime?:typeof verifyRuntime;signal?:AbortSignal}={}){
  const project=store.project(projectId),packetPath=await containedFile(project.root,packetFile),id=randomUUID();
  const operation:NativeOperation={id,projectId,backend:project.backend,action,jobId:process.env.ACQ_EDIT_JOB_ID||null,packetPath,packetSha256:await sha256(packetPath),directory:path.join(project.root,'10_WORK','native-operations',id),state:'running',ownerPid:process.pid,childPid:null,childPending:false,createdAt:now(),updatedAt:now(),error:null};
  store.addNativeOperation(operation);
@@ -31,6 +32,7 @@ export async function executeNative(store:Store,config:Config,projectId:string,a
    // Keep one job/lock throughout while exposing the current native phase.
    store.setJob(operation.jobId,action==='render'?'rendering':'editing');await exportState(store,projectId);
   }
+  await (tools.verifyRuntime||verifyRuntime)(config);
   const env={...process.env,...await secretEnv(),ACQ_EDIT_ROOT:ROOT,ACQ_EDIT_NATIVE_OPERATION_ID:id,ACQ_EDIT_NATIVE_OPERATION_DIR:operation.directory};
   store.updateNativeOperation(id,{childPending:true});
   const result=await (tools.execute||run)(project.backend==='resolve'&&!['compile','captions','hooks'].includes(action)?config.resolvePython!:config.python,[path.join(ROOT,'python','native.py'),action,'--backend',project.backend,'--config',path.join(HOME,'config.json'),'--project',path.join(project.root,'project.json'),'--packet',packetPath],{timeout:4*3600_000,env,signal:tools.signal,onSpawn:pid=>{store.updateNativeOperation(id,{childPid:pid,childPending:false})}});

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,readFile,rm,mkdir} from 'node:fs/promises';
+import {mkdtemp,readFile,writeFile,chmod,rm,mkdir} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -13,7 +13,9 @@ test('service shutdown waits for its agent, reconciles the job, and exports dura
  const projectRoot=path.join(root,'project');await mkdir(projectRoot);
  s.addProject({id:'p',title:'Shutdown fixture',root:projectRoot,backend:'filmcraft',agent:'codex',createdAt:''});
  const job=s.enqueueBuild('p','Fixture only');
- const room=serve(s,{storageRoot:root,backend:'filmcraft',agent:'codex',python:'python3',port:0,agentCommand:fileURLToPath(new URL('./fixtures/agent-process.mjs',import.meta.url))});
+ // This process fixture has no real skill installation or editor.
+ const python=path.join(root,'fixture-runtime-verifier');await writeFile(python,'#!/usr/bin/env node\nconsole.log(JSON.stringify({ready:true,verifiedFiles:1,routedEntrypoints:1}));\n');await chmod(python,0o700);
+ const room=serve(s,{storageRoot:root,backend:'filmcraft',agent:'codex',python,port:0,agentCommand:fileURLToPath(new URL('./fixtures/agent-process.mjs',import.meta.url))});
  t.after(async()=>{if(room.server.listening)await room.stop();s.close();await rm(root,{recursive:true,force:true})});
  await new Promise(r=>room.server.listen(0,'127.0.0.1',r));
  let pid;

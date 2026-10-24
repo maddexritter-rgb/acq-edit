@@ -4,9 +4,10 @@ import {mkdtemp,mkdir,writeFile,readFile,rm} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {Store} from '../dist/store.js';
-import {executeNative,reconcileNative,reconcileJob} from '../dist/native-operations.js';
+import {executeNative as nativeCommand,reconcileNative,reconcileJob} from '../dist/native-operations.js';
 import {sha256} from '../dist/files.js';
 import {publish} from '../dist/publish.js';
+const executeNative=(store,config,projectId,action,packet,tools={})=>nativeCommand(store,config,projectId,action,packet,{verifyRuntime:async()=>({ready:true}),...tools});
 async function fixture(t){
  const root=await mkdtemp(path.join(os.tmpdir(),'acq-native-'));await mkdir(path.join(root,'10_WORK'));
  const store=new Store(path.join(root,'state.sqlite'));store.addProject({id:'p',root,title:'Native recovery fixture',backend:'filmcraft',agent:'codex',createdAt:''});
@@ -68,4 +69,10 @@ test('unrelated native commands cannot enter an active job and arbitrary files c
  await assert.rejects(executeNative(f.store,f.config,'p','build',f.packet),/editing job owns/);assert.equal(f.store.nativeOperations('p').length,0);
  f.store.setJob(job.id,'reconciliation_required');await assert.rejects(reconcileJob(f.store,job.id,'failed',f.packet),/another job/);
  await writeFile(f.packet,JSON.stringify({jobId:job.id}));await assert.rejects(reconcileJob(f.store,job.id,'failed',f.packet),/terminal process/);assert.equal(f.store.job(job.id).state,'reconciliation_required');
+});
+
+test('stale runtime is refused before spawning a native process',async t=>{
+ const f=await fixture(t);let spawned=false;
+ await assert.rejects(executeNative(f.store,f.config,'p','build',f.packet,{verifyRuntime:async()=>{throw Error('stale installed runtime')},execute:async()=>{spawned=true;return '{}'}}),/stale installed runtime/);
+ assert.equal(spawned,false);const op=f.store.nativeOperations('p')[0];assert.equal(op.state,'reconciliation_required');assert.equal(op.childPid,null);assert.equal(op.childPending,false);assert.equal(op.resultPath,undefined);
 });
