@@ -1,8 +1,65 @@
-"""Real-agent FilmCraft music replacement qualification using generated tones."""
+"""Real-agent native music replacement qualification using generated tones."""
 import array,copy,json,math,os,sqlite3,subprocess,sys
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'python'))
 from common import read,save,sha,require,plan as validate_plan,verify_native_render
+
+
+def resolve_snapshot(spec,state):
+    """Check actual native source ranges, links and levels independently of receipts."""
+    video,audio=state['tracks']['video'],state['tracks']['audio']
+    require(len(video)==1 and len(audio)==2 and len(video[0])==len(audio[0])==len(spec['cuts']) and len(audio[1])==2,'Resolve native layer coverage differs')
+    require(all(t['enabled'] for tracks in state['trackState'].values() for t in tracks),'Resolve track disabled')
+    sources={s['id']:s['path'] for s in spec['sources']};ratio=spec['fps']['numerator']/spec['fps']['denominator']/spec['sampleRate']
+    def item(row,source,start,left,duration):
+        require(row['enabled'] and row['sourcePath']==source,'Resolve source or enable state differs')
+        require(all(abs(a-b)<1e-8 for a,b in zip((row['start'],row['left'],row['duration'],row['end']),(start,left,duration,start+duration))),'Resolve native source range differs')
+    for cut,v,a in zip(spec['cuts'],video[0],audio[0]):
+        item(v,sources[cut['sourceId']],cut['recordFrame'],cut['sourceInFrame'],cut['frames'])
+        item(a,sources[cut.get('audioSourceId',cut['sourceId'])],cut['recordFrame'],cut['audioInSample']*ratio,cut['audioSamples']*ratio)
+        require(v['linkedIds']==[a['id']] and a['linkedIds']==[v['id']],'Resolve AV links differ')
+        require(len(v['fusion'])==1 and a['properties']['AudioVolumeEnabled'] and a['properties']['AudioVolume']==spec['audio']['gainDb'],'Resolve dialogue treatment differs')
+    for bed,m in zip(spec['audio']['music'],audio[1]):
+        item(m,sources[bed['sourceId']],bed['startFrame'],bed['sourceInSample']*ratio,bed['samples']*ratio)
+        require(m['properties']['AudioVolumeEnabled'] and m['properties']['AudioVolume']==bed['gainDb'] and m['fades']['FadeIn']==bed['fadeInSamples']*ratio and m['fades']['FadeOut']==bed['fadeOutSamples']*ratio,'Resolve music gain/fades differ')
+
+
+def inspect_resolve(file,versions):
+    """Inspect both exact fixture timelines, then restore the final selection."""
+    from resolve import Adapter
+    from resolve_sources import verify_timeline
+    from resolve_music import inspect
+    f=read(file);a=Adapter(f['config']);r,p=a.selected(f['project'])
+    require(not p.IsRenderingInProgress(),'Fixture still rendering')
+    states=[read(v['inspectionPath']) for v in versions];original=p.GetCurrentTimeline();queue=p.GetRenderJobList();page=r.GetCurrentPage()
+    require(a.snapshot(p)==states[-1],'Select unchanged final fixture timeline before checking')
+    selected=original.GetUniqueId();details=[]
+    try:
+        for v,state in zip(versions,states):
+            require(r.GetProjectManager().GetCurrentProject().GetUniqueId()==p.GetUniqueId() and p.GetCurrentTimeline().GetUniqueId()==selected and not p.IsRenderingInProgress(),'Resolve selection changed during verification')
+            timeline=next((p.GetTimelineByIndex(i) for i in range(1,p.GetTimelineCount()+1) if p.GetTimelineByIndex(i).GetUniqueId()==state['timeline']),None)
+            require(timeline and p.SetCurrentTimeline(timeline),'Published fixture timeline missing');selected=timeline.GetUniqueId()
+            require(a.snapshot(p)==state,'Published native snapshot changed')
+            spec=read(v['planPath']);resolve_snapshot(spec,state);verify_timeline(timeline,spec)
+            for cut,item in zip(spec['cuts'],timeline.GetItemListInTrack('video',1)):
+                comp=item.GetFusionCompByIndex(1);nodes=list(comp.GetToolList(False).values())
+                def node(kind):
+                    found=[n for n in nodes if n.GetAttrs()['TOOLS_RegID']==kind];require(len(found)==1,'Unexpected fixture Fusion graph: '+kind);return found[0]
+                text,merge,output,source=[node(k) for k in ['TextPlus','Merge','MediaOut','MediaIn']]
+                card=spec['captions'][0];style=card['style']
+                for key,value in {'StyledText':card['text'],'Font':style['font'],'Size':style['size']/spec['width'],'Width':spec['width'],'Height':spec['height'],'Center':{1:.5,2:style.get('centerY',.22),3:0.0}}.items():require(text.GetInput(key)==value,'Resolve caption field differs: '+key)
+                for port,target in [(merge.Foreground,text),(merge.Background,source),(output.Input,merge)]:
+                    link=port.GetConnectedOutput();require(link and link.GetTool().GetAttrs()['TOOLS_Name']==target.GetAttrs()['TOOLS_Name'],'Resolve caption graph disconnected')
+                start=comp.GetAttrs()['COMPN_RenderStart'];end=start+cut['frames']
+                require(merge.Blend.GetExpression()==f'iif(time >= {start} and time < {end}, 1, 0)','Resolve caption visibility differs')
+            details.append(inspect(a,p,duplicate=True,indices=[0]))
+            require(a.snapshot(p)==state,'Inspection changed native state')
+        require(details[0]==details[1],'Resolve music replacement changed protected state, metadata, Fusion graph or channel routing')
+    finally:
+        require(r.GetProjectManager().GetCurrentProject().GetUniqueId()==p.GetUniqueId() and p.GetCurrentTimeline().GetUniqueId()==selected and not p.IsRenderingInProgress(),'Host changed during verification; preserve current selection')
+        require(p.SetCurrentTimeline(original) and r.OpenPage(page),'Cannot restore final fixture selection/page')
+    require(a.snapshot(p)==states[-1] and p.GetRenderJobList()==queue,'Final fixture state or queue changed')
+    return {'bothPublishedSnapshotsPreserved':True,'protectedStateAndAudioRoutingPreserved':True,'captionGraphAndSourceClocksVerified':True,'finalSelectionAndQueueRestored':True}
 
 
 def expected_revision(previous,current,replacement):
@@ -58,7 +115,7 @@ def rendered(versions):
 
 
 def check(file):
-    os.environ['ACQ_EDIT_TEST_FIXTURE']='1';f=read(file);require(f['project']['backend']=='filmcraft','This independent music agent checker currently qualifies FilmCraft only')
+    os.environ['ACQ_EDIT_TEST_FIXTURE']='1';f=read(file);backend=f['project']['backend'];require(backend in ['filmcraft','resolve'],'Unsupported music fixture backend')
     require(sha(f['planPath'])==f['initialPlanSha256'],'Frozen plan changed')
     db=sqlite3.connect('file:'+str(Path(f['home'])/'state.sqlite')+'?mode=ro',uri=True)
     def rows(query,*args):return [json.loads(r[0]) for r in db.execute(query,args)]
@@ -72,9 +129,18 @@ def check(file):
             require(read(Path(f['project']['root'])/'10_WORK/jobs'/job['id']/'result.json')=={'jobId':job['id'],'versionIds':[v['id']]},'Wrong job result')
             for key,pin in [('media','sha256'),('nativeCheckpoint','nativeFingerprint'),('planPath','planSha256'),('receiptPath','receiptSha256'),('inspectionPath','inspectionSha256')]:require(sha(v[key])==v[pin],'Published artifact changed: '+key)
             spec=validate_plan(f['project'],{'plan':v['planPath']});plans.append(spec);verify_native_render(v['media'],spec)
-            receipt=read(v['receiptPath']);require(receipt['nativeRendered'] is True and receipt['backend']=='filmcraft' and receipt['jobId']==job['id'],'Native receipt differs')
+            receipt=read(v['receiptPath']);require(receipt['nativeRendered'] is True and receipt['backend']==backend and receipt['jobId']==job['id'],'Native receipt differs')
         replacement=read(Path(file).parent/'replacement-source.json');require(plans[0]==read(f['planPath']),'Initial build changed frozen plan');expected_revision(*plans,replacement)
-        native_state(read(old['nativeCheckpoint']),read(new['nativeCheckpoint']),*plans,Path(new['nativeProject']).stem)
+        live=None
+        if backend=='filmcraft':native_state(read(old['nativeCheckpoint']),read(new['nativeCheckpoint']),*plans,Path(new['nativeProject']).stem)
+        else:
+            preparation=f['sourcePreparation'];receipt=read(preparation['receiptPath'])
+            require(sha(preparation['receiptPath'])==preparation['receiptSha256'] and receipt['status']=='PCM_PREPARED_PICTURE_CLOCK_VERIFIED' and receipt['video_packets_and_pts_identical'],'Prepared source lineage differs')
+            for key,pin in [('rawSourceId','source_sha256'),('preparedSourceId','media_sha256')]:
+                source=rows('SELECT data FROM sources WHERE id=?',preparation[key])[0];require(source['projectId']==f['project']['id'] and source['sha256']==receipt[pin] and sha(source['path'])==source['sha256'],'Prepared source changed')
+            for v,spec in zip(versions,plans):resolve_snapshot(spec,read(v['inspectionPath']))
+            result=subprocess.run([f['config']['resolvePython'],str(Path(__file__).resolve()),'inspect-resolve',str(file),json.dumps(versions)],capture_output=True,text=True)
+            require(result.returncode==0,'Resolve live verification failed:\n'+result.stderr[-3000:]);live=json.loads(result.stdout)
         require(sha(old['nativeProject'])==old['nativeFingerprint'],'Original working native project changed')
         for source in rows('SELECT data FROM sources WHERE project_id=?',f['project']['id']):require(sha(source['path'])==source['sha256'],'Project-owned source changed')
         request=read(Path(file).parent/'revision-request.json');submitted=jobs[1]['snapshot'][0]
@@ -82,7 +148,12 @@ def check(file):
         require('music' in submitted['owners'],'Music owner missing');require(rows('SELECT data FROM feedback WHERE version_id=?',new['id'])[0]['decision'] is None,'Changed version is not freshly unreviewed')
         pending=rows('SELECT data FROM deferred_feedback WHERE clip_id=? AND consumed_by IS NULL',f['clip']['id']);require(len(pending)==1,'Late feedback missing or duplicated')
         require(pending[0]['sourceVersion']['id']==old['id'] and len(pending[0]['latest']['comments'])==2 and pending[0]['latest']['comments'][1]['text']==request['lateComment'],'Late feedback or source version changed')
-        return {'passed':True,'qualification':'synthetic FilmCraft agent/review music replacement, not listening or editorial approval','versions':[v['id'] for v in versions],'nativeJobs':2,'nativeProtectedStatePreserved':True,'sourcesAndParentPreserved':True,'lateFeedbackPreserved':True,'rendered':rendered(versions)}
+        return {'passed':True,'qualification':f'synthetic {backend} agent/review music replacement, not listening or editorial approval','versions':[v['id'] for v in versions],'nativeJobs':2,'nativeProtectedStatePreserved':True,'sourcesAndParentPreserved':True,'lateFeedbackPreserved':True,'resolveLiveInspection':live,'rendered':rendered(versions)}
     finally:db.close()
 
-if __name__=='__main__':print(json.dumps(check(sys.argv[1]),indent=2))
+if __name__=='__main__':
+    if sys.argv[1]=='inspect-resolve':
+        sys.path.insert(0,'/Library/Application Support/Blackmagic Design/DaVinci Resolve/Developer/Scripting/Modules')
+        result=inspect_resolve(sys.argv[2],json.loads(sys.argv[3]))
+    else:result=check(sys.argv[1])
+    print(json.dumps(result,indent=2))

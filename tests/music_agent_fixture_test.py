@@ -40,4 +40,19 @@ class MusicAgentFixtureTests(unittest.TestCase):
   with patch.object(checker,'audio',side_effect=self.signals()),patch.object(checker.subprocess,'check_output',side_effect=[b'before',b'after']):
    with self.assertRaisesRegex(RuntimeError,'decoded pictures'):checker.rendered([{'media':'a'},{'media':'b'}])
 
+ def resolve_fixture(self):
+  spec={'fps':{'numerator':25,'denominator':1},'sampleRate':48000,'sources':[{'id':'dialogue','path':'/source.mov'},{'id':'music','path':'/music.wav'}],'cuts':[{'sourceId':'dialogue','recordFrame':0,'sourceInFrame':50,'frames':25,'audioInSample':96000,'audioSamples':48000}],'audio':{'gainDb':-3,'music':[{'sourceId':'music','startFrame':i,'sourceInSample':48000,'samples':28800,'gainDb':-12,'fadeInSamples':3840,'fadeOutSamples':3840} for i in [5,30]]}}
+  def item(source,start,left,duration):return {'enabled':True,'sourcePath':source,'start':start,'left':left,'duration':duration,'end':start+duration}
+  v={**item('/source.mov',0,50,25),'id':'v','linkedIds':['a'],'fusion':['caption']}
+  a={**item('/source.mov',0,50,25),'id':'a','linkedIds':['v'],'properties':{'AudioVolumeEnabled':True,'AudioVolume':-3}}
+  music=[{**item('/music.wav',i,25,15),'properties':{'AudioVolumeEnabled':True,'AudioVolume':-12},'fades':{'FadeIn':2,'FadeOut':2}} for i in [5,30]]
+  return spec,{'tracks':{'video':[[v]],'audio':[[a],music]},'trackState':{'video':[{'enabled':True}],'audio':[{'enabled':True},{'enabled':True}]}}
+ def test_resolve_native_clocks_links_and_levels(self):
+  spec,state=self.resolve_fixture();checker.resolve_snapshot(spec,state)
+  state['tracks']['audio'][1][0]['duration']+=1e-14;checker.resolve_snapshot(spec,state)
+ def test_resolve_checker_rejects_displacement_source_changes_and_other_layer_damage(self):
+  for change in [lambda s:s['tracks']['audio'][1][0].update(left=25+25/48000),lambda s:s['tracks']['audio'][1][1].update(sourcePath='/other.wav'),lambda s:s['tracks']['audio'][0][0]['properties'].update(AudioVolume=-6),lambda s:s['tracks']['audio'][1][0]['fades'].update(FadeIn=0),lambda s:s['tracks']['video'][0][0].update(linkedIds=[]),lambda s:s['trackState']['audio'][0].update(enabled=False)]:
+   spec,state=self.resolve_fixture();change(state)
+   with self.assertRaises(RuntimeError):checker.resolve_snapshot(spec,state)
+
 if __name__=='__main__':unittest.main()

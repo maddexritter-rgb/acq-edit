@@ -26,7 +26,6 @@ if (mode === 'prepare') {
   const existing = await json(path.resolve(configFile));
   assert(['filmcraft', 'resolve'].includes(existing.backend),
     'This fixture supports FilmCraft or Resolve; it never switches an existing project backend');
-  if(scenario==='music')assert.equal(existing.backend,'filmcraft','The music agent scenario currently has a FilmCraft-only independent checker');
   assert(['codex', 'claude'].includes(existing.agent), 'Unknown configured agent');
   if (existing.backend === 'filmcraft') run(existing.filmcraft, ['--help']);
   else { assert(existing.resolvePython, 'Configured ResolvePython required'); run(existing.resolvePython, ['-c', 'print("ResolvePython available")']); }
@@ -131,7 +130,7 @@ if (mode === 'prepare') {
       plan.audio={gainDb:-3,music:[5,30].map((frame,index)=>({id:`bed-${index}`,sourceId:sources[0].id,startFrame:frame,sourceInSample:48000,samples:28800,gainDb:-12,fadeInSamples:3840,fadeOutSamples:3840,receiptPath:receipt,receiptSha256:null}))};
       for(const bed of plan.audio.music)bed.receiptSha256=await sha256(receipt);
       await atomicJson(path.join(base,'revision-request.json'),{
-        notes:`Replace only music placement bed-0 (musicIndices [0]) with the already registered 1320 Hz PCM source described in ${path.join(base,'replacement-source.json')}. Append that exact source record to a new plan and create a new synthetic music decision receipt with notAuditionEvidence true. Change only bed-0 sourceId, receiptPath and receiptSha256. Keep its source offset, timing, duration, gain and fades unchanged. Preserve bed-1, dialogue, cuts, captions, framing and graphics. Use the native music-replacement operation with the pinned published previous plan and a fresh native inspection; render in FilmCraft and publish a new immutable version. This is the same synthetic mechanical fixture with ACQ_EDIT_TEST_FIXTURE=1; no audition, new editorial design, transcription or brain fetch is requested.`,
+        notes:`Replace only music placement bed-0 (musicIndices [0]) with the already registered 1320 Hz PCM source described in ${path.join(base,'replacement-source.json')}. Append that exact source record to a new plan and create a new synthetic music decision receipt with notAuditionEvidence true. Change only bed-0 sourceId, receiptPath and receiptSha256. Keep its source offset, timing, duration, gain and fades unchanged. Preserve bed-1, dialogue, cuts, captions, framing and graphics. Use the native music-replacement operation with the pinned published previous plan and a fresh native inspection; render in ${config.backend} and publish a new immutable version. This is the same synthetic mechanical fixture with ACQ_EDIT_TEST_FIXTURE=1; no audition, new editorial design, transcription or brain fetch is requested.`,
         comment:'Replace only the first music bed. Keep the second bed and all pictures unchanged.',
         lateComment:'Added while music replacement is running: leave this note for the next submission; do not change the current job.'
       });
