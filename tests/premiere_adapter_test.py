@@ -23,16 +23,29 @@ class PremiereAdapterTests(unittest.TestCase):
   export={'baseline':copy.deepcopy(self.baseline),'start_ticks':'0','end_ticks':'508032000000','frame_ticks':10160640000,'sample_rate':48000,'preset_path':str(self.preset),'output_path':str(self.root/'render/clip.mp4')}
   self.packet={'nativeProject':str(self.native),'expectedFingerprint':fingerprint(self.state),'plan':str(self.root/'plan.json'),'output':export['output_path'],'inspection':str(self.root/'inspection.json'),'receipt':str(self.root/'receipt.json'),'receiptDirectory':str(self.root/'operations'),'operations':[operation('save_project',{},1),operation('lab_export_exact_range',export,2)]}
   selection=self.root/'selection.json';selection.write_text(json.dumps({'testFixture':True}))
-  self.plan={'clipId':'clip-1','fps':{'numerator':25,'denominator':1},'width':640,'height':360,'sampleRate':48000,'cuts':[{'frames':25},{'frames':25}],'editorial':{'selectionPath':str(selection)}}
+  (self.root/'00_SOURCE').mkdir();source=self.root/'00_SOURCE/source.mov';source.write_bytes(b'fake fixture source')
+  self.plan={'clipId':'clip-1','fps':{'numerator':25,'denominator':1},'width':640,'height':360,'sampleRate':48000,'sources':[{'id':'source','path':str(source),'sha256':sha(source)}],
+   'cuts':[{'id':f'cut-{i}','sourceId':'source','frames':25,'recordFrame':i*25,'sourceInFrame':i*50,'audioInSample':i*96000,'audioSamples':48000} for i in range(2)],'editorial':{'selectionPath':str(selection)}}
+  self.links={'project_path':str(self.native),'sequence_id':'sequence-1','frame_duration_ticks':'10160640000','verification':'stable_complete_paged_native_link_membership','items':[]}
+  for kind,kind_id in [('video',0),('audio',1)]:
+   track={'kind':kind_id,'index':0,'muted':False,'clips':[]};self.state['tracks'].append(track)
+   for i,cut in enumerate(self.plan['cuts']):
+    node=f'{kind}-{i}';start=cut['recordFrame']*10160640000;left=cut['sourceInFrame']*10160640000;duration=cut['frames']*10160640000
+    item={'node_id':node,'source_id':'native-source','media_path':str(source),'offline':False,'start_ticks':str(start),'end_ticks':str(start+duration),'source_in_ticks':str(left),'source_out_ticks':str(left+duration),'speed':1,'speed_reversed':False,'disabled':False}
+    self.links['items'].append({'kind':kind,'track_index':0,'item_index':i,'item':item,'linked_node_ids':[f'{"audio" if kind=="video" else "video"}-{i}'],'self_included':False})
+    track['clips'].append({'id':node,'sourceId':'native-source','start':item['start_ticks'],'end':item['end_ticks'],'inPoint':item['source_in_ticks'],'outPoint':item['source_out_ticks'],'speed':1,'disabled':False})
+  self.packet['expectedFingerprint']=fingerprint(self.state)
   Path(self.packet['plan']).write_text(json.dumps(self.plan))
   self.result={'path':export['output_path'],'start_ticks':export['start_ticks'],'end_ticks':export['end_ticks'],'expected_frames':50,'preserved_bounded_state':True,'restored_in':'0','restored_out':export['end_ticks']}
-  self.mutations=[];self.observed_baseline=copy.deepcopy(self.baseline);self.verification={'frames':50,'width':640,'height':360,'fullDecode':True}
+  self.mutations=[];self.link_calls=0;self.observed_baseline=copy.deepcopy(self.baseline);self.verification={'frames':50,'width':640,'height':360,'fullDecode':True}
   owner=self
   class Client:
    def __init__(self,profile):pass
    def inspect(self,name,args):
     if name=='lab_snapshot':return copy.deepcopy(owner.state)
     if name=='lab_inspect_export_state':return {'success':True,'data':copy.deepcopy(owner.observed_baseline)}
+    if name=='inspect_assembly_links':
+     owner.assertEqual(args,{'project_path':str(owner.native),'sequence_id':'sequence-1','paged':True});owner.link_calls+=1;return {'success':True,'data':copy.deepcopy(owner.links)}
     raise AssertionError(name)
    def close(self):pass
   def execute(client,operation,receipt,timeout):
@@ -52,6 +65,60 @@ class PremiereAdapterTests(unittest.TestCase):
   self.assertTrue(result['nativeRendered']);self.assertEqual(result['backend'],'premiere')
   self.assertEqual(result['nativeFingerprint'],sha(self.native));self.assertEqual(result['qualification'],'mechanical-fixture')
   self.assertEqual(json.loads(Path(self.packet['inspection']).read_text())['snapshot'],self.state)
+  evidence=json.loads(Path(self.packet['inspection']).read_text());self.assertEqual(evidence['nativeSourceLinks'],self.links)
+  self.assertEqual(len(evidence['sourceCutVerification']['mapping']),2);self.assertEqual(self.link_calls,2)
+
+ def test_wrong_native_passage_source_link_or_playback_stops_before_export(self):
+  original=copy.deepcopy(self.links)
+  cases=[
+   lambda l:l.update(project_path=str(self.root/'other.prproj')),
+   lambda l:l.update(sequence_id='other-sequence'),
+   lambda l:l.update(frame_duration_ticks='8467200000'),
+   lambda l:l.update(verification='same_source_overlap_guess'),
+   lambda l:l['items'][0]['item'].update(media_path=str(self.root/'wrong.mov')),
+   lambda l:l['items'][0]['item'].update(offline=True),
+   lambda l:l['items'][0]['item'].update(source_in_ticks='1'),
+   lambda l:l['items'][0]['item'].update(start_ticks='0.0'),
+   lambda l:l['items'][0]['item'].update(speed=2),
+   lambda l:l['items'][0]['item'].update(speed_reversed=True),
+   lambda l:l['items'][0]['item'].update(disabled=True),
+   lambda l:l['items'][0].update(linked_node_ids=[]),
+   lambda l:l['items'][2].update(linked_node_ids=['video-1']),
+   lambda l:l['items'].append(copy.deepcopy(l['items'][0])),
+   lambda l:l['items'].pop(),
+  ]
+  for i,change in enumerate(cases):
+   with self.subTest(case=i):
+    self.links=copy.deepcopy(original);change(self.links)
+    with self.assertRaises(RuntimeError):self.adapter.render(self.project,self.packet)
+    self.assertEqual(self.mutations,[]);self.assertFalse(Path(self.packet['receipt']).exists())
+
+ def test_muted_dialogue_and_inconsistent_snapshots_are_not_valid_plan_execution(self):
+  original=copy.deepcopy(self.state)
+  for field in ['muted','sourceId','inPoint']:
+   self.state=copy.deepcopy(original)
+   if field=='muted':self.state['tracks'][1]['muted']=True
+   else:self.state['tracks'][0]['clips'][0][field]='different' if field=='sourceId' else '5292000'
+   self.packet['expectedFingerprint']=fingerprint(self.state)
+   with self.subTest(field=field),self.assertRaises(RuntimeError):self.adapter.render(self.project,self.packet)
+   self.assertEqual(self.mutations,[])
+
+ def test_native_relink_during_export_is_not_hidden_by_unchanged_snapshot(self):
+  def relink(*args):self.links['items'][0]['linked_node_ids']=[];return self.verification
+  self.verifier.side_effect=relink
+  with self.assertRaisesRegex(RuntimeError,'source or link state changed'):self.adapter.render(self.project,self.packet)
+  self.assertEqual(self.mutations,['save_project','lab_export_exact_range']);self.assertFalse(Path(self.packet['receipt']).exists())
+  self.assertTrue(Path(self.packet['output']).exists())
+
+ def test_sample_precise_separate_audio_source_is_verified_without_frame_rounding(self):
+  source=self.root/'00_SOURCE/dialogue.wav';source.write_bytes(b'fake separate dialogue')
+  self.plan['sources'].append({'id':'dialogue','path':str(source),'sha256':sha(source)})
+  cut=self.plan['cuts'][0];cut.update(audioSourceId='dialogue',audioInSample=11,audioRecordSample=11,audioSamples=47989)
+  item=self.links['items'][2]['item'];item.update(source_id='native-dialogue',media_path=str(source),start_ticks=str(11*5292000),source_in_ticks=str(11*5292000))
+  clip=self.state['tracks'][1]['clips'][0];clip.update(sourceId='native-dialogue',start=item['start_ticks'],inPoint=item['source_in_ticks'])
+  self.packet['expectedFingerprint']=fingerprint(self.state);Path(self.packet['plan']).write_text(json.dumps(self.plan))
+  self.adapter.render(self.project,self.packet)
+  evidence=json.loads(Path(self.packet['inspection']).read_text());self.assertEqual(evidence['sourceCutVerification']['mapping'][0]['audioSourceId'],'dialogue')
 
  def test_missing_profile_never_falls_back_to_global_production_connector(self):
   for config in [{},{'premiereProfile':''},{'premiereProfile':'relative.json'},{'premiereProfile':str(self.root/'missing.json')}]:

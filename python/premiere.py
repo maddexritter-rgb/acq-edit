@@ -3,6 +3,7 @@ import sys
 from fractions import Fraction
 from pathlib import Path
 from common import *
+from premiere_plan import verify_source_cuts
 sys.path.insert(0,str(SKILLS/'_shared'))
 from premiere_bridge import Profile,PremiereBridge,execute_operation
 class Adapter:
@@ -71,6 +72,9 @@ class Adapter:
    observed=client.inspect('lab_inspect_export_state',{'project_path':str(native),'sequence_id':state['sequenceId']})
    observed=observed.get('data',observed)
    require(observed==baseline,'Export baseline changed; inspect current native state')
+   links=client.inspect('inspect_assembly_links',{'project_path':str(native),'sequence_id':state['sequenceId'],'paged':True})
+   links=links.get('data',links)
+   source_verification=verify_source_cuts(p,state,links)
   finally:client.close()
   output.parent.mkdir(parents=True,exist_ok=True)
   execution=self.execute(project,packet);export=execution['receipts'][-1];native_hash=execution['savedNativeSha256']
@@ -80,8 +84,15 @@ class Adapter:
   # Verify the actual file before issuing the shared success receipt. A settled
   # Lab operation is still only committed_unverified, never render acceptance.
   verification=verify_native_render(output,p)
+  client=PremiereBridge(self.profile)
+  try:
+   final_links=client.inspect('inspect_assembly_links',{'project_path':str(native),'sequence_id':state['sequenceId'],'paged':True})
+   final_links=final_links.get('data',final_links)
+   require(final_links==links,'Native source or link state changed during export; reconcile before publication')
+  finally:client.close()
   after=self.inspect(project,packet)
   require(after['fingerprint']==before['fingerprint'],'Native state changed during export; reconcile before publication')
   require(sha(native)==native_hash,'Saved native project changed during file verification')
-  save(inspection,{'snapshot':after['state'],'exportBaseline':baseline,'exportResult':export,'nativeSha256':native_hash,'mediaVerification':verification})
+  require(verify_source_cuts(p,after['state'],final_links)==source_verification,'Native source-cut verification changed during export')
+  save(inspection,{'snapshot':after['state'],'exportBaseline':baseline,'exportResult':export,'nativeSha256':native_hash,'mediaVerification':verification,'nativeSourceLinks':final_links,'sourceCutVerification':source_verification})
   return result_receipt(project,packet,p,native,output,inspection,verification=verification,expected_native_hash=native_hash)
