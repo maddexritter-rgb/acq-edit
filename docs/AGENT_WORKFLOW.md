@@ -16,7 +16,7 @@ This contract supplies the execution routes for the portable skill distribution,
 | Assembly Design and precision cuts | assembly-design | [NATIVE_ASSEMBLY.md](NATIVE_ASSEMBLY.md): shared compiler, exact source-word and paired-audio plans |
 | Framing and camera panels | horizontal-to-vertical; Assembly Design owns camera/layout choices | [NATIVE_FRAMING.md](NATIVE_FRAMING.md), [NATIVE_PANELS.md](NATIVE_PANELS.md) |
 | Body captions | caption-clips | [NATIVE_CAPTIONS.md](NATIVE_CAPTIONS.md): shared handoff, selected engine's native text |
-| Opening text | text-hook | [NATIVE_HOOKS.md](NATIVE_HOOKS.md): owner-measured editable FilmCraft title additions; other native hook operations remain open |
+| Opening text | text-hook | [NATIVE_HOOKS.md](NATIVE_HOOKS.md): editable FilmCraft/Resolve additions and exact owned-hook removal; replacement uses a freshly measured native intermediate |
 | Music | music | [NATIVE_AUDIO.md](NATIVE_AUDIO.md): project-owned asset, explicit timing/gain/fades |
 | Motion assets | promo or the requested graphics owner | [NATIVE_MOTION.md](NATIVE_MOTION.md): Remotion creates assets, selected editor composes/exports |
 | Native render and publication | render | [ENGINES.md](ENGINES.md), [PREMIERE_RENDER.md](PREMIERE_RENDER.md): native inspection, export receipt and immutable publication |
@@ -41,6 +41,8 @@ Missing native effects, profiles, assets or unresolved `__ACQ_` references requi
 9. Save the job's result.json only after publishing every requested clip. It contains the exact jobId and published versionIds. Never invent IDs, receipts, speech evidence or human approval. A clip returned for review is not human-approved.
 
 Deferred feedback is included in each submission when notes changed during a prior render. Compare `submitted` with `latest` to identify additions, edits and withdrawals. Those timestamps refer to `sourceVersion`, even when the current clip has different timing. Do not reapply unchanged instructions. The review room shows pending changes separately from the request already applied.
+
+When the submitted plan has a `hookContract`, do not bypass its context pin to revise captions or framing. Follow the removal/replacement sequence in `NATIVE_HOOKS.md`: verify/remove only the owned hook on a new checkpoint, apply requested finishing changes through their owners, render a native intermediate, measure the current layout, then prepare/add the appropriate hook and render the final version. Preserve the headline unless its removal or replacement was requested; remeasure placement when its context changes. Keep intermediate files under this job, publish only its requested final result against the submitted parent, and retain late feedback for the next submission. Native hook removal does not authorize changing the spoken opening or cutting source footage.
 
 Music reselection stays with `music`. FilmCraft and Resolve support `music-replacement` with pinned previous/new plans and explicit `musicIndices`, preserving existing source offsets, timing, automation and other native layers. Use the PCM/source/receipt requirements and backend-specific packet fields in `NATIVE_AUDIO.md`. Resolve uses a version-gated native DRT binding edit with a fresh archive directory and full metadata/channel-mapping readback; its audio take API is unsupported. Changed sections and Premiere source replacement still require another supported operation; report the limitation without changing engines or rebuilding approved cuts.
 

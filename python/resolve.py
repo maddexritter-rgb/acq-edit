@@ -154,6 +154,7 @@ class Adapter:
    merge.Blend.SetExpression(f'iif(time >= {start} and time < {end}, 1, 0)');source=merge
   output.ConnectInput('Input',source)
  def revise(self,project,packet):
+  if packet.get('kind')=='text-hook-remove':return self.remove_hook(project,packet)
   if packet.get('kind')=='text-hook':return self.revise_hook(project,packet)
   if packet.get('kind')=='music-replacement':return self.revise_music(project,packet)
   if packet.get('kind')=='graphic-replacement':return self.revise_graphics(project,packet)
@@ -360,6 +361,27 @@ class Adapter:
    return {'nativeProject':str(native),'timelineId':revised.GetUniqueId(),'fingerprint':fingerprint(after),'status':'revised-native-render-pending','musicBindingProof':str(work/'native-readback.json')}
   finally:
    require(r.OpenPage(page),'Cannot restore Resolve page after music replacement')
+ def remove_hook(self,project,packet):
+  from hook_removal import prepare
+  from resolve_hooks import verify_timeline
+  from resolve_graphics import inspect
+  previous,spec,prepared=prepare(project,packet);r,p=self.selected(project)
+  require(not p.IsRenderingInProgress(),'Resolve is rendering; wait before hook removal')
+  before=self.snapshot(p);require(fingerprint(before)==packet['expectedFingerprint'],'Native state changed; reconcile before hook removal')
+  original=p.GetCurrentTimeline();verify_timeline(original,previous,prepared)
+  track=original.GetTrackCount('video');require(track>1 and not original.GetIsTrackLocked('video',track),'Owned hook track is locked or is the only picture track')
+  original_detail=inspect(self,p);baseline=inspect(self,p,duplicate=True,omit_last_video_track=True)
+  native=inside(project['root'],packet['nativeProject']);inspection=inside(project['root'],packet['inspection'])
+  require(not native.exists() and not inspection.exists(),'Hook removal outputs exist; reconcile before retrying')
+  require(packet['title'] not in {p.GetTimelineByIndex(i).GetName() for i in range(1,p.GetTimelineCount()+1)},'Hook removal timeline name exists')
+  duplicate=original.DuplicateTimeline(packet['title']);require(duplicate and p.SetCurrentTimeline(duplicate),'Cannot duplicate hook parent')
+  verify_timeline(duplicate,previous,prepared)
+  require(duplicate.DeleteTrack('video',track),'Native hook track removal failed')
+  require(inspect(self,p,duplicate=True)==baseline,'Hook removal changed protected native state or metadata')
+  after=self.snapshot(p);require(p.SetCurrentTimeline(original) and inspect(self,p)==original_detail,'Hook removal changed parent timeline')
+  require(p.SetCurrentTimeline(duplicate) and self.snapshot(p)==after,'New timeline changed during parent verification')
+  pm=r.GetProjectManager();require(pm.SaveProject(),'Cannot save hook-free revision');require(pm.ExportProject(p.GetName(),str(native),False),'Cannot checkpoint hook-free revision');save(inspection,after)
+  return {'nativeProject':str(native),'timelineId':duplicate.GetUniqueId(),'fingerprint':fingerprint(after),'status':'revised-native-render-pending'}
  def revise_hook(self,project,packet):
   from hook_plan import validate
   from resolve_hooks import font_preflight,construct,verify_timeline

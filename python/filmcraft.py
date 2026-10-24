@@ -114,6 +114,7 @@ class Adapter:
    placed=c.tool('sequence_inspect')['video'][track]['items'];require(len(placed)==1,'Unexpected native graphic coverage');graphic=placed[0]
    require(graphic['item']==item and graphic['start']==asset['startFrame']*ft and graphic['duration']==asset['frames']*ft and graphic['sourceIn']==0,'Native graphic source/timing readback mismatch')
  def revise(self,project,packet):
+  if packet.get('kind')=='text-hook-remove':return self.remove_hook(project,packet)
   if packet.get('kind')=='text-hook':return self.revise_hook(project,packet)
   if packet.get('kind')=='music-replacement':return self.revise_music(project,packet)
   if packet.get('kind')=='graphic-replacement':return self.revise_graphics(project,packet)
@@ -266,6 +267,24 @@ class Adapter:
   reopened=self.inspect(project,{'nativeProject':str(target),'session':packet['reopenSession']})
   verify_filmcraft_replacement(before,read(target),previous,spec,indices,target.stem)
   require(sha(native)==parent_hash,'Parent changed during music reopen');save(inspection,reopened)
+  return {'nativeProject':str(target),'fingerprint':reopened['fingerprint'],'status':'revised-native-render-pending'}
+ def remove_hook(self,project,packet):
+  from hook_removal import prepare,filmcraft_target,verify_filmcraft
+  previous,spec,prepared=prepare(project,packet);native=inside(project['root'],packet['nativeProject']);parent_hash=sha(native)
+  observed=self.inspect(project,{'nativeProject':str(native),'session':packet['inspectSession']})
+  require(observed['fingerprint']==packet['expectedFingerprint'],'Native state changed; reconcile before removing the hook')
+  before=read(native);require(sha(native)==parent_hash,'Hook parent changed during inspection')
+  require(TICKS*spec['fps']['denominator']%spec['fps']['numerator']==0,'Unsupported frame tick grid')
+  ft=TICKS*spec['fps']['denominator']//spec['fps']['numerator'];track=filmcraft_target(before,previous,prepared,ft)
+  target=inside(project['root'],packet['outputProject']);inspection=inside(project['root'],packet['inspection'])
+  require(not target.exists() and not inspection.exists(),'Hook removal outputs exist; reconcile before retrying')
+  shutil.copy2(native,target);c=Filmcraft(self.config['filmcraft'],inside(project['root'],packet['session']),str(target))
+  try:
+   result=c.run('sequence.deleteTracks',{'video':track});require(result=={'deleted':1},'Native hook removal targeted an unexpected track count');c.run('file.save')
+   verify_filmcraft(before,read(target),previous,prepared,target.stem,ft);require(sha(native)==parent_hash,'Hook removal changed parent')
+  finally:c.close()
+  reopened=self.inspect(project,{'nativeProject':str(target),'session':packet['reopenSession']})
+  verify_filmcraft(before,read(target),previous,prepared,target.stem,ft);require(sha(native)==parent_hash,'Hook reopen changed parent');save(inspection,reopened)
   return {'nativeProject':str(target),'fingerprint':reopened['fingerprint'],'status':'revised-native-render-pending'}
  def revise_hook(self,project,packet):
   from hook_plan import validate,build_native,verify_addition

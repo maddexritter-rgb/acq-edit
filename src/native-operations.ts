@@ -26,7 +26,11 @@ export async function executeNative(store:Store,config:Config,projectId:string,a
  store.addNativeOperation(operation);
  try{
   await record(store,id);
-  if(operation.jobId&&action==='render'){store.setJob(operation.jobId,'rendering');await exportState(store,projectId)}
+  if(operation.jobId){
+   // A finishing job can render an intermediate, inspect it, then edit again.
+   // Keep one job/lock throughout while exposing the current native phase.
+   store.setJob(operation.jobId,action==='render'?'rendering':'editing');await exportState(store,projectId);
+  }
   const env={...process.env,...await secretEnv(),ACQ_EDIT_ROOT:ROOT,ACQ_EDIT_NATIVE_OPERATION_ID:id,ACQ_EDIT_NATIVE_OPERATION_DIR:operation.directory};
   store.updateNativeOperation(id,{childPending:true});
   const result=await (tools.execute||run)(project.backend==='resolve'&&!['compile','captions','hooks'].includes(action)?config.resolvePython!:config.python,[path.join(ROOT,'python','native.py'),action,'--backend',project.backend,'--config',path.join(HOME,'config.json'),'--project',path.join(project.root,'project.json'),'--packet',packetPath],{timeout:4*3600_000,env,signal:tools.signal,onSpawn:pid=>{store.updateNativeOperation(id,{childPid:pid,childPending:false})}});

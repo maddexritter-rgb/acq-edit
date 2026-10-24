@@ -20,6 +20,17 @@ test('native success records exact packet, command identity and immutable result
  }});
  assert.deepEqual(result,{native:true});const op=f.store.nativeOperations('p')[0];assert.equal(op.state,'succeeded');assert.equal(op.ownerPid,null);assert.equal(op.packetSha256,await sha256(f.packet));assert.equal(op.resultSha256,await sha256(op.resultPath));const journal=JSON.parse(await readFile(op.resultPath));assert.equal(journal.operationId,op.id);assert.equal(journal.stdout,'{"native":true}');f.store.assertNativeSettled('p');
 });
+test('intermediate renders return to editing without releasing the owning job',async t=>{
+ const f=await fixture(t),job=f.store.enqueueBuild('p','Replace hook after changing captions');f.store.claim();process.env.ACQ_EDIT_JOB_ID=job.id;
+ const next=f.store.enqueueBuild('p','Later work');
+ for(const [action,state] of [['render','rendering'],['inspect','editing'],['revise','editing'],['hooks','editing'],['render','rendering']]){
+  await executeNative(f.store,f.config,'p',action,f.packet,{execute:async(c,a,o)=>{
+   o.onSpawn(2147483647);assert.equal(f.store.job(job.id).state,state);assert.equal(f.store.claim(),undefined);return '{}';
+  }});
+  assert.equal(f.store.job(next.id).state,'queued');assert.equal(f.store.job(job.id).state,state);
+ }
+ assert.equal(f.store.nativeOperations('p').length,5);assert.ok(f.store.nativeOperations('p').every(op=>op.jobId===job.id&&op.state==='succeeded'));
+});
 test('malformed or non-object native responses retain evidence and require reconciliation',async t=>{
  for(const stdout of ['progress\n{"native":true}', 'null', '[]', '"double encoded"', 'true']){
   await t.test(stdout,async t=>{

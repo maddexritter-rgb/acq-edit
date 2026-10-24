@@ -2,7 +2,7 @@
 
 `text-hook` owns copy, supporting passages, typography and placement; generated copy also uses `slop-detector`. The FilmCraft and Resolve adapters transport the owning helper's text origins, font metrics, rounded boxes and interval geometry into editable native graphics. Preview plates are review artifacts and are never placed on the native timeline.
 
-Current executable scope is **adding a first hook to an already rendered FilmCraft or Resolve clip**, preserving its existing captions and all other layers. Caption hiding, replacement of an existing native hook, Premiere hook transport and automatic hook recalculation after another finishing revision remain open. These are explicit repair tasks; they do not trigger raster substitution or another engine.
+Current executable scope includes **adding a hook to an already rendered FilmCraft or Resolve clip and removing a verified owned hook on a new native copy**. A replacement uses removal, a fresh native render and a newly measured owner recipe, as described below. Caption hiding and Premiere hook transport remain open. These are explicit repair tasks; they do not trigger raster substitution or another engine.
 
 ## Prepare
 
@@ -73,6 +73,34 @@ Use the returned fingerprint and new DRP with the ordinary native render packet 
 
 Resolve's Text+ baseline/font-size conversion and rounded-mask mapping were measured on this host. Native text rasterization is not pixel-identical to the owner's Pillow preview: the qualified Arial Bold fixture's measured glyph bounds differed by up to three pixels, while remaining inside its fitted cards. Other fonts, scripts and host versions need rendered verification; matching a font name alone is insufficient.
 
+## Removal, replacement and later finishing changes
+
+Do not delete the hook contract to suppress stale-layout validation while leaving its native graphic in place. When the user requests a replacement or a finishing change that affects the current hook context, make a new plan identical to the existing plan except for removal of `hookContract`. Pin the existing plan and use `native PROJECT_ID revise PACKET.json`:
+
+```json
+{
+  "kind": "text-hook-remove",
+  "previousPlan": "<project>/10_WORK/current-hook-plan.json",
+  "previousPlanSha256": "<exact previous plan SHA-256>",
+  "plan": "<project>/10_WORK/hook-free-plan.json",
+  "expectedFingerprint": "<current inspected native fingerprint>",
+  "inspection": "<project>/10_WORK/hook-free-inspection.json"
+}
+```
+
+For FilmCraft, add `nativeProject` for the inspected parent, a fresh `outputProject`, and fresh `inspectSession`, `session` and `reopenSession` paths. For Resolve, add a unique `title` and a fresh output `nativeProject` DRP path. These are the same backend path conventions as addition; removal needs no DRT archive directory.
+
+The adapter first verifies the entire owned hook, its exact graph/graphics and interval timing, and refuses a locked track. FilmCraft removes that exact track through its native command on a saved/reopened copy. Resolve duplicates the inspected timeline and calls its native `DeleteTrack` API. All other inspected state, source/bin assets, cuts, captions, manual effects and metadata remain protected. The original project/timeline is rechecked; an unidentified or manually changed hook requires reconciliation, not broad title deletion. The removal plan cannot also change another field.
+
+Within the same revision job:
+
+1. Remove the identified hook using the operation above. Keep the old published version and feedback intact.
+2. If requested, apply caption, framing or other finishing changes to this new hook-free checkpoint using their owning skills and supported native revision routes. A spoken recut still requires Assembly Design and the recut verification contract.
+3. Render the updated hook-free result in the selected engine. Study the actual updated captions and protected picture regions. Use that render and receipt as the source for a fresh `text-hook` recipe; `existing_hook: none` now describes the actual result.
+4. Add the freshly prepared hook and render the final version. Publish only that final result against the original submitted parent. Intermediate render receipts are work evidence, not review completion. If the request was only to remove the headline, the verified hook-free result can be the final version.
+
+The job remains serialized through intermediate renders and returns to `editing` when the next native preparation, inspection or revision starts. A failure preserves its files and blocks publication/replay until reconciliation. Never reintroduce the old recipe by updating its hash, reuse its old placement after a layout change, or publish an intermediate without the requested replacement.
+
 ## Evidence and limits
 
 A native synthetic fixture exercised two fitted rounded cards, two placement intervals, exact text/face/color, save/reopen, protected parent state and a 50-frame FilmCraft export. Its decoded audio matched the base byte for byte. The native render and owning preview were visually inspected.
@@ -84,3 +112,7 @@ These are mechanical fixtures, not real speech, editorial quality, reference fid
 A separate six-second Resolve fixture added two native fitted cards with two placement intervals, saved/closed/reopened the project and rendered 150 frames. The complete fingerprint stayed unchanged through reopen and export. Decoded audio matched the base byte for byte. All 24 native lossless frames after the hook matched the base pixel for pixel; sampled frames confirmed the card at 125 and its disappearance at 126. The original review project and page were restored after each test. This is direct native CLI evidence, not a review-room agent or human acceptance test.
 
 The initial Resolve expression-based attempt completed its MP4 but correctly failed the post-render fingerprint guard when Resolve materialized an expression cache. That output has no success receipt and remains diagnostic evidence. The operation was reconciled after terminal-process/native-state inspection. Native visibility keys fixed the cause without weakening Fusion fingerprints or migrating existing approved work. A separate strict two-pixel preview comparison failed by one pixel; its evidence is retained, and the three-pixel typography difference is reported above rather than claimed as exact raster parity.
+
+FilmCraft subsequently completed a six-second removal → body-caption wording revision → fresh layout preparation → replacement hook → native render sequence. The original checkpoint retained its hash, all four stages had byte-identical decoded audio, and the final sampled render visibly contained the new single-line hook and changed body caption. Exact saved-project comparisons protected everything outside the removed owned track. This was direct CLI execution, not the agent/review-room acceptance scenario.
+
+Resolve removal passed its native graph/protected-state checks and completed a 150-frame hook-free export. **The subsequent caption-revised export is not qualified:** the host reported that its first Fusion composition could not be processed, consistently across a fresh retry and a normal application restart. The revised timeline's complete snapshot remained unchanged across save/reopen/restart; a still export showed the revised caption. Neither proves export success. No successful render receipt or new published version was issued. The prior review project was restored and verified. A separate later inspection found a changed Fusion fingerprint on the hook-free parent. The exact same-timeline cause has not been established; the captured parent/revision graphs are insufficient to prove that earlier-state change harmless. Do not treat this failed composite workflow as a Resolve replacement acceptance pass or weaken fingerprints to bypass it.
