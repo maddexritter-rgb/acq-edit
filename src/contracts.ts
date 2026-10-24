@@ -32,7 +32,7 @@ export function routeRevision(text:string):string[] {
   const owners=new Set<string>(['edit']);
   if(/\b(cuts?|recut|trim|shorten|remove|passages?|spoken|sentences?|word ending|reorder|hook replacement)\b/i.test(text)) ['assembly-design','horizontal-to-vertical','caption-clips','text-hook','music','promo'].forEach(x=>owners.add(x));
   if(/caption|subtitle|font/i.test(text)) owners.add('caption-clips');
-  if(/fram|crop|zoom|camera/i.test(text)) owners.add('horizontal-to-vertical');
+  if(/fram|crop|zoom|camera|\b(tracking|recenter|recentre|centered|centred)\b|\b(track|follow)\s+(the\s+)?(speaker|subject|face)\b/i.test(text)) owners.add('horizontal-to-vertical');
   if(/music|audio|volume|sound/i.test(text)) owners.add('music');
   if(/headline|text hook/i.test(text)) owners.add('text-hook');
   if(/motion|animation|graphic/i.test(text)) owners.add('promo');

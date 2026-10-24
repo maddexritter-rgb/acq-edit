@@ -5,6 +5,7 @@ No subject detection, shot selection, smoothing or editorial camera changes live
 import json,subprocess,math
 from fractions import Fraction
 from common import inside,require,sha
+from pathlib import Path
 
 def validate_framing(project,spec):
  framing=spec.get('framing',{})
@@ -78,6 +79,9 @@ def verify_filmcraft_framing(native,spec,frame_ticks):
  require(len(items)==len(spec['cuts']),'Native framing picture coverage differs')
  for item,cut in zip(items,spec['cuts']):
   require((item['start'],item['source_in'],item['duration'])==(cut['recordFrame']*frame_ticks,cut['sourceInFrame']*frame_ticks,cut['frames']*frame_ticks),'Native framing clocks differ')
+  source=next(s for s in spec['sources'] if s['id']==cut['sourceId'])
+  native_source=data['project']['items'][str(item['item'])]['kind']['Media']['media']['File']['path']
+  require(Path(native_source).resolve()==Path(source['path']).resolve(),'Native framing source differs')
   shot=shots[cut['id']];m=next(e['params'] for e in item['effects'] if e['effect']=='motion')
   for key,value in filmcraft_motion(spec,shot).items():
    actual=m[key]['value'];expected={'Vec2':dict(zip(['x','y'],value))} if isinstance(value,list) else {'Float':value}

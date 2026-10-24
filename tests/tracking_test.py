@@ -34,8 +34,9 @@ class TrackingTests(unittest.TestCase):
  def test_typed_native_key_verifier_catches_retiming_easing_and_y_motion(self):
   ft=10
   m={'anchor':{'value':{'Vec2':{'x':190.25,'y':180}},'keyframes':[{'time':(50+i)*ft,'interp':'Linear','value':{'Vec2':{'x':x+90,'y':180}}} for i,x in enumerate(self.shot['xByFrame'])]},'position':{'value':{'Vec2':{'x':180,'y':320}},'keyframes':[]},'scale':{'value':{'Float':200},'keyframes':[]}}
-  item={'start':250,'source_in':500,'duration':30,'effects':[{'effect':'motion','params':m}]}
+  item={'item':2,'start':250,'source_in':500,'duration':30,'effects':[{'effect':'motion','params':m}]}
   data={'view':{'active_sequence':1},'project':{'items':{'1':{'kind':{'Sequence':{'video_tracks':[{'items':[item]}]}}}}}}
+  data['project']['items']['2']={'kind':{'Media':{'media':{'File':{'path':'source.mp4'}}}}}
   def verify(value):
    file=self.root/'native.json';file.write_text(json.dumps(value));verify_filmcraft_framing(file,self.spec,ft)
   verify(data)

@@ -52,3 +52,4 @@ test('partial batch publication preserves unconsumed feedback and cannot mark th
  s.publish({...version('other-v2',2,'other-v1'),clipId:'other',jobId:job.id});s.finishJob(job.id,['v2','other-v2']);
  assert.equal(s.pendingFeedback('c').length,1);
 });
+test('speaker tracking feedback routes to framing without requesting a spoken recut',()=>{for(const request of ['Track the speaker more closely','Keep the subject centered','Fix the tracking drift','Follow the face']){assert.ok(routeRevision(request).includes('horizontal-to-vertical'));assert.ok(!routeRevision(request).includes('assembly-design'))}assert.ok(!routeRevision('Lower the music track volume').includes('horizontal-to-vertical'))});

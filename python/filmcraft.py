@@ -99,6 +99,7 @@ class Adapter:
    placed=c.tool('sequence_inspect')['video'][track]['items'];require(len(placed)==1,'Unexpected native graphic coverage');graphic=placed[0]
    require(graphic['item']==item and graphic['start']==asset['startFrame']*ft and graphic['duration']==asset['frames']*ft and graphic['sourceIn']==0,'Native graphic source/timing readback mismatch')
  def revise(self,project,packet):
+  if packet.get('kind')=='tracking-framing':return self.revise_tracking(project,packet)
   if packet.get('kind')=='spoken-recut':
    from recut_execution import prepare,record
    prepared=prepare(project,packet);parent=prepared['version'];native=inside(project['root'],parent['nativeProject'])
@@ -145,6 +146,30 @@ class Adapter:
     from caption_plan import validate,verify_native
     verify_native(target,spec,validate(project,spec),TICKS*spec['fps']['denominator']//spec['fps']['numerator'])
    save(inside(project['root'],packet['inspection']),after)
+  finally:c.close()
+  return {'nativeProject':str(target),'fingerprint':fingerprint({'state':after,'fileHash':sha(target)}),'status':'revised-native-render-pending'}
+ def revise_tracking(self,project,packet):
+  from tracking_revision import prepare,protected_filmcraft
+  previous,spec=prepare(project,packet);native=inside(project['root'],packet['nativeProject']);parent_hash=sha(native)
+  before=self.inspect(project,{'nativeProject':str(native),'session':packet['inspectSession']})
+  require(before['fingerprint']==packet['expectedFingerprint'],'Native state changed; reconcile user edits before revising tracking')
+  ft=TICKS*spec['fps']['denominator']//spec['fps']['numerator'];verify_filmcraft_framing(native,previous,ft)
+  baseline=protected_filmcraft(read(native),packet['cutIds'],previous,Path(packet['outputProject']).stem)
+  target=inside(project['root'],packet['outputProject']);inspection=inside(project['root'],packet['inspection'])
+  require(not target.exists() and not inspection.exists(),'Tracking revision outputs exist; reconcile before retrying')
+  shutil.copy2(native,target);c=Filmcraft(self.config['filmcraft'],inside(project['root'],packet['session']),str(target))
+  try:
+   items=c.tool('sequence_inspect')['video'][0]['items']
+   for cut,item in zip(spec['cuts'],items):
+    if cut['id'] not in packet['cutIds']:continue
+    shot=spec['framing']['shots'][cut['id']]
+    c.run('effects.toggleAnimation',{'clip':item['clip'],'effect':'motion','param':'anchor'})
+    c.run('effects.setParam',{'clip':item['clip'],'effect':'motion','param':'anchor','value':filmcraft_motion(spec,shot)['anchor']})
+    filmcraft_tracking(c,item,cut,shot,ft)
+   c.run('file.save');verify_filmcraft_framing(target,spec,ft)
+   require(protected_filmcraft(read(target),packet['cutIds'],spec)==baseline,'Tracking revision changed protected native data')
+   require(sha(native)==parent_hash,'Parent project changed during tracking revision')
+   after=c.tool('sequence_inspect');save(inspection,after)
   finally:c.close()
   return {'nativeProject':str(target),'fingerprint':fingerprint({'state':after,'fileHash':sha(target)}),'status':'revised-native-render-pending'}
  def render(self,project,packet):

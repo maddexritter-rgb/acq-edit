@@ -145,6 +145,7 @@ class Adapter:
    merge.Blend.SetExpression(f'iif(time >= {start} and time < {end}, 1, 0)');source=merge
   output.ConnectInput('Input',source)
  def revise(self,project,packet):
+  if packet.get('kind')=='tracking-framing':return self.revise_tracking(project,packet)
   if packet.get('kind')=='spoken-recut':
    from recut_execution import prepare,record
    prepared=prepare(project,packet);r,p=self.selected(project)
@@ -193,6 +194,38 @@ class Adapter:
    from resolve_captions import verify_timeline
    verify_timeline(copy,spec,caption_prepared)
   pm=r.GetProjectManager();require(pm.SaveProject(),'Save failed');native=inside(project['root'],packet['nativeProject']);require(not native.exists(),'Checkpoint exists');require(pm.ExportProject(p.GetName(),str(native),False),'Checkpoint failed');save(inside(project['root'],packet['inspection']),after);return {'nativeProject':str(native),'fingerprint':fingerprint(after),'status':'revised-native-render-pending'}
+ def revise_tracking(self,project,packet):
+  from tracking_revision import prepare,protected_fusion
+  from resolve_framing import revise_tracking
+  previous,spec=prepare(project,packet);r,p=self.selected(project)
+  require(not p.IsRenderingInProgress(),'Resolve render active; tracking revision must wait')
+  before=self.snapshot(p);require(fingerprint(before)==packet['expectedFingerprint'],'Native state changed; reconcile user edits before revising tracking')
+  verify_framing(p.GetCurrentTimeline(),previous)
+  native=inside(project['root'],packet['nativeProject']);inspection=inside(project['root'],packet['inspection'])
+  require(not native.exists() and not inspection.exists(),'Tracking revision outputs exist; reconcile before retrying')
+  original=p.GetCurrentTimeline();duplicate=original.DuplicateTimeline(packet['title']);require(duplicate and p.SetCurrentTimeline(duplicate),'Cannot preserve parent timeline before tracking revision')
+  verify_framing(duplicate,previous)
+  indices=[i for i,cut in enumerate(spec['cuts']) if cut['id'] in packet['cutIds']]
+  def protected_snapshot():
+   state=self.snapshot(p);items=p.GetCurrentTimeline().GetItemListInTrack('video',1)
+   with tempfile.TemporaryDirectory(prefix='tracking-protected-',dir=self.project_root/'10_WORK') as folder:
+    for i in indices:
+     file=Path(folder)/f'{i}.comp';require(items[i].ExportFusionComp(str(file),1),'Cannot inspect protected tracking graph')
+     state['tracks']['video'][0][i]['fusion']=[protected_fusion(file.read_text(encoding='utf-8'))]
+   return fingerprint(state)
+  protected=protected_snapshot();items=duplicate.GetItemListInTrack('video',1)
+  for i in indices:
+   cut_id=spec['cuts'][i]['id'];revise_tracking(items[i].GetFusionCompByIndex(1),previous['framing']['shots'][cut_id],spec['framing']['shots'][cut_id])
+  verify_framing(duplicate,spec);require(protected_snapshot()==protected,'Tracking revision changed protected native data')
+  after=self.snapshot(p)
+  require(p.SetCurrentTimeline(original),'Cannot verify parent after tracking revision')
+  try:require(fingerprint(self.snapshot(p))==packet['expectedFingerprint'],'Parent timeline changed during tracking revision')
+  finally:
+   require(p.GetCurrentTimeline().GetUniqueId()==original.GetUniqueId(),'Timeline changed while checking parent; reconcile')
+   require(p.SetCurrentTimeline(duplicate),'Cannot restore revised tracking timeline')
+  require(fingerprint(self.snapshot(p))==fingerprint(after),'Revised tracking timeline changed during parent verification')
+  pm=r.GetProjectManager();require(pm.SaveProject(),'Native save failed');require(pm.ExportProject(p.GetName(),str(native),False),'Native tracking checkpoint failed');save(inspection,after)
+  return {'nativeProject':str(native),'timelineId':duplicate.GetUniqueId(),'fingerprint':fingerprint(after),'status':'revised-native-render-pending'}
  def render(self,project,packet):
   spec=plan(project,packet);r,p=self.selected(project);state=self.snapshot(p);require(fingerprint(state)==packet['expectedFingerprint'],'Timeline changed before export');save(inside(project['root'],packet['inspection']),state)
   if spec.get('captionContract'):

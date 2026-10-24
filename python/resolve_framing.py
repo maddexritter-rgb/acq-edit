@@ -86,3 +86,12 @@ def verify_timeline(timeline,spec):
   link=resize.Input.GetConnectedOutput();require(link and link.GetTool().GetAttrs()['TOOLS_Name']=='ACQ_FramingCrop','Native resize source changed')
   if shots[cut['id']]['mode']=='fixed-crop':
    source=crop.Input.GetConnectedOutput();require(source and source.GetTool().GetAttrs()['TOOLS_RegID']=='MediaIn','Native crop source changed')
+
+
+def revise_tracking(comp,previous,current):
+ crop=comp.FindTool('ACQ_FramingCrop');require(crop,'Owned framing crop missing')
+ verify_comp(comp,crop,previous)
+ spline=comp.FindTool('ACQ_FramingPathX');start=comp.GetAttrs()['COMPN_RenderStart']
+ crop.SetInput('XOffset',fusion_crop({},current)['XOffset'])
+ spline.SetKeyFrames({start+i:{1:x,'Flags':{'Linear':True}} for i,x in enumerate(track_positions(current))},True)
+ verify_comp(comp,crop,current)
