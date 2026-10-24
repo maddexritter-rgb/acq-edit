@@ -3,7 +3,7 @@ import {createReadStream,constants} from 'node:fs';
 import {mkdir,copyFile,stat,lstat,statfs,rename,chmod,readdir,readFile,realpath} from 'node:fs/promises';
 import path from 'node:path';
 import {Store} from './store.js';
-import {type Intake,type Source,now,invariant} from './contracts.js';
+import {type Intake,type Source,type DriveFile,now,invariant} from './contracts.js';
 import {atomicJson,sha256,safeName,containedFile} from './files.js';
 import {run,type RunOptions} from './process.js';
 import {exportState} from './projects.js';
@@ -12,7 +12,7 @@ export interface IntakeTools {execute?:typeof run;freeBytes?:(folder:string)=>Pr
 const reserve=1024**3;
 async function available(folder:string,tools:IntakeTools){if(tools.freeBytes)return tools.freeBytes(folder);const fs=await statfs(folder);return fs.bavail*fs.bsize}
 async function exists(file:string){try{await lstat(file);return true}catch(e:any){if(e.code==='ENOENT')return false;throw e}}
-function alive(pid:number|null){if(pid===null)return false;invariant(Number.isSafeInteger(pid)&&pid>0,'Invalid intake process identity');try{process.kill(pid,0);return true}catch(e:any){if(e.code==='ESRCH')return false;throw e}}
+export function intakeProcessAlive(pid:number|null){if(pid===null)return false;invariant(Number.isSafeInteger(pid)&&pid>0,'Invalid intake process identity');try{process.kill(pid,0);return true}catch(e:any){if(e.code==='ESRCH')return false;throw e}}
 async function record(store:Store,id:string,patch:Partial<Intake>={}){const i=store.updateIntake(id,patch);await atomicJson(path.join(i.directory,'intake.json'),i);return i}
 async function execute(store:Store,id:string,command:string,args:string[],tools:IntakeTools,options:RunOptions={}){
  store.updateIntake(id,{childPending:true});
@@ -46,6 +46,7 @@ async function driveProof(store:Store,i:Intake,candidate:string,tools:IntakeTool
  const raw=await execute(store,i.id,'rclone',['backend','query',i.remote+':',`name = '${escaped}' and trashed = false`],tools);
  const rows=JSON.parse(raw);invariant(Array.isArray(rows),'Drive metadata result is not an array');const matches=rows.filter((x:any)=>x.id===i.fileId);invariant(matches.length===1,'Cannot verify exact Drive file metadata; no filename-only acceptance');const m=matches[0];
  invariant(typeof m.md5Checksum==='string'&&/^[0-9a-f]{32}$/i.test(m.md5Checksum),'Drive file has no usable MD5; remote verification is unavailable');
+ if(i.driveExpected){const expected=i.driveExpected;invariant(m.id===expected.id&&m.name===expected.name&&Number(m.size)===expected.bytes&&m.md5Checksum.toLowerCase()===expected.md5&&Array.isArray(m.parents)&&m.parents.includes(expected.parentId),'Drive file changed from the frozen folder manifest')}
  const size=Number(m.size);invariant(Number.isSafeInteger(size)&&size>0&&size===(await stat(candidate)).size,'Drive file size differs');
  const h=createHash('md5');for await(const chunk of createReadStream(candidate))h.update(chunk);const md5=h.digest('hex');invariant(md5===m.md5Checksum.toLowerCase(),'Drive MD5 differs from downloaded bytes');
  return {kind:'drive-md5',fileId:i.fileId,name:m.name,bytes:size,md5,modifiedTime:m.modifiedTime,checkedAt:now()};
@@ -76,7 +77,7 @@ async function complete(store:Store,id:string,tools:IntakeTools):Promise<Source>
  invariant(!remote||(remote.md5===finalRemote?.md5&&remote.bytes===finalRemote.bytes),'Drive source changed during verification');
  tools.signal?.throwIfAborted();
  invariant(await sha256(verifiedFile)===hash,'Source copy changed during media verification');
- const verificationPath=path.join(i.directory,'verification.json');await atomicJson(verificationPath,{schema:'acq-edit/intake-verification-v1',intakeId:id,origin:i.origin,candidate,bytes:before.size,sha256:hash,remote:finalRemote||null,verification:remote?'remote-md5-and-local-sha256':'local-copy-sha256',probed:true,verifiedAt:now()});
+ const verificationPath=path.join(i.directory,'verification.json');await atomicJson(verificationPath,{schema:'acq-edit/intake-verification-v1',intakeId:id,origin:i.origin,candidate,bytes:before.size,sha256:hash,remote:finalRemote||null,verification:remote?'remote-md5-and-local-sha256':'local-copy-sha256',probed:true,verifiedAt:now(),...(i.batchId?{batchId:i.batchId,folderManifestEntry:i.driveExpected}:{})});
  if(!alreadyLanded){invariant(!await exists(target),'Intake destination appeared during verification');await rename(partial,target)}
  await chmod(target,0o444);const source:Source={id,projectId:i.projectId,path:target,sha256:hash,bytes:before.size,origin:i.origin,probe,intakeId:id,verificationPath,verificationSha256:await sha256(verificationPath)};
  store.finishIntake(id,source);await record(store,id);await exportState(store,i.projectId);return source;
@@ -100,8 +101,8 @@ async function attempt(store:Store,i:Intake,tools:IntakeTools,download=false){
 export async function importLocal(store:Store,projectId:string,file:string,origin='local',tools:IntakeTools={}){
  invariant(file,'Source file required');return attempt(store,await begin(store,projectId,'local',path.resolve(file),origin),tools);
 }
-export async function importUrl(store:Store,projectId:string,url:string,kind:'youtube'|'drive',remote='drive',tools:IntakeTools={}){
- const extra=parseUrl(url,kind,remote);return attempt(store,await begin(store,projectId,kind,url,kind+':'+url,extra),tools,true);
+export async function importUrl(store:Store,projectId:string,url:string,kind:'youtube'|'drive',remote='drive',tools:IntakeTools={},batch?:{id:string;expected:DriveFile}){
+ const extra=parseUrl(url,kind,remote);return attempt(store,await begin(store,projectId,kind,url,kind+':'+url,{...extra,...(batch?{batchId:batch.id,driveExpected:batch.expected}:{})}),tools,true);
 }
 export async function recoverIntake(store:Store,id:string,tools:IntakeTools={}){
  let i=store.intake(id);
@@ -109,9 +110,10 @@ export async function recoverIntake(store:Store,id:string,tools:IntakeTools={}){
   const source=store.sources(i.projectId).find(s=>s.id===i.sourceId);invariant(source,'Ready intake has no registered source');invariant(await sha256(source.path)===source.sha256,'Registered source changed');invariant(source.verificationPath&&await sha256(source.verificationPath)===source.verificationSha256,'Verification receipt changed');await record(store,id);await exportState(store,i.projectId);return source;
  }
  store.transaction(()=>{
-  i=store.intake(id);invariant(!alive(i.ownerPid)&&!alive(i.childPid),'Intake owner or child process is still live; do not replay it');
+  i=store.intake(id);invariant(!intakeProcessAlive(i.ownerPid)&&!intakeProcessAlive(i.childPid),'Intake owner or child process is still live; do not replay it');
   invariant(!i.childPending,'Process launch outcome was not recorded; inspect processes and reconcile this intake before retrying');
   invariant(!store.intakes(i.projectId).some(x=>x.id!==id&&!['ready','failed'].includes(x.state)),'Another intake owns the project');
+  const batch=store.driveBatches(i.projectId).find(b=>!['ready','abandoned'].includes(b.state));invariant(!batch||batch.id===i.batchId&&batch.ownerPid===process.pid&&batch.state==='transferring','Recover the owning Drive batch first');
   const job=store.jobs(i.projectId).find(j=>['editing','rendering','reconciliation_required'].includes(j.state));invariant(!job,'Recover intake before dispatching another editing job');
   i=store.updateIntake(id,{state:'verifying',ownerPid:process.pid,childPid:null,error:null});
  });
@@ -122,6 +124,6 @@ export async function abandonIntake(store:Store,id:string,evidencePath:string){
  const i=store.intake(id);invariant(i.state!=='ready','Registered sources cannot be abandoned');
  const evidence=await containedFile(store.project(i.projectId).root,evidencePath);
  const report=JSON.parse(await readFile(evidence,'utf8'));invariant(report.intakeId===id&&typeof report.processInspection==='string'&&report.processInspection.trim()&&report.noActiveWriter===true,'Evidence must identify this intake and describe the operator process inspection');
- store.transaction(()=>{const current=store.intake(id);invariant(current.state!=='ready'&&!alive(current.ownerPid)&&!alive(current.childPid),'Intake is registered or a known process is still live');store.updateIntake(id,{state:'failed',ownerPid:null,childPid:null,childPending:false,error:'Operator abandoned this intake after process inspection; see evidence'});store.event(i.projectId,{type:'intake.abandoned',intakeId:id,evidence});});
+ store.transaction(()=>{const current=store.intake(id);invariant(current.state!=='ready'&&!intakeProcessAlive(current.ownerPid)&&!intakeProcessAlive(current.childPid),'Intake is registered or a known process is still live');store.updateIntake(id,{state:'failed',ownerPid:null,childPid:null,childPending:false,error:'Operator abandoned this intake after process inspection; see evidence'});store.event(i.projectId,{type:'intake.abandoned',intakeId:id,evidence});});
  await record(store,id);await exportState(store,i.projectId);return store.intake(id);
 }

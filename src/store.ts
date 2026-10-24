@@ -4,7 +4,7 @@ import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import {
   type Project, type Source, type Clip, type Version, type Feedback,
-  type Job, type Submission, type JobState, type DeferredFeedback, type Intake,
+  type Job, type Submission, type JobState, type DeferredFeedback, type Intake, type DriveBatch,
   now, hash, invariant, routeRevision,
 } from './contracts.js';
 
@@ -28,6 +28,8 @@ export class Store {
       CREATE UNIQUE INDEX IF NOT EXISTS one_mutator ON jobs(project_id) WHERE state IN ('editing','rendering','reconciliation_required');
       CREATE TABLE IF NOT EXISTS intakes(id TEXT PRIMARY KEY,project_id TEXT NOT NULL REFERENCES projects(id),state TEXT NOT NULL,data TEXT NOT NULL);
       CREATE UNIQUE INDEX IF NOT EXISTS one_intake ON intakes(project_id) WHERE state IN ('downloading','verifying','copying','reconciliation_required');
+      CREATE TABLE IF NOT EXISTS drive_batches(id TEXT PRIMARY KEY,project_id TEXT NOT NULL REFERENCES projects(id),state TEXT NOT NULL,data TEXT NOT NULL);
+      CREATE UNIQUE INDEX IF NOT EXISTS one_drive_batch ON drive_batches(project_id) WHERE state NOT IN ('ready','abandoned');
       CREATE TABLE IF NOT EXISTS deferred_feedback(
         id TEXT PRIMARY KEY, clip_id TEXT NOT NULL REFERENCES clips(id),
         consumed_by TEXT REFERENCES versions(id), data TEXT NOT NULL);
@@ -63,6 +65,9 @@ export class Store {
       this.project(value.projectId);
       const active=this.jobs(value.projectId).find(j=>activeStates.includes(j.state));
       invariant(!active||(active.id===process.env.ACQ_EDIT_JOB_ID&&active.state!=='reconciliation_required'),'An editing job owns this project; intake must belong to that job');
+      const batch=this.driveBatches(value.projectId).find(b=>!['ready','abandoned'].includes(b.state));
+      invariant(!batch||batch.id===value.batchId&&batch.ownerPid===process.pid&&batch.state==='transferring','A Drive batch owns this project');
+      if(value.batchId)invariant(batch?.id===value.batchId,'Drive batch is not active');
       invariant(!this.intakes(value.projectId).some(i=>!['ready','failed'].includes(i.state)),'Another intake is active or needs recovery');
       this.db.prepare('INSERT INTO intakes VALUES (?,?,?,?)').run(value.id,value.projectId,value.state,JSON.stringify(value));
       this.event(value.projectId,{type:'intake.created',intakeId:value.id});return value;
@@ -76,6 +81,16 @@ export class Store {
     return this.transaction(()=>{const intake=this.intake(id);invariant(source.id===id&&source.projectId===intake.projectId,'Intake source identity differs');
       this.addSource(source);return this.updateIntake(id,{state:'ready',sourceId:source.id,ownerPid:null,childPid:null,error:null});});
   }
+  driveBatch(id:string){const b=parse<DriveBatch>(this.db.prepare('SELECT data FROM drive_batches WHERE id=?').get(id));invariant(b,'Drive batch not found');return b}
+  driveBatches(projectId:string){this.project(projectId);return this.db.prepare('SELECT data FROM drive_batches WHERE project_id=? ORDER BY rowid DESC').all(projectId).map(r=>parse<DriveBatch>(r)!)}
+  addDriveBatch(b:DriveBatch){return this.transaction(()=>{
+    this.project(b.projectId);const job=this.jobs(b.projectId).find(j=>activeStates.includes(j.state));
+    invariant(!job||job.id===process.env.ACQ_EDIT_JOB_ID&&job.state!=='reconciliation_required','An editing job owns this project');
+    invariant(!this.intakes(b.projectId).some(i=>!['ready','failed'].includes(i.state)),'An intake needs completion or reconciliation');
+    invariant(!this.driveBatches(b.projectId).some(x=>!['ready','abandoned'].includes(x.state)),'A Drive batch needs completion or abandonment');
+    this.db.prepare('INSERT INTO drive_batches VALUES (?,?,?,?)').run(b.id,b.projectId,b.state,JSON.stringify(b));this.event(b.projectId,{type:'drive-batch.created',batchId:b.id});return b;
+  })}
+  updateDriveBatch(id:string,patch:Partial<DriveBatch>){const old=this.driveBatch(id),value={...old,...patch,id:old.id,projectId:old.projectId,updatedAt:now()};this.db.prepare('UPDATE drive_batches SET state=?,data=? WHERE id=?').run(value.state,JSON.stringify(value),id);return value}
   clips(id: string) { return this.db.prepare('SELECT data FROM clips WHERE project_id=? ORDER BY rowid').all(id).map(r => parse<Clip>(r)!); }
   clip(id: string) {
     const c = parse<Clip>(this.db.prepare('SELECT data FROM clips WHERE id=?').get(id));
@@ -200,6 +215,7 @@ export class Store {
       const row = this.db.prepare(`SELECT data FROM jobs j WHERE state='queued' AND NOT EXISTS
         (SELECT 1 FROM jobs b WHERE b.project_id=j.project_id AND b.state IN ('editing','rendering','reconciliation_required'))
         AND NOT EXISTS (SELECT 1 FROM intakes i WHERE i.project_id=j.project_id AND i.state NOT IN ('ready','failed'))
+        AND NOT EXISTS (SELECT 1 FROM drive_batches d WHERE d.project_id=j.project_id AND d.state NOT IN ('ready','abandoned'))
         ORDER BY rowid LIMIT 1`).get();
       const j = parse<Job>(row); if (!j) return;
       if (j.snapshot.some(s => this.clip(s.clipId).currentVersionId !== s.version.id)) {
@@ -241,7 +257,7 @@ export class Store {
     return {
       project: this.project(id), sources: this.sources(id),
       clips: this.clips(id).map(c => ({ ...c, pendingFeedback: this.pendingFeedback(c.id), versions: this.versions(c.id).map(v => ({ ...v, feedback: this.feedback(v.id) })) })),
-      jobs: this.jobs(id),intakes:this.intakes(id),
+      jobs: this.jobs(id),intakes:this.intakes(id),driveBatches:this.driveBatches(id),
     };
   }
 }

@@ -30,6 +30,7 @@ node dist/cli.js source PROJECT_ID /absolute/path/recording.mp4
 # Alternatives:
 node dist/cli.js youtube PROJECT_ID https://www.youtube.com/watch?v=VIDEO_ID
 node dist/cli.js drive PROJECT_ID https://drive.google.com/file/d/FILE_ID/view drive
+node dist/cli.js drive-folder PROJECT_ID https://drive.google.com/drive/folders/FOLDER_ID drive
 node dist/cli.js build PROJECT_ID "Design three complete, useful short clips."
 node dist/cli.js serve
 ```

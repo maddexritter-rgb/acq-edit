@@ -11,6 +11,14 @@ export interface Intake {
  state:'downloading'|'verifying'|'copying'|'ready'|'failed'|'reconciliation_required';
  directory:string;candidate?:string;target?:string;expectedSha256?:string;bytes?:number;sourceId?:string;
  ownerPid:number|null;childPid:number|null;childPending?:boolean;createdAt:string;updatedAt:string;error:string|null;
+ batchId?:string;driveExpected?:DriveFile;
+}
+export interface DriveFile {id:string;name:string;parentId:string;folders:string[];bytes:number;md5:string}
+export interface DriveBatch {
+ id:string;projectId:string;url:string;remote:string;folderId:string;directory:string;
+ state:'enumerating'|'transferring'|'ready'|'failed'|'abandoned';
+ ownerPid:number|null;childPid:number|null;childPending?:boolean;createdAt:string;updatedAt:string;error:string|null;
+ manifestPath?:string;manifestSha256?:string;
 }
 export interface Version { id:string; clipId:string; number:number; media:string; sha256:string; nativeProject:string; nativeCheckpoint?:string; nativeFingerprint:string; planPath:string; planSha256?:string; inspectionPath?:string; inspectionSha256?:string; receiptPath:string; receiptSha256?:string; recutVerificationPath?:string; recutVerificationSha256?:string; createdAt:string; parentId:string|null; jobId?:string }
 export interface Clip { id:string; projectId:string; number:number; title:string; currentVersionId:string|null }
