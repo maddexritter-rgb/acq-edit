@@ -70,6 +70,64 @@ def native(spec,state,data):
     require(source(item)==asset['path'] and (item['start'],item['sourceIn'],item['duration'])==(asset['startFrame']*ft,0,asset['frames']*ft),'Native graphic source/timing differs')
 
 
+def resolve_snapshot(spec,state):
+    """Check archived ranges and linkage; live Fusion checks run separately."""
+    video,audio=state['tracks']['video'],state['tracks']['audio']
+    require(len(video)==len(audio)==2 and len(video[0])==len(audio[0])==len(spec['cuts']) and len(video[1])==len(audio[1])==1,'Resolve native layer coverage differs')
+    require(all(t['enabled'] for tracks in state['trackState'].values() for t in tracks),'Resolve track is disabled')
+    sources={s['id']:s['path'] for s in spec['sources']};fps=spec['fps']['numerator']/spec['fps']['denominator'];rate=spec['sampleRate']
+    def item(row,source,start,left,duration):
+        require(row['enabled'] and row['sourcePath']==source,'Resolve source or enable state differs')
+        require((row['start'],row['left'],row['duration'],row['end'])==(start,left,duration,start+duration),'Resolve native source range differs')
+    for cut,v,a in zip(spec['cuts'],video[0],audio[0]):
+        item(v,sources[cut['sourceId']],cut['recordFrame'],cut['sourceInFrame'],cut['frames'])
+        item(a,sources[cut.get('audioSourceId',cut['sourceId'])],cut.get('audioRecordSample',cut['recordFrame']*rate/fps)*fps/rate,cut['audioInSample']*fps/rate,cut['audioSamples']*fps/rate)
+        require(v['linkedIds']==[a['id']] and a['linkedIds']==[v['id']],'Resolve AV links differ')
+        require(len(v['fusion'])==1 and a['properties']['AudioVolumeEnabled'] and a['properties']['AudioVolume']==spec['audio']['gainDb'],'Resolve dialogue treatment differs')
+    bed=spec['audio']['music'][0];m=audio[1][0]
+    item(m,sources[bed['sourceId']],bed['startFrame'],bed['sourceInSample']*fps/rate,bed['samples']*fps/rate)
+    require(m['properties']['AudioVolumeEnabled'] and m['properties']['AudioVolume']==bed['gainDb'] and m['fades']['FadeIn']==bed['fadeInSamples']*fps/rate and m['fades']['FadeOut']==bed['fadeOutSamples']*fps/rate,'Resolve music gain/fades differ')
+    graphic=spec['graphics'][0];item(video[1][0],graphic['path'],graphic['startFrame'],0,graphic['frames'])
+
+
+def inspect_resolve(file,versions):
+    """Opt-in host inspection; select only these two verified fixture timelines."""
+    from resolve import Adapter
+    from resolve_sources import verify_timeline as verify_sources
+    from resolve_framing import verify_timeline as verify_framing
+    f=read(file);a=Adapter(f['config']);r,p=a.selected(f['project'])
+    require(not p.IsRenderingInProgress(),'Resolve fixture is rendering')
+    states=[read(v['inspectionPath']) for v in versions];original=p.GetCurrentTimeline();queue=p.GetRenderJobList();page=r.GetCurrentPage()
+    require(a.snapshot(p)==states[-1],'Select the unchanged final fixture timeline before checking')
+    selected=original.GetUniqueId()
+    try:
+        for v,state in zip(versions,states):
+            require(r.GetProjectManager().GetCurrentProject().GetUniqueId()==p.GetUniqueId() and p.GetCurrentTimeline().GetUniqueId()==selected and not p.IsRenderingInProgress(),'Native selection changed during inspection')
+            t=next((p.GetTimelineByIndex(i) for i in range(1,p.GetTimelineCount()+1) if p.GetTimelineByIndex(i).GetUniqueId()==state['timeline']),None)
+            require(t and p.SetCurrentTimeline(t),'Published fixture timeline missing');selected=t.GetUniqueId()
+            require(a.snapshot(p)==state,'Published native snapshot changed')
+            spec=read(v['planPath']);resolve_snapshot(spec,state);verify_sources(t,spec);verify_framing(t,spec)
+            for cut,native_item in zip(spec['cuts'],t.GetItemListInTrack('video',1)):
+                comp=native_item.GetFusionCompByIndex(1);nodes=list(comp.GetToolList(False).values())
+                texts=[n for n in nodes if n.GetAttrs()['TOOLS_RegID']=='TextPlus'];merges=[n for n in nodes if n.GetAttrs()['TOOLS_RegID']=='Merge'];outputs=[n for n in nodes if n.GetAttrs()['TOOLS_RegID']=='MediaOut']
+                require(len(texts)==len(merges)==len(outputs)==1,'Unexpected fixture caption graph')
+                text,merge,output=texts[0],merges[0],outputs[0];card=spec['captions'][0];style=card['style']
+                for key,value in {'StyledText':card['text'],'Font':style['font'],'Size':style['size']/spec['width'],'Width':spec['width'],'Height':spec['height']}.items():require(text.GetInput(key)==value,'Resolve caption field differs: '+key)
+                require(text.GetInput('Center')=={1:.5,2:style.get('centerY',.22),3:0.0},'Resolve fixture caption position differs')
+                def connected(port,name):
+                    link=port.GetConnectedOutput();require(link and link.GetTool().GetAttrs()['TOOLS_Name']==name,'Resolve caption graph disconnected')
+                connected(merge.Foreground,text.GetAttrs()['TOOLS_Name']);connected(merge.Background,'ACQ_FramingResize');connected(output.Input,merge.GetAttrs()['TOOLS_Name'])
+                start=comp.GetAttrs()['COMPN_RenderStart']+max(0,card['startFrame']-cut['recordFrame']);end=comp.GetAttrs()['COMPN_RenderStart']+min(cut['frames'],card['endFrame']-cut['recordFrame'])
+                require(merge.Blend.GetExpression()==f'iif(time >= {start} and time < {end}, 1, 0)','Resolve caption visibility clock differs')
+            require(a.snapshot(p)==state,'Inspection changed native state')
+    finally:
+        require(r.GetProjectManager().GetCurrentProject().GetUniqueId()==p.GetUniqueId() and p.GetCurrentTimeline().GetUniqueId()==selected and not p.IsRenderingInProgress(),'Host changed during verification; preserve current selection')
+        require(p.SetCurrentTimeline(original),'Cannot restore final fixture selection')
+        require(r.OpenPage(page),'Cannot restore fixture page')
+    require(a.snapshot(p)==states[-1] and p.GetRenderJobList()==queue,'Final fixture state or render queue changed')
+    return {'bothPublishedSnapshotsPreserved':True,'sourceClocksFramingCaptionGraphVerified':True,'renderQueuePreserved':True,'finalSelectionRestored':True}
+
+
 def rendered(versions):
     images=[]
     for v in versions:
@@ -96,7 +154,7 @@ def rendered(versions):
 
 def check(file):
     os.environ['ACQ_EDIT_TEST_FIXTURE']='1'
-    f=read(file);require(f['project']['backend']=='filmcraft','This native recut checker is FilmCraft-specific')
+    f=read(file);backend=f['project']['backend'];require(backend in ['filmcraft','resolve'],'Unsupported recut fixture backend')
     require(sha(f['planPath'])==f['initialPlanSha256'],'Frozen fixture changed')
     db=sqlite3.connect('file:'+str(Path(f['home'])/'state.sqlite')+'?mode=ro',uri=True)
     def rows(query,*args):return [json.loads(r[0]) for r in db.execute(query,args)]
@@ -110,12 +168,16 @@ def check(file):
             require(read(Path(f['project']['root'])/'10_WORK/jobs'/j['id']/'result.json')=={'jobId':j['id'],'versionIds':[v['id']]},'Job result differs')
             for key,pin in [('media','sha256'),('nativeCheckpoint','nativeFingerprint'),('planPath','planSha256'),('inspectionPath','inspectionSha256'),('receiptPath','receiptSha256')]:require(sha(v[key])==v[pin],'Changed published '+key)
             spec=validate_plan(f['project'],{'plan':v['planPath']});plans.append(spec)
-            verify_native_render(v['media'],spec);native(spec,read(v['inspectionPath']),read(v['nativeCheckpoint']))
-            receipt=read(v['receiptPath']);require(receipt['nativeRendered'] and receipt['backend']=='filmcraft' and receipt['jobId']==j['id'],'Missing native render evidence')
+            verify_native_render(v['media'],spec)
+            if backend=='filmcraft':native(spec,read(v['inspectionPath']),read(v['nativeCheckpoint']))
+            else:resolve_snapshot(spec,read(v['inspectionPath']))
+            receipt=read(v['receiptPath']);require(receipt['nativeRendered'] and receipt['backend']==backend and receipt['jobId']==j['id'],'Missing native render evidence')
         require(plans[0]==read(f['planPath']),'Build changed frozen plan');expected_revision(*plans)
         require(sha(v2['recutVerificationPath'])==v2['recutVerificationSha256'],'Changed archived recut proof')
         proof=read(v2['recutVerificationPath']);require(proof['parentPreserved'] and proof['parentVersionId']==v1['id'] and proof['parentPlanSha256']==v1['planSha256'] and proof['planSha256']==v2['planSha256'] and proof['newNativeSha256']==v2['nativeFingerprint'],'Recut proof does not bind these versions')
-        require(proof['parentFingerprint']==fingerprint({'state':read(v1['inspectionPath']),'fileHash':v1['nativeFingerprint']}) and proof['construction']['fingerprint']==fingerprint({'state':read(v2['inspectionPath']),'fileHash':v2['nativeFingerprint']}),'Recut native fingerprints differ')
+        def native_fingerprint(v):
+            state=read(v['inspectionPath']);return fingerprint({'state':state,'fileHash':v['nativeFingerprint']}) if backend=='filmcraft' else fingerprint(state)
+        require(proof['parentFingerprint']==native_fingerprint(v1) and proof['construction']['fingerprint']==native_fingerprint(v2),'Recut native fingerprints differ')
         require(sha(v1['nativeProject'])==v1['nativeFingerprint'],'Parent working project changed')
         for source in rows('SELECT data FROM sources WHERE project_id=?',f['project']['id']):require(sha(source['path'])==source['sha256'],'Source changed')
         request=read(Path(file).parent/'revision-request.json');submitted=jobs[1]['snapshot'][0]
@@ -125,10 +187,22 @@ def check(file):
         pending=rows('SELECT data FROM deferred_feedback WHERE clip_id=? AND consumed_by IS NULL',f['clip']['id']);require(len(pending)==1,'Late feedback absent or duplicated')
         require(pending[0]['sourceVersion']['id']==v1['id'] and len(pending[0]['latest']['comments'])==2 and pending[0]['latest']['comments'][1]['text']==request['lateComment'],'Late feedback lost its original version')
         require(1<pending[0]['latest']['comments'][1]['seconds']<2,'Historical comment must test a time beyond the shorter revision')
-        return {'passed':True,'scope':'synthetic FilmCraft real-agent recut, not editorial or speech acceptance','versions':[v['id'] for v in versions],'frames':[50,25],'nativeSourcesCutsLinksFinishingVerified':True,'parentAndSourcesPreserved':True,'lateFeedbackPreserved':True,'rendered':rendered(versions)}
+        live=None
+        if backend=='resolve':
+            preparation=f['sourcePreparation'];receipt=read(preparation['receiptPath'])
+            require(sha(preparation['receiptPath'])==preparation['receiptSha256'] and receipt['video_packets_and_pts_identical'] is True,'PCM source preparation changed')
+            sources={s['id']:s for s in rows('SELECT data FROM sources WHERE project_id=?',f['project']['id'])}
+            require(sources[preparation['rawSourceId']]['sha256']==receipt['source_sha256'] and sources[preparation['preparedSourceId']]['sha256']==receipt['media_sha256'] and all(c['sourceId']==preparation['preparedSourceId'] for spec in plans for c in spec['cuts']),'Recut bypassed the prepared source lineage')
+            result=subprocess.run([f['config']['resolvePython'],str(Path(__file__).resolve()),'inspect-resolve',str(file),json.dumps(versions)],capture_output=True,text=True)
+            require(result.returncode==0,'Resolve live inspection failed:\n'+result.stderr[-3000:])
+            live=json.loads(result.stdout)
+        return {'passed':True,'scope':f'synthetic {backend} real-agent recut, not editorial or speech acceptance','versions':[v['id'] for v in versions],'frames':[50,25],'nativeSourcesCutsLinksFinishingVerified':True,'parentAndSourcesPreserved':True,'lateFeedbackPreserved':True,'resolveLiveInspection':live,'rendered':rendered(versions)}
     finally:db.close()
 
 
 if __name__=='__main__':
-    result=prepare(sys.argv[2],sys.argv[3]) if sys.argv[1]=='prepare' else check(sys.argv[2])
+    if sys.argv[1]=='inspect-resolve':
+        sys.path.insert(0,'/Library/Application Support/Blackmagic Design/DaVinci Resolve/Developer/Scripting/Modules')
+        result=inspect_resolve(sys.argv[2],json.loads(sys.argv[3]))
+    else:result=prepare(sys.argv[2],sys.argv[3]) if sys.argv[1]=='prepare' else check(sys.argv[2])
     print(json.dumps(result,indent=2))

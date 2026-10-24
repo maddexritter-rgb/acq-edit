@@ -43,5 +43,27 @@ class RecutAgentFixtureTests(unittest.TestCase):
                 field='sha256' if kind=='editorial' else 'receiptSha256';changed[kind][field]=old[kind][field]
             with self.subTest(kind=kind),self.assertRaises(RuntimeError):fixture.expected_revision(old,changed)
 
+    def test_resolve_snapshot_rejects_wrong_passage_and_dependent_native_state(self):
+        spec={'fps':{'numerator':25,'denominator':1},'sampleRate':48000,'sources':[{'id':'s','path':'source.mov'},{'id':'m','path':'music.wav'}],
+              'cuts':[{'sourceId':'s','recordFrame':0,'sourceInFrame':50,'frames':25,'audioInSample':96000,'audioSamples':48000}],
+              'audio':{'gainDb':0,'music':[{'sourceId':'m','startFrame':0,'sourceInSample':48000,'samples':48000,'gainDb':-12,'fadeInSamples':0,'fadeOutSamples':0}]},
+              'graphics':[{'path':'overlay.mov','startFrame':0,'frames':25}]}
+        def item(id,path,left):return {'id':id,'sourcePath':path,'start':0,'left':left,'duration':25,'end':25,'enabled':True,'linkedIds':[],'fusion':[],'properties':{'AudioVolumeEnabled':True,'AudioVolume':0},'fades':{'FadeIn':0,'FadeOut':0}}
+        v=item('v','source.mov',50);v.update(linkedIds=['a'],fusion=['hash']);a=item('a','source.mov',50);a['linkedIds']=['v'];g=item('g','overlay.mov',0);m=item('m','music.wav',25);m['properties']['AudioVolume']=-12
+        state={'tracks':{'video':[[v],[g]],'audio':[[a],[m]]},'trackState':{'video':[{'enabled':True},{'enabled':True}],'audio':[{'enabled':True},{'enabled':True}]}}
+        fixture.resolve_snapshot(spec,state)
+        for kind in ['range','source','link','music','gain','graphic','muted','disabled','fusion']:
+            changed=copy.deepcopy(state)
+            if kind=='range':changed['tracks']['video'][0][0]['left']=0
+            elif kind=='source':changed['tracks']['audio'][0][0]['sourcePath']='wrong.mov'
+            elif kind=='link':changed['tracks']['audio'][0][0]['linkedIds']=[]
+            elif kind=='music':changed['tracks']['audio'][1][0]['left']=0
+            elif kind=='gain':changed['tracks']['audio'][1][0]['properties']['AudioVolume']=0
+            elif kind=='graphic':changed['tracks']['video'][1][0]['start']=25
+            elif kind=='muted':changed['trackState']['audio'][0]['enabled']=False
+            elif kind=='disabled':changed['tracks']['video'][1][0]['enabled']=False
+            else:changed['tracks']['video'][0][0]['fusion']=[]
+            with self.subTest(kind=kind),self.assertRaises(RuntimeError):fixture.resolve_snapshot(spec,changed)
+
 
 if __name__=='__main__':unittest.main()

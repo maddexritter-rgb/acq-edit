@@ -27,7 +27,6 @@ if (mode === 'prepare') {
   assert(['filmcraft', 'resolve'].includes(existing.backend),
     'This fixture supports FilmCraft or Resolve; it never switches an existing project backend');
   assert(['codex', 'claude'].includes(existing.agent), 'Unknown configured agent');
-  if(scenario==='recut')assert.equal(existing.backend,'filmcraft','Recut live checker currently qualifies FilmCraft only');
   if (existing.backend === 'filmcraft') run(existing.filmcraft, ['--help']);
   else { assert(existing.resolvePython, 'Configured ResolvePython required'); run(existing.resolvePython, ['-c', 'print("ResolvePython available")']); }
   run('ffmpeg', ['-version']);
