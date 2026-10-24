@@ -34,8 +34,12 @@ export async function executeNative(store:Store,config:Config,projectId:string,a
   await children(operation);
   invariant(await sha256(packetPath)===operation.packetSha256,'Native packet changed during execution');
   const resultPath=path.join(operation.directory,'result.json');await atomicJson(resultPath,{operationId:id,projectId,backend:project.backend,action,packetSha256:operation.packetSha256,stdout:result});
-  await record(store,id,{state:'succeeded',ownerPid:null,resultPath,resultSha256:await sha256(resultPath)});
-  return result;
+  await record(store,id,{resultPath,resultSha256:await sha256(resultPath)});
+  let value:unknown;
+  try{value=JSON.parse(result)}catch{throw new Error('Native command returned invalid JSON; inspect the retained result journal')}
+  invariant(value!==null&&typeof value==='object'&&!Array.isArray(value),'Native command must return a JSON object; inspect the retained result journal');
+  await record(store,id,{state:'succeeded',ownerPid:null});
+  return value as Record<string,unknown>;
  }catch(e){await record(store,id,{state:'reconciliation_required',ownerPid:null,error:(e as Error).message});throw new Error(`Native operation ${id} requires reconciliation: ${(e as Error).message}`)}
 }
 export async function reconcileNative(store:Store,id:string,evidencePath:string){

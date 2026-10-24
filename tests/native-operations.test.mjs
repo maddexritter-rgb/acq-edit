@@ -18,7 +18,18 @@ test('native success records exact packet, command identity and immutable result
  const f=await fixture(t);const result=await executeNative(f.store,f.config,'p','inspect',f.packet,{execute:async(cmd,args,options)=>{
   options.onSpawn(2147483647);assert.equal(f.store.nativeOperations('p')[0].childPid,2147483647);assert(options.env.ACQ_EDIT_NATIVE_OPERATION_ID);assert.equal(f.store.claim(),undefined);return '{"native":true}';
  }});
- assert.equal(result,'{"native":true}');const op=f.store.nativeOperations('p')[0];assert.equal(op.state,'succeeded');assert.equal(op.ownerPid,null);assert.equal(op.packetSha256,await sha256(f.packet));assert.equal(op.resultSha256,await sha256(op.resultPath));assert.equal(JSON.parse(await readFile(op.resultPath)).operationId,op.id);f.store.assertNativeSettled('p');
+ assert.deepEqual(result,{native:true});const op=f.store.nativeOperations('p')[0];assert.equal(op.state,'succeeded');assert.equal(op.ownerPid,null);assert.equal(op.packetSha256,await sha256(f.packet));assert.equal(op.resultSha256,await sha256(op.resultPath));const journal=JSON.parse(await readFile(op.resultPath));assert.equal(journal.operationId,op.id);assert.equal(journal.stdout,'{"native":true}');f.store.assertNativeSettled('p');
+});
+test('malformed or non-object native responses retain evidence and require reconciliation',async t=>{
+ for(const stdout of ['progress\n{"native":true}', 'null', '[]', '"double encoded"', 'true']){
+  await t.test(stdout,async t=>{
+   const f=await fixture(t);
+   await assert.rejects(executeNative(f.store,f.config,'p','inspect',f.packet,{execute:async(c,a,o)=>{o.onSpawn(2147483647);return stdout}}),/requires reconciliation.*JSON/);
+   const op=f.store.nativeOperations('p')[0];assert.equal(op.state,'reconciliation_required');assert.equal(op.ownerPid,null);assert.equal(op.childPid,null);
+   assert.equal(JSON.parse(await readFile(op.resultPath)).stdout,stdout);assert.equal(op.resultSha256,await sha256(op.resultPath));
+   assert.throws(()=>f.store.assertNativeSettled('p'),/Native operation/);
+  });
+ }
 });
 test('failed native operation blocks queue, re-entry and job reconciliation until inspected',async t=>{
  const f=await fixture(t);const first=f.store.enqueueBuild('p','First');f.store.claim();process.env.ACQ_EDIT_JOB_ID=first.id;
