@@ -1,9 +1,6 @@
 """Compare owner-supplied panel revisions without changing source selections."""
 import copy
 from common import inside, require, sha, plan, fingerprint
-from framing_plan import fusion_crop
-from resolve_framing import track_positions
-from fusion_state import canonical_fusion, field, remove_field
 
 
 def compare_plans(previous, current, targets):
@@ -52,6 +49,8 @@ def prepare(project, packet):
 
 
 def resolve_changes(spec, before, after, ids):
+    from framing_plan import fusion_crop
+    from resolve_framing import track_positions
     from resolve_panels import prefix, merge_name, center
     fields, curves = {}, {}
     for index,(a,b) in enumerate(zip(before['panels'],after['panels'])):
@@ -69,6 +68,7 @@ def resolve_changes(spec, before, after, ids):
 
 def protected_fusion(text, fields, curves):
     """Remove only approved value slots; retain graph links, expressions and flags."""
+    from fusion_state import canonical_fusion, field, remove_field
     graph=canonical_fusion(text);tools=field(graph['composition'],'Tools')
     for name,values in fields.items():
         tool=field(tools,name);require(tool,'Panel revision node missing')
@@ -89,6 +89,7 @@ def duplicate_snapshot(state, graphs):
     This is not the saved-state fingerprint: same-timeline fingerprints continue
     to include every identity and cache path. All exported graphs are required.
     """
+    from fusion_state import canonical_fusion, field, remove_field
     value=copy.deepcopy(state);value.pop('timeline');value.pop('name')
     identities={item['id']:f'{kind}:{track}:{index}' for kind,tracks in value['tracks'].items() for track,items in enumerate(tracks) for index,item in enumerate(items)}
     used=set()

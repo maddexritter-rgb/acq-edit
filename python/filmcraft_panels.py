@@ -1,5 +1,6 @@
 """Native, independent panel nests. Original dialogue remains on the master."""
-from common import require
+import copy
+from common import require, fingerprint
 from panel_layout import panel_spec
 
 
@@ -93,3 +94,62 @@ def verify(data, spec, cut, parent, frame_ticks):
         effects(picture)
         require(picture['enabled'] and picture['speed'] == 1 and not picture['reverse'], 'Panel camera speed or visibility changed')
         verify_filmcraft_framing_data(data, panel_spec(spec, cut, panel), frame_ticks, nest['item'])
+
+
+def revision_operations(data, previous, current, targets):
+    from framing_plan import filmcraft_motion
+    items=data['project']['items'];master=items[str(data['view']['active_sequence'])]['kind']['Sequence']
+    operations=[]
+    for cut,parent in zip(previous['cuts'],master['video_tracks'][0]['items']):
+        if cut['id'] not in targets:continue
+        old=previous['framing']['shots'][cut['id']];new=current['framing']['shots'][cut['id']]
+        container=items[str(parent['item'])]['kind']['Sequence']
+        for index,(a,b) in enumerate(zip(old['panels'],new['panels'])):
+            if a['id'] not in targets[cut['id']]:continue
+            nest=container['video_tracks'][index]['items'][0];child=items[str(nest['item'])]['kind']['Sequence'];camera=child['video_tracks'][0]['items'][0]
+            changed=lambda old,new:{key:value for key,value in new.items() if old[key]!=value}
+            placement=lambda panel:{'anchor':[panel['rect']['width']/2,panel['rect']['height']/2], 'position':[panel['rect']['x']+panel['rect']['width']/2,panel['rect']['y']+panel['rect']['height']/2]}
+            camera_motion=changed(filmcraft_motion(panel_spec(previous,cut,a),a['crop']),filmcraft_motion(panel_spec(current,cut,b),b['crop']))
+            anchors=lambda panel:[[x+panel['crop']['width']/2,panel['crop']['y']+panel['crop']['height']/2] for x in panel['crop'].get('xByFrame',[])]
+            operations.append({'container':parent['item'],'child':nest['item'],'nestClip':nest['id'],'cameraClip':camera['id'],
+                'settings':changed({k:a['rect'][k] for k in ['width','height']},{k:b['rect'][k] for k in ['width','height']}),
+                'nestMotion':changed(placement(a),placement(b)),'cameraMotion':camera_motion,
+                'trackingChanged':b['crop']['mode']=='tracked-crop' and anchors(a)!=anchors(b),
+                'panel':b,'cut':cut})
+    require(operations,'No native panel targets')
+    return operations
+
+
+def protected_revision(data, operations, destination_name=None):
+    value=copy.deepcopy(data['project'])
+    if destination_name is not None:value['name']=destination_name;value['root']['name']=destination_name
+    def motion(sequence_id,clip_id):
+        seq=value['items'][str(sequence_id)]['kind']['Sequence']
+        item=next((item for track in seq['video_tracks'] for item in track['items'] if item['id']==clip_id),None)
+        require(item,'Native panel revision target missing')
+        return next(effect['params'] for effect in item['effects'] if effect['effect']=='motion')
+    for op in operations:
+        settings=value['items'][str(op['child'])]['kind']['Sequence']['settings']
+        for key in op['settings']:settings.pop(key)
+        for target,clip,fields in [('container','nestClip','nestMotion'),('child','cameraClip','cameraMotion')]:
+            params=motion(op[target],op[clip])
+            for key in op[fields]:params[key].pop('value')
+        if op['trackingChanged']:motion(op['child'],op['cameraClip'])['anchor'].pop('keyframes')
+    return fingerprint({'activeSequence':data['view']['active_sequence'],'project':value})
+
+
+def revise(c, spec, operations, frame_ticks):
+    from framing_plan import filmcraft_motion,filmcraft_tracking
+    master=c.tool('sequence_inspect')['id']
+    for op in operations:
+        c.run('sequence.open',{'item':op['container']})
+        for key,value in op['nestMotion'].items():c.run('effects.setParam',{'clip':op['nestClip'],'effect':'motion','param':key,'value':value})
+        c.run('sequence.open',{'item':op['child']})
+        if op['settings']:c.run('sequence.settings',{**op['settings'],'scaleMotion':False})
+        panel=op['panel'];child_spec=panel_spec(spec,op['cut'],panel)
+        if op['trackingChanged']:c.run('effects.toggleAnimation',{'clip':op['cameraClip'],'effect':'motion','param':'anchor'})
+        fields=dict(op['cameraMotion'])
+        if op['trackingChanged']:fields['anchor']=filmcraft_motion(child_spec,panel['crop'])['anchor']
+        for key,value in fields.items():c.run('effects.setParam',{'clip':op['cameraClip'],'effect':'motion','param':key,'value':value})
+        if op['trackingChanged']:filmcraft_tracking(c,{'clip':op['cameraClip']},child_spec['cuts'][0],panel['crop'],frame_ticks)
+    c.run('sequence.open',{'item':master})

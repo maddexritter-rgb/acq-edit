@@ -110,6 +110,7 @@ class Adapter:
    placed=c.tool('sequence_inspect')['video'][track]['items'];require(len(placed)==1,'Unexpected native graphic coverage');graphic=placed[0]
    require(graphic['item']==item and graphic['start']==asset['startFrame']*ft and graphic['duration']==asset['frames']*ft and graphic['sourceIn']==0,'Native graphic source/timing readback mismatch')
  def revise(self,project,packet):
+  if packet.get('kind')=='panel-framing':return self.revise_panels(project,packet)
   if packet.get('kind')=='tracking-framing':return self.revise_tracking(project,packet)
   if packet.get('kind')=='spoken-recut':
    from recut_execution import prepare,record
@@ -186,6 +187,28 @@ class Adapter:
    after=c.tool('sequence_inspect');save(inspection,after)
   finally:c.close()
   return {'nativeProject':str(target),'fingerprint':fingerprint({'state':after,'fileHash':sha(target)}),'status':'revised-native-render-pending'}
+ def revise_panels(self,project,packet):
+  from panel_revision import prepare
+  from filmcraft_panels import revision_operations,protected_revision,revise
+  previous,spec,targets=prepare(project,packet);native=inside(project['root'],packet['nativeProject']);parent_hash=sha(native)
+  before=self.inspect(project,{'nativeProject':str(native),'session':packet['inspectSession']})
+  require(before['fingerprint']==packet['expectedFingerprint'],'Native state changed; reconcile user edits before revising panels')
+  ft=TICKS*spec['fps']['denominator']//spec['fps']['numerator'];verify_filmcraft_framing(native,previous,ft)
+  operations=revision_operations(read(native),previous,spec,targets)
+  target=inside(project['root'],packet['outputProject']);inspection=inside(project['root'],packet['inspection'])
+  require(not target.exists() and not inspection.exists(),'Panel revision outputs exist; reconcile before retrying')
+  baseline=protected_revision(read(native),operations,target.stem)
+  shutil.copy2(native,target);c=Filmcraft(self.config['filmcraft'],inside(project['root'],packet['session']),str(target))
+  try:
+   revise(c,spec,operations,ft);c.run('file.save');verify_filmcraft_framing(target,spec,ft)
+   require(protected_revision(read(target),operations)==baseline,'Panel revision changed protected native data')
+   require(sha(native)==parent_hash,'Parent project changed during panel revision')
+  finally:c.close()
+  reopened=self.inspect(project,{'nativeProject':str(target),'session':packet['reopenSession']})
+  verify_filmcraft_framing(target,spec,ft)
+  require(protected_revision(read(target),operations)==baseline and sha(native)==parent_hash,'Reopened panel revision or parent changed')
+  save(inspection,reopened)
+  return {'nativeProject':str(target),'fingerprint':reopened['fingerprint'],'status':'revised-native-render-pending'}
  def render(self,project,packet):
   p=plan(project,packet);native=inside(project['root'],packet['nativeProject']);media=inside(project['root'],packet['media']);require(not media.exists(),'Never overwrite renders');media.parent.mkdir(parents=True,exist_ok=True)
   c=Filmcraft(self.config['filmcraft'],inside(project['root'],packet['session']),str(native))
