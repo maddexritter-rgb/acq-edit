@@ -131,3 +131,17 @@ def verify(comp, spec, cut, composed=True):
             require(foreground and previous and foreground.GetTool().GetAttrs()['TOOLS_RegID']=='TextPlus' and foreground.GetTool().GetAttrs()['TOOLS_Name'].startswith('ACQ_Caption_'), 'Unknown layer after panel composition')
             node=previous.GetTool()
     return background
+
+
+def revise(comp, previous, current, cut, ids):
+    from panel_revision import resolve_changes
+    verify(comp,previous,cut)
+    fields,curves=resolve_changes(current,previous['framing']['shots'][cut['id']],current['framing']['shots'][cut['id']],ids)
+    for name,values in fields.items():
+        node=comp.FindTool(name);require(node,'Owned panel revision node missing')
+        require_static_fusion_crop(node,values);put(node,values)
+    start=comp.GetAttrs()['COMPN_RenderStart']
+    for name,values in curves.items():
+        node=comp.FindTool(name);require(node and node.GetAttrs()['TOOLS_RegID']=='BezierSpline','Owned panel spline missing')
+        node.SetKeyFrames({start+i:{1:value,'Flags':{'Linear':True}} for i,value in enumerate(values)},True)
+    verify(comp,current,cut)

@@ -153,6 +153,7 @@ class Adapter:
    merge.Blend.SetExpression(f'iif(time >= {start} and time < {end}, 1, 0)');source=merge
   output.ConnectInput('Input',source)
  def revise(self,project,packet):
+  if packet.get('kind')=='panel-framing':return self.revise_panels(project,packet)
   if packet.get('kind')=='tracking-framing':return self.revise_tracking(project,packet)
   if packet.get('kind')=='spoken-recut':
    from recut_execution import prepare,record
@@ -236,6 +237,50 @@ class Adapter:
    require(p.SetCurrentTimeline(duplicate),'Cannot restore revised tracking timeline')
   require(fingerprint(self.snapshot(p))==fingerprint(after),'Revised tracking timeline changed during parent verification')
   pm=r.GetProjectManager();require(pm.SaveProject(),'Native save failed');require(pm.ExportProject(p.GetName(),str(native),False),'Native tracking checkpoint failed');save(inspection,after)
+  return {'nativeProject':str(native),'timelineId':duplicate.GetUniqueId(),'fingerprint':fingerprint(after),'status':'revised-native-render-pending'}
+ def revise_panels(self,project,packet):
+  from panel_revision import prepare,resolve_changes,protected_fusion,duplicate_snapshot
+  from resolve_panels import revise
+  previous,spec,targets=prepare(project,packet);r,p=self.selected(project)
+  require(not p.IsRenderingInProgress(),'Resolve render active; panel revision must wait')
+  before=self.snapshot(p);require(fingerprint(before)==packet['expectedFingerprint'],'Native state changed; reconcile user edits before revising panels')
+  verify_framing(p.GetCurrentTimeline(),previous)
+  native=inside(project['root'],packet['nativeProject']);inspection=inside(project['root'],packet['inspection'])
+  require(not native.exists() and not inspection.exists(),'Panel revision outputs exist; reconcile before retrying')
+  def copy_state():
+   state=self.snapshot(p);timeline=p.GetCurrentTimeline();graphs={}
+   with tempfile.TemporaryDirectory(prefix='panel-copy-',dir=self.project_root/'10_WORK') as folder:
+    for kind,tracks in state['tracks'].items():
+     for track,items in enumerate(tracks):
+      native_items=timeline.GetItemListInTrack(kind,track+1) or []
+      for index,item in enumerate(items):
+       for comp in range(len(item['fusion'])):
+        file=Path(folder)/f'{kind}-{track}-{index}-{comp}.comp';require(native_items[index].ExportFusionComp(str(file),comp+1),'Cannot inspect duplicated Fusion graph');graphs[(kind,track,index,comp)]=file.read_text(encoding='utf-8')
+   return duplicate_snapshot(state,graphs)
+  original_copy_state=copy_state()
+  original=p.GetCurrentTimeline();duplicate=original.DuplicateTimeline(packet['title']);require(duplicate and p.SetCurrentTimeline(duplicate),'Cannot preserve parent timeline before panel revision')
+  require(duplicate.GetName()==packet['title'] and duplicate.GetUniqueId()!=original.GetUniqueId(),'Unexpected native duplicate identity')
+  require(copy_state()==original_copy_state,'Native duplication changed protected state; reconcile before editing panels')
+  verify_framing(duplicate,previous)
+  changes={i:resolve_changes(spec,previous['framing']['shots'][cut['id']],spec['framing']['shots'][cut['id']],targets[cut['id']]) for i,cut in enumerate(spec['cuts']) if cut['id'] in targets}
+  def protected_snapshot():
+   state=self.snapshot(p);items=p.GetCurrentTimeline().GetItemListInTrack('video',1)
+   with tempfile.TemporaryDirectory(prefix='panel-protected-',dir=self.project_root/'10_WORK') as folder:
+    for i,(fields,curves) in changes.items():
+     file=Path(folder)/f'{i}.comp';require(items[i].ExportFusionComp(str(file),1),'Cannot inspect protected panel graph')
+     state['tracks']['video'][0][i]['fusion']=[protected_fusion(file.read_text(encoding='utf-8'),fields,curves)]
+   return fingerprint(state)
+  protected=protected_snapshot();items=duplicate.GetItemListInTrack('video',1)
+  for i in changes:
+   cut=spec['cuts'][i];revise(items[i].GetFusionCompByIndex(1),previous,spec,cut,targets[cut['id']])
+  verify_framing(duplicate,spec);require(protected_snapshot()==protected,'Panel revision changed protected native data')
+  after=self.snapshot(p);require(p.SetCurrentTimeline(original),'Cannot verify parent after panel revision')
+  try:require(fingerprint(self.snapshot(p))==packet['expectedFingerprint'],'Parent changed during panel revision')
+  finally:
+   require(p.GetCurrentTimeline().GetUniqueId()==original.GetUniqueId(),'Timeline changed while checking parent; reconcile')
+   require(p.SetCurrentTimeline(duplicate),'Cannot restore revised panel timeline')
+  require(fingerprint(self.snapshot(p))==fingerprint(after),'Revised panel timeline changed during parent verification')
+  pm=r.GetProjectManager();require(pm.SaveProject(),'Native save failed');require(pm.ExportProject(p.GetName(),str(native),False),'Native panel checkpoint failed');save(inspection,after)
   return {'nativeProject':str(native),'timelineId':duplicate.GetUniqueId(),'fingerprint':fingerprint(after),'status':'revised-native-render-pending'}
  def render(self,project,packet):
   spec=plan(project,packet);r,p=self.selected(project);state=self.snapshot(p);require(fingerprint(state)==packet['expectedFingerprint'],'Timeline changed before export');save(inside(project['root'],packet['inspection']),state)
