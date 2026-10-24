@@ -8,9 +8,9 @@ import { spawnSync } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
 
 const [mode, directory, configFile, scenario = 'caption'] = process.argv.slice(2);
-assert(['caption','tracking'].includes(scenario), 'Unknown live fixture scenario');
+assert(['caption','tracking','panels'].includes(scenario), 'Unknown live fixture scenario');
 assert(['prepare', 'check'].includes(mode) && directory,
-  'Usage: node scripts/native_agent_fixture.mjs prepare NEW_DIRECTORY CONFIG_JSON [caption|tracking] | check DIRECTORY');
+  'Usage: node scripts/native_agent_fixture.mjs prepare NEW_DIRECTORY CONFIG_JSON [caption|tracking|panels] | check DIRECTORY');
 const base = path.resolve(directory);
 const json = async file => JSON.parse(await readFile(file, 'utf8'));
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -49,7 +49,7 @@ if (mode === 'prepare') {
   try {
     const project = await createProject(store, config.storageRoot, 'Synthetic native agent loop', config.backend, config.agent);
     const seed = path.join(base, 'synthetic.mp4');
-    run('ffmpeg', ['-v', 'error', '-n', '-f', 'lavfi', '-i', 'testsrc2=size=640x360:rate=25:duration=4',
+    run('ffmpeg', ['-v', 'error', '-n', '-f', 'lavfi', '-i', scenario==='panels'?'color=red:size=640x360:rate=25:duration=4,drawbox=x=220:y=100:w=16:h=100:color=white:t=fill':'testsrc2=size=640x360:rate=25:duration=4',
       '-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=48000:duration=4', '-c:v', 'libx264',
       '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-shortest', seed]);
     const source = await importLocal(store, project.id, seed);
@@ -59,7 +59,7 @@ if (mode === 'prepare') {
     const brain = path.join(work, 'brain-fixture.json'), selection = path.join(work, 'selection-fixture.json');
     await atomicJson(brain, { testFixture: true, purpose: 'Mechanical test; no live editorial guidance claimed' });
     await atomicJson(selection, { testFixture: true, purpose: 'Frozen synthetic geometry; not speech or human approval' });
-    const plan = {
+    let plan = {
       schema: 'acq-edit/plan-v1', projectId: project.id, backend: project.backend, clipId: clip.id, title: clip.title,
       fps: { numerator: 25, denominator: 1 }, width: 640, height: 360, sampleRate: 48000,
       brain: { receiptPath: brain, sha256: await sha256(brain) },
@@ -80,6 +80,13 @@ if (mode === 'prepare') {
         return [cut.id,{mode:'tracked-crop',sourceWidth:640,sourceHeight:360,x:xs[0],y:20,width:180,height:320,xByFrame:xs,sourceRange:{sourceId:source.id,sha256:source.sha256,inFrame:cut.sourceInFrame,frames:cut.frames}}];
       }))};
     }
+    if(scenario==='panels'){
+      const seedB=path.join(base,'camera-b.mp4');
+      run('ffmpeg',['-v','error','-n','-f','lavfi','-i','color=blue:size=640x360:rate=25:duration=4,drawbox=x=280:y=100:w=16:h=100:color=white:t=fill','-c:v','libx264','-pix_fmt','yuv420p',seedB]);
+      const second=await importLocal(store,project.id,seedB),seedPlan=path.join(work,'panel-seed-plan.json'),secondPath=path.join(work,'panel-camera-source.json');
+      await atomicJson(seedPlan,plan);await atomicJson(secondPath,second);
+      plan=JSON.parse(run(config.python,[path.resolve('scripts/panel_agent_fixture.py'),'prepare',seedPlan,secondPath]));
+    }
     const planPath = path.join(work, 'fixture-plan.json');
     await atomicJson(planPath, plan);
     const request = `Mechanical integration fixture: build exactly one existing clip ${clip.id} from the frozen synthetic plan ${planPath}.
@@ -87,11 +94,12 @@ This is not editorial design, speech content, or human approval. Do not fetch br
 ACQ_EDIT_TEST_FIXTURE=1 must be supplied by the operator. Read the native ${config.backend} adapter and packet documentation.
 Use the toolkit native build/render commands, new packets and operation folders under this job directory. Do not substitute a shell-made final or copy an old render.
 Capture the native fingerprint, inspect the exported geometry, publish the native receipt through the toolkit, and write result.json with the returned version ID.
-Expected output: 50 frames, ${plan.width}x${plan.height}, 25 fps, NATIVE AGENT LOOP text. ${scenario === 'tracking' ? 'Preserve the complete frozen tracking curves and fixed caption; execute native framing, not a pre-rendered replacement.' : ''} No optional audits, real projects, credentials, global skills or editor installation changes.`;
+Expected output: ${plan.cuts.reduce((n,c)=>n+c.frames,0)} frames, ${plan.width}x${plan.height}, 25 fps, NATIVE AGENT LOOP text. ${scenario === 'panels' ? 'Read NATIVE_PANELS.md and preserve all native independent camera panels, curves, source clocks and the fixed caption; no flattened replacement.' : ''} ${scenario === 'tracking' ? 'Preserve the complete frozen tracking curves and fixed caption; execute native framing, not a pre-rendered replacement.' : ''} No optional audits, real projects, credentials, global skills or editor installation changes.`;
     const job = store.enqueueBuild(project.id, request);
     await exportState(store, project.id);
-    const fixture = { project, clip, jobId: job.id, home: process.env.ACQ_EDIT_HOME, config, planPath, scenario, archivePinsRequired: true };
+    const fixture = { project, clip, jobId: job.id, home: process.env.ACQ_EDIT_HOME, config, planPath, scenario, initialPlanSha256: await sha256(planPath), archivePinsRequired: true };
     if(scenario==='tracking')await atomicJson(path.join(base,'revision-request.json'),{notes:'Revise only the existing horizontal tracking curve for cut-0: xByFrame[i] = 80.25 + i for all 25 frames, with x = 80.25. Leave cut-1 exactly as it is. Preserve all cuts, source ranges, Y, scale, captions, graphics and audio. Use the tracking-framing operation, pinned previous plan and a fresh framing decision receipt. This is the same synthetic fixture with ACQ_EDIT_TEST_FIXTURE=1; no new editorial design, transcription or brain fetch. Render natively and publish a new version.',comment:'At the opening, change only the specified X curve. Keep the caption wording and second shot unchanged.',lateComment:'Added while tracking revision is running: leave this note for the next submission; do not change the current job.'});
+    if(scenario==='panels')await atomicJson(path.join(base,'revision-request.json'),{notes:'Revise only cut-0 existing panels: move top to y=320 and bottom to y=0, keeping each rectangle 360x320. Set the top camera crop x=80.25 and xByFrame[i]=80.25+0.75*i for all 25 frames. Set the bottom camera crop x=60. Preserve all other crop fields, cuts, source identities/ranges/sync, cut-1 and cut-2, captions, graphics and audio. Use panel-framing with pinned previous plan and targets cut-0 panelIds top/bottom, a fresh Assembly Design camera-layout receipt and a fresh horizontal-to-vertical framing receipt. This is the same synthetic fixture with ACQ_EDIT_TEST_FIXTURE=1; no new moment selection, transcription or brain fetch. Render natively and publish a new version.',comment:'At the opening, swap the two panels and apply only the specified crops and curve. Keep the later split unchanged.',lateComment:'Added while panel revision is running: leave this note for the next submission; do not change the current job.'});
     await atomicJson(path.join(base, 'fixture.json'), fixture);
     console.log(JSON.stringify({ fixture: path.join(base, 'fixture.json'), projectId: project.id,
       home: fixture.home, queuedJob: job.id,
@@ -100,7 +108,8 @@ Expected output: 50 frames, ${plan.width}x${plan.height}, 25 fps, NATIVE AGENT L
   } finally { store.close(); }
 } else {
   const f = await json(path.join(base, 'fixture.json'));
-  const tracking=f.scenario==='tracking',expectedWidth=tracking?360:640,expectedHeight=tracking?640:360;
+  const tracking=f.scenario==='tracking',panels=f.scenario==='panels',vertical=tracking||panels,expectedWidth=vertical?360:640,expectedHeight=vertical?640:360,expectedFrames=panels?75:50;
+  if(f.initialPlanSha256)assert.equal(digest(await readFile(f.planPath)),f.initialPlanSha256,'Frozen fixture plan changed');
   const db = new DatabaseSync(path.join(f.home, 'state.sqlite'), { readOnly: true });
   const rows = (sql, ...args) => db.prepare(sql).all(...args).map(r => JSON.parse(r.data));
   try {
@@ -110,7 +119,7 @@ Expected output: 50 frames, ${plan.width}x${plan.height}, 25 fps, NATIVE AGENT L
     const versions = rows('SELECT data FROM versions WHERE clip_id=? ORDER BY rowid', f.clip.id);
     assert.equal(versions.length, 2, 'Expected two published versions');
     const archivedArtifactsPinned = versions.every(v => v.planSha256 && v.receiptSha256 && v.inspectionPath && v.inspectionSha256);
-    if (tracking || f.archivePinsRequired) assert(archivedArtifactsPinned, 'This fixture requires pinned plan, receipt and inspection artifacts');
+    if (tracking || panels || f.archivePinsRequired) assert(archivedArtifactsPinned, 'This fixture requires pinned plan, receipt and inspection artifacts');
     const [v1, v2] = versions;
     assert.equal(v2.parentId, v1.id); assert.equal(v1.jobId, jobs[0].id); assert.equal(v2.jobId, jobs[1].id);
     assert.equal(jobs[1].snapshot[0].version.id, v1.id);
@@ -126,12 +135,12 @@ Expected output: 50 frames, ${plan.width}x${plan.height}, 25 fps, NATIVE AGENT L
       const receipt = await json(v.receiptPath);
       assert.equal(receipt.backend, f.project.backend); assert.equal(receipt.jobId, v.jobId);
       assert.equal(receipt.nativeRendered, true);
-      assert.deepEqual(receipt.expected, { frames: 50, width: expectedWidth, height: expectedHeight, fps: '25/1' });
+      assert.deepEqual(receipt.expected, { frames: expectedFrames, width: expectedWidth, height: expectedHeight, fps: '25/1' });
       const result = await json(path.join(f.project.root, '10_WORK', 'jobs', v.jobId, 'result.json'));
       assert.deepEqual(result.versionIds, [v.id]); assert.equal(result.jobId, v.jobId);
       const probe = JSON.parse(run('ffprobe', ['-v', 'error', '-count_frames', '-show_streams', '-of', 'json', v.media]));
       const video = probe.streams.filter(s => s.codec_type === 'video');
-      assert.equal(video.length, 1); assert.equal(video[0].nb_read_frames, '50');
+      assert.equal(video.length, 1); assert.equal(video[0].nb_read_frames, String(expectedFrames));
       assert.equal(video[0].width, expectedWidth); assert.equal(video[0].height, expectedHeight); assert.equal(video[0].r_frame_rate, '25/1');
       assert.equal(probe.streams.filter(s => s.codec_type === 'audio').length, 1);
       const decodedAudio = run('ffmpeg', ['-v', 'error', '-i', v.media, '-map', '0:a:0', '-f', 'f32le', '-']);
@@ -139,7 +148,7 @@ Expected output: 50 frames, ${plan.width}x${plan.height}, 25 fps, NATIVE AGENT L
       pictures.push(digest(run('ffmpeg', ['-v', 'error', '-i', v.media, '-map', '0:v:0', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'])));
       inspections.push(await json(v.inspectionPath || path.join(path.dirname(v.receiptPath), 'inspection.json')));
       plans.push(await json(v.planPath));
-      if (tracking) {
+      if (tracking || panels) {
         const framing = plans.at(-1).framing;
         assert.equal(digest(await readFile(framing.receiptPath)), framing.receiptSha256,
           'Framing decision receipt changed');
@@ -156,7 +165,9 @@ Expected output: 50 frames, ${plan.width}x${plan.height}, 25 fps, NATIVE AGENT L
       maxDifference = Math.max(maxDifference, Math.abs(difference));
     }
     assert.notEqual(pictures[0], pictures[1], 'Revision produced identical pictures');
-    if(tracking){
+    let panelEvidence=null;
+    if(panels){panelEvidence=JSON.parse(run(f.config.python,[path.resolve('scripts/panel_agent_fixture.py'),'check',path.join(base,'fixture.json'),JSON.stringify(versions)]));}
+    else if(tracking){
       assert.equal(plans[0].framing.shots['cut-0'].mode,'tracked-crop');
       assert.deepEqual(plans[1].framing.shots['cut-0'].xByFrame,Array.from({length:25},(_,i)=>80.25+i));
       assert.equal(plans[1].framing.shots['cut-0'].x,80.25);
@@ -171,7 +182,8 @@ Expected output: 50 frames, ${plan.width}x${plan.height}, 25 fps, NATIVE AGENT L
       assert.deepEqual(plans[1], plans[0], 'Caption wording revision changed other plan fields');
     }
     if (f.project.backend === 'filmcraft') {
-      if(tracking){
+      if(panels){assert(panelEvidence.nativeGraph.includes('protected saved project preserved'));}
+      else if(tracking){
         const data=await Promise.all(versions.map(v=>json(v.nativeCheckpoint)));
         assert.equal(data[1].view.active_sequence,data[0].view.active_sequence,'Active native sequence changed');
         assert.equal(data[1].project.name,path.basename(v2.nativeProject,'.fcproj'));
@@ -229,10 +241,18 @@ Expected output: 50 frames, ${plan.width}x${plan.height}, 25 fps, NATIVE AGENT L
     assert.equal(pending[0].submitted.comments.length, 1);
     assert.equal(pending[0].latest.comments.length, 2);
     assert.equal(jobs[1].snapshot[0].feedback.comments.length, 1, 'Late feedback leaked into submitted snapshot');
+    if(panels){
+      const request=await json(path.join(base,'revision-request.json')),submitted=jobs[1].snapshot[0];
+      assert.equal(submitted.feedback.notes,request.notes,'Submitted panel notes changed');
+      assert.equal(submitted.feedback.comments[0].text,request.comment,'Submitted panel comment changed');
+      assert.equal(pending[0].latest.comments[1].text,request.lateComment,'Late panel comment changed');
+      assert(submitted.owners.includes('assembly-design')&&submitted.owners.includes('horizontal-to-vertical'),'Panel feedback missed its capability owners');
+    }
+
     console.log(JSON.stringify({ passed: failures.length === 0, failures, scope: `synthetic ${f.project.backend} ${f.scenario||'caption'} agent/review integration, not editorial approval`,
       agent: f.project.agent, nativeJobs: jobs.length, versions: versions.map(v => v.id),
-      sourceAndPublishedHashesPreserved: true, archivedArtifactsPinned: Boolean(archivedArtifactsPinned), nativeChange: f.project.backend === 'filmcraft' ? (tracking?'selected X curve only; protected saved native project data preserved':'caption text only') : 'finishing plan changed; native cuts/sources/properties/links preserved; Fusion appearance requires inspection',
-      decodedAudioIdentical: pcm[0] === pcm[1],
+      sourceAndPublishedHashesPreserved: true, archivedArtifactsPinned: Boolean(archivedArtifactsPinned), nativeChange: f.project.backend === 'filmcraft' ? (panels?'selected panels only; protected saved native project data preserved':tracking?'selected X curve only; protected saved native project data preserved':'caption text only') : 'finishing plan changed; native cuts/sources/properties/links preserved; Fusion appearance requires inspection',
+      ...(panelEvidence?{panelEvidence}:{}), decodedAudioIdentical: pcm[0] === pcm[1],
       audioDifference: {maxSampleDifference: maxDifference, rmsRelativeDb: differenceEnergy && signalEnergy ? 10 * Math.log10(differenceEnergy / signalEnergy) : null},
       renderedPicturesChanged: true, lateCommentPreserved: true }, null, 2));
     if (failures.length) process.exitCode = 1;
