@@ -53,10 +53,21 @@ if (mode === 'prepare') {
     run('ffmpeg', ['-v', 'error', '-n', '-f', 'lavfi', '-i', scenario==='panels'?'color=red:size=640x360:rate=25:duration=4,drawbox=x=220:y=100:w=16:h=100:color=white:t=fill':'testsrc2=size=640x360:rate=25:duration=4',
       '-f', 'lavfi', '-i', scenario==='recut'?'aevalsrc=if(lt(t\\,2)\\,0.12*sin(2*PI*440*t)\\,0.12*sin(2*PI*880*t)):s=48000:d=4':'sine=frequency=440:sample_rate=48000:duration=4', '-c:v', 'libx264',
       '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-shortest', seed]);
-    const source = await importLocal(store, project.id, seed);
+    const rawSource = await importLocal(store, project.id, seed);
+    const work = path.join(project.root, '10_WORK');
+    let source=rawSource,sourcePreparation;
+    if(config.backend==='resolve'){
+      const helper=path.resolve('distribution/skills/assembly-design/scripts/prepare_audio_precision.py');
+      const prepared=path.join(work,'precision-source');
+      run(config.python,[helper,'--source',rawSource.path,'--output-dir',prepared,'--sample-rate','48000']);
+      const receiptPath=path.join(prepared,'audio_precision_source.json'),receipt=await json(receiptPath);
+      assert.equal(receipt.status,'PCM_PREPARED_PICTURE_CLOCK_VERIFIED');
+      assert.equal(receipt.source_sha256,rawSource.sha256);assert.equal(receipt.video_packets_and_pts_identical,true);
+      source=await importLocal(store,project.id,receipt.media_path);assert.equal(source.sha256,receipt.media_sha256);
+      sourcePreparation={owner:'assembly-design',rawSourceId:rawSource.id,preparedSourceId:source.id,receiptPath,receiptSha256:await sha256(receiptPath),helperSha256:await sha256(helper)};
+    }
     const clip = { id: randomUUID(), projectId: project.id, number: 1, title: 'Synthetic native job test', currentVersionId: null };
     store.addClip(clip);
-    const work = path.join(project.root, '10_WORK');
     const brain = path.join(work, 'brain-fixture.json'), selection = path.join(work, 'selection-fixture.json');
     await atomicJson(brain, { testFixture: true, purpose: 'Mechanical test; no live editorial guidance claimed' });
     await atomicJson(selection, { testFixture: true, purpose: 'Frozen synthetic geometry; not speech or human approval' });
@@ -110,7 +121,7 @@ Capture the native fingerprint, inspect the exported geometry, publish the nativ
 Expected output: ${plan.cuts.reduce((n,c)=>n+c.frames,0)} frames, ${plan.width}x${plan.height}, 25 fps, NATIVE AGENT LOOP text. ${scenario === 'panels' ? 'Read NATIVE_PANELS.md and preserve all native independent camera panels, curves, source clocks and the fixed caption; no flattened replacement.' : ''} ${scenario === 'tracking' ? 'Preserve the complete frozen tracking curves and fixed caption; execute native framing, not a pre-rendered replacement.' : ''} No optional audits, real projects, credentials, global skills or editor installation changes.`;
     const job = store.enqueueBuild(project.id, request);
     await exportState(store, project.id);
-    const fixture = { project, clip, jobId: job.id, home: process.env.ACQ_EDIT_HOME, config, planPath, scenario, initialPlanSha256: await sha256(planPath), archivePinsRequired: true };
+    const fixture = { project, clip, jobId: job.id, home: process.env.ACQ_EDIT_HOME, config, planPath, scenario, initialPlanSha256: await sha256(planPath), archivePinsRequired: true,...(sourcePreparation?{sourcePreparation}:{}) };
     if(scenario==='tracking')await atomicJson(path.join(base,'revision-request.json'),{notes:'Revise only the existing horizontal tracking curve for cut-0: xByFrame[i] = 80.25 + i for all 25 frames, with x = 80.25. Leave cut-1 exactly as it is. Preserve all cuts, source ranges, Y, scale, captions, graphics and audio. Use the tracking-framing operation, pinned previous plan and a fresh framing decision receipt. This is the same synthetic fixture with ACQ_EDIT_TEST_FIXTURE=1; no new editorial design, transcription or brain fetch. Render natively and publish a new version.',comment:'At the opening, change only the specified X curve. Keep the caption wording and second shot unchanged.',lateComment:'Added while tracking revision is running: leave this note for the next submission; do not change the current job.'});
     if(scenario==='panels')await atomicJson(path.join(base,'revision-request.json'),{notes:'Revise only cut-0 existing panels: move top to y=320 and bottom to y=0, keeping each rectangle 360x320. Set the top camera crop x=80.25 and xByFrame[i]=80.25+0.75*i for all 25 frames. Set the bottom camera crop x=60. Preserve all other crop fields, cuts, source identities/ranges/sync, cut-1 and cut-2, captions, graphics and audio. Use panel-framing with pinned previous plan and targets cut-0 panelIds top/bottom, a fresh Assembly Design camera-layout receipt and a fresh horizontal-to-vertical framing receipt. This is the same synthetic fixture with ACQ_EDIT_TEST_FIXTURE=1; no new moment selection, transcription or brain fetch. Render natively and publish a new version.',comment:'At the opening, swap the two panels and apply only the specified crops and curve. Keep the later split unchanged.',lateComment:'Added while panel revision is running: leave this note for the next submission; do not change the current job.'});
     await atomicJson(path.join(base, 'fixture.json'), fixture);
@@ -127,6 +138,16 @@ Expected output: ${plan.cuts.reduce((n,c)=>n+c.frames,0)} frames, ${plan.width}x
   const db = new DatabaseSync(path.join(f.home, 'state.sqlite'), { readOnly: true });
   const rows = (sql, ...args) => db.prepare(sql).all(...args).map(r => JSON.parse(r.data));
   try {
+    if(f.sourcePreparation){
+      const preparation=f.sourcePreparation,receipt=await json(preparation.receiptPath);
+      assert.equal(digest(await readFile(preparation.receiptPath)),preparation.receiptSha256,'PCM preparation receipt changed');
+      assert.equal(receipt.status,'PCM_PREPARED_PICTURE_CLOCK_VERIFIED');assert.equal(receipt.video_packets_and_pts_identical,true);
+      const [raw]=rows('SELECT data FROM sources WHERE id=?',preparation.rawSourceId),[prepared]=rows('SELECT data FROM sources WHERE id=?',preparation.preparedSourceId);
+      assert(raw&&prepared&&raw.projectId===f.project.id&&prepared.projectId===f.project.id,'Prepared source lineage differs');
+      assert.equal(digest(await readFile(raw.path)),raw.sha256);assert.equal(raw.sha256,receipt.source_sha256);
+      assert.equal(digest(await readFile(prepared.path)),prepared.sha256);assert.equal(prepared.sha256,receipt.media_sha256);
+      assert((await json(f.planPath)).sources.some(s=>s.id===prepared.id&&s.sha256===prepared.sha256),'Fixture bypassed prepared PCM');
+    }
     const jobs = rows('SELECT data FROM jobs WHERE project_id=? ORDER BY rowid', f.project.id);
     assert.equal(jobs.length, 2, 'Expected one build and one revision; do not silently ignore duplicate jobs');
     assert(jobs.every(j => j.state === 'ready' && j.agentSession && !j.error), 'Both real agent jobs must finish ready');

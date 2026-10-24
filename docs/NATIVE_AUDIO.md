@@ -48,3 +48,21 @@ The 2026-10-23 Codex/Resolve caption-wording fixture completed native build and 
 An additional unpublished render of the unchanged V2 timeline also produced different decoded audio (−74.70 dB difference RMS relative to signal). Repeated native output can therefore vary in this fixture; the mismatch alone does not establish an editorial audio mutation. Its cause remains unqualified, and no human listening or speech-sync approval is claimed. The checker retains the exact-audio failure rather than accepting a newly chosen numerical tolerance.
 
 Both exports reported 2.000000 seconds of video and 2.069333 seconds of AAC audio in the container, with both streams starting at zero; decoded PCM duration was 2.025333 seconds. These observations do not by themselves establish an AV offset or explain codec padding. Real speech and duration/padding qualification remain open. See `LIVE_AGENT_LOOP.md` for the reproducible isolated fixture.
+
+## Resolve source-codec isolation
+
+A controlled follow-up on Studio 21.1.1 build 10 used a separate native copy of the synthetic review project. The existing review timeline's complete inspected snapshot and original render queue were verified unchanged after every probe and restored to the original page. Ten native exports completed and decoded with 50 video frames each.
+
+| Source / native output | Repeat decoded-audio comparison | Decoded sample frames |
+|---|---|---:|
+| Existing AAC source / AAC output | Different, −80.62 dB difference RMS relative to signal | 97,216 |
+| Existing AAC source / 24-bit PCM output | Different, −79.59 dB | 96,000 |
+| Fresh native AAC-source cuts / 24-bit PCM output | Different, −79.74 dB | 96,000 |
+| Same cuts from a prepared PCM source / 24-bit PCM output | Exactly identical | 96,000 |
+| Prepared PCM-source cuts / AAC output | Exactly identical | 97,216 |
+
+The PCM source retained the source's compressed picture stream and used decoded 24-bit audio. This control points to the AAC source path under test, rather than only final AAC encoding; it does not identify Resolve's internal cause. The best local alignment over ±8 samples was zero in each comparison. PCM output duration was exactly two seconds, while AAC retained the previously observed container/decoded padding. These measurements do not certify speech joins, audibility or padding behavior in other players.
+
+The production Assembly Design compiler already requires matched-rate PCM for played dialogue. The old synthetic agent fixture bypassed that production binding and used AAC input directly. Future Resolve `native_agent_fixture.mjs prepare` runs now call the existing `assembly-design/scripts/prepare_audio_precision.py` owner before design: retain the original registered source, prepare PCM-in-MOV without re-encoding picture, verify all packet payload hashes/presentation times, and register a separate prepared source. The fixture pins helper/receipt hashes and both source identities; its checker verifies the lineage and unchanged bytes. Historical fixtures remain unchanged and retain their failed exact-audio results.
+
+A new preparation check preserved all 100 picture packets and clocks and registered the verified PCM source. The new agent build/review/caption-revision loop is still pending. The exact-audio acceptance rule has not been relaxed; the next test must run that complete loop with the prepared source, then independently qualify real speech and each finishing route.
