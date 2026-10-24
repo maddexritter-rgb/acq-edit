@@ -8,9 +8,9 @@ import { spawnSync } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
 
 const [mode, directory, configFile, scenario = 'caption'] = process.argv.slice(2);
-assert(['caption','tracking','panels','recut','hook','caption-visibility'].includes(scenario), 'Unknown live fixture scenario');
+assert(['caption','tracking','panels','recut','hook','caption-visibility','music'].includes(scenario), 'Unknown live fixture scenario');
 assert(['prepare', 'check'].includes(mode) && directory,
-  'Usage: node scripts/native_agent_fixture.mjs prepare NEW_DIRECTORY CONFIG_JSON [caption|tracking|panels|recut|hook|caption-visibility] | check DIRECTORY');
+  'Usage: node scripts/native_agent_fixture.mjs prepare NEW_DIRECTORY CONFIG_JSON [caption|tracking|panels|recut|hook|caption-visibility|music] | check DIRECTORY');
 const base = path.resolve(directory);
 const json = async file => JSON.parse(await readFile(file, 'utf8'));
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -26,6 +26,7 @@ if (mode === 'prepare') {
   const existing = await json(path.resolve(configFile));
   assert(['filmcraft', 'resolve'].includes(existing.backend),
     'This fixture supports FilmCraft or Resolve; it never switches an existing project backend');
+  if(scenario==='music')assert.equal(existing.backend,'filmcraft','The music agent scenario currently has a FilmCraft-only independent checker');
   assert(['codex', 'claude'].includes(existing.agent), 'Unknown configured agent');
   if (existing.backend === 'filmcraft') run(existing.filmcraft, ['--help']);
   else { assert(existing.resolvePython, 'Configured ResolvePython required'); run(existing.resolvePython, ['-c', 'print("ResolvePython available")']); }
@@ -122,6 +123,19 @@ if (mode === 'prepare') {
         lateComment:'Added while the recut is running: keep this note for the next submission, bound to the original version.'
       });
     }
+    if(scenario==='music'){
+      const sources=[];
+      for(const hz of [220,1320]){const seed=path.join(base,`music-${hz}.wav`);run('ffmpeg',['-v','error','-n','-f','lavfi','-i',`sine=frequency=${hz}:sample_rate=48000:duration=4`,'-c:a','pcm_s16le',seed]);sources.push(await importLocal(store,project.id,seed))}
+      plan.sources.push(sources[0]);await atomicJson(path.join(base,'replacement-source.json'),sources[1]);
+      const receipt=path.join(work,'music-selection-fixture.json');await atomicJson(receipt,{testFixture:true,owner:'music',toneHz:220,notAuditionEvidence:true});
+      plan.audio={gainDb:-3,music:[5,30].map((frame,index)=>({id:`bed-${index}`,sourceId:sources[0].id,startFrame:frame,sourceInSample:48000,samples:28800,gainDb:-12,fadeInSamples:3840,fadeOutSamples:3840,receiptPath:receipt,receiptSha256:null}))};
+      for(const bed of plan.audio.music)bed.receiptSha256=await sha256(receipt);
+      await atomicJson(path.join(base,'revision-request.json'),{
+        notes:`Replace only music placement bed-0 (musicIndices [0]) with the already registered 1320 Hz PCM source described in ${path.join(base,'replacement-source.json')}. Append that exact source record to a new plan and create a new synthetic music decision receipt with notAuditionEvidence true. Change only bed-0 sourceId, receiptPath and receiptSha256. Keep its source offset, timing, duration, gain and fades unchanged. Preserve bed-1, dialogue, cuts, captions, framing and graphics. Use the native music-replacement operation with the pinned published previous plan and a fresh native inspection; render in FilmCraft and publish a new immutable version. This is the same synthetic mechanical fixture with ACQ_EDIT_TEST_FIXTURE=1; no audition, new editorial design, transcription or brain fetch is requested.`,
+        comment:'Replace only the first music bed. Keep the second bed and all pictures unchanged.',
+        lateComment:'Added while music replacement is running: leave this note for the next submission; do not change the current job.'
+      });
+    }
     const planPath = path.join(work, 'fixture-plan.json');
     await atomicJson(planPath, plan);
     const request = `Mechanical integration fixture: build exactly one existing clip ${clip.id} from the frozen synthetic plan ${planPath}.
@@ -144,6 +158,7 @@ Expected output: ${plan.cuts.reduce((n,c)=>n+c.frames,0)} frames, ${plan.width}x
   } finally { store.close(); }
 } else {
   const f = await json(path.join(base, 'fixture.json'));
+  if(f.scenario==='music'){console.log(run(f.config.python,[path.resolve('scripts/music_agent_fixture.py'),path.join(base,'fixture.json')]).toString());process.exit(0)}
   if(f.scenario==='recut'){console.log(run(f.config.python,[path.resolve('scripts/recut_agent_fixture.py'),'check',path.join(base,'fixture.json')]).toString());process.exit(0)}
   const tracking=f.scenario==='tracking',panels=f.scenario==='panels',vertical=tracking||panels,expectedWidth=vertical?360:640,expectedHeight=vertical?640:360,expectedFrames=f.scenario==='caption-visibility'?175:f.scenario==='hook'?150:panels?75:50,hook=f.scenario==='hook',visibility=f.scenario==='caption-visibility';
   if(f.initialPlanSha256)assert.equal(digest(await readFile(f.planPath)),f.initialPlanSha256,'Frozen fixture plan changed');
