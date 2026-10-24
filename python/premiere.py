@@ -4,16 +4,34 @@ from fractions import Fraction
 from pathlib import Path
 from common import *
 from premiere_plan import verify_source_cuts
-sys.path.insert(0,str(SKILLS/'_shared'))
-from premiere_bridge import Profile,PremiereBridge,execute_operation
+from premiere_installation import verify as verify_installation
+Profile=PremiereBridge=execute_operation=None
 class Adapter:
  def __init__(self,config):
+  global Profile,PremiereBridge,execute_operation
+  self.installation=verify_installation(config,ROOT)
+  # Do not import executable skill code before checking its materialization.
+  sys.path.insert(0,str(SKILLS/'_shared'))
+  from premiere_bridge import Profile,PremiereBridge,execute_operation
   profile=config.get('premiereProfile')
   require(isinstance(profile,str) and Path(profile).is_absolute() and Path(profile).is_file(),'Configure an explicit toolkit Premiere profile; global fallback is disabled')
   self.config=config;self.profile=Profile.load(profile)
  def doctor(self):
   client=PremiereBridge(self.profile)
-  try:return {'backend':'premiere','ping':client.inspect('ping',{}),'snapshot':client.inspect('lab_snapshot',{}),'profileMode':self.profile.mode}
+  try:
+   response=client.inspect('ping',{});ping=response.get('data',response)
+   connected=ping.get('connected') is True;version=ping.get('premiereVersion')
+   import re
+   matches=isinstance(version,str) and re.match(r'^'+re.escape(self.profile.host_version)+r'(?:\D|$)',version) is not None
+   return {'backend':'premiere','ready':connected and matches,'installation':self.installation,
+           'connected':connected,'hostVersion':version,'expectedHostVersion':self.profile.host_version,
+           'versionMatches':matches,'profileMode':self.profile.mode,'hostQualified':False,
+           'projectLifecycle':'requires dedicated project open; automatic creation/reopening not yet implemented',
+           'repair':None if connected and matches else 'Open the isolated ACQ Edit Agent panel in the supported Premiere version; do not select the production connector'}
+  except Exception as error:
+   return {'backend':'premiere','ready':False,'installation':self.installation,'connected':None,
+           'hostQualified':False,'profileMode':self.profile.mode,'connectionError':str(error)[:1000],
+           'repair':'Open the isolated ACQ Edit Agent panel in Premiere 26.3.0, then rerun doctor. No production connector fallback was attempted'}
   finally:client.close()
  def inspect(self,project,packet):
   client=PremiereBridge(self.profile)

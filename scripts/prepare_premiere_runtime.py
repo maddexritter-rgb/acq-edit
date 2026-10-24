@@ -13,6 +13,19 @@ REQUIRED_HELPERS = ('validate-assembly-import.py', 'validate-master-import.py',
                     'assembly-master-compiler.py', 'prepare-assembly-coverage.py')
 
 
+def compiled_hashes(root):
+    dist = Path(root) / 'dist'
+    if dist.is_symlink() or not (dist / 'lab/index.js').is_file():
+        raise RuntimeError('Compiled Premiere entrypoint missing or redirected')
+    hashes = {}
+    for target in sorted(dist.rglob('*')):
+        if target.is_symlink():
+            raise RuntimeError('Symlink in compiled Premiere runtime')
+        if target.is_file() and target.suffix in ('.js', '.json'):
+            hashes[target.relative_to(dist).as_posix()] = hashlib.sha256(target.read_bytes()).hexdigest()
+    return hashes
+
+
 def verify_helpers(root, toolkit):
     root, toolkit = Path(root), Path(toolkit)
     manifest = json.loads((toolkit / 'integrations/premiere-source-manifest.json').read_text())
@@ -83,6 +96,7 @@ def copy_resources(root):
 
 
 def check_transport(root, profile, cli, resource_hashes, helper_hashes=None):
+    code_hashes = compiled_hashes(root)
     # tools/list initializes the actual packaged server but never dispatches an editor command.
     process = subprocess.Popen([sys.executable, str(cli), '--profile', str(profile), 'tools'],
                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
@@ -114,7 +128,10 @@ def check_transport(root, profile, cli, resource_hashes, helper_hashes=None):
             except ProcessLookupError:
                 pass
             process.communicate()
-    receipt = {'schema': 'acq-edit/premiere-runtime-v1', 'resourceHashes': resource_hashes,
+    if compiled_hashes(root) != code_hashes:
+        raise RuntimeError('Compiled Premiere runtime changed during discovery')
+    receipt = {'schema': 'acq-edit/premiere-runtime-v2', 'resourceHashes': resource_hashes,
+               'compiledHashes': code_hashes,
                'helperHashes': helper_hashes or {},
                'transportInitialized': True, 'toolCount': len(names), 'requiredTools': sorted(REQUIRED_TOOLS),
                'hostToolsCalled': False, 'hostQualified': False}

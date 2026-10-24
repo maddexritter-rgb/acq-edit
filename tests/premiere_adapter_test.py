@@ -10,6 +10,40 @@ with patch.dict(sys.modules,{'premiere_bridge':bridge}):
  spec=importlib.util.spec_from_file_location('premiere_adapter_under_test',ROOT/'python/premiere.py')
  premiere=importlib.util.module_from_spec(spec);spec.loader.exec_module(premiere)
 
+class PremiereDoctorTests(unittest.TestCase):
+ def test_doctor_uses_only_ping_and_does_not_dump_current_project(self):
+  adapter=premiere.Adapter.__new__(premiere.Adapter)
+  adapter.profile=types.SimpleNamespace(mode='scoped-edit',host_version='26.3.0')
+  adapter.installation={'verified':True,'hostQualified':False}
+  for connected,version,ready in [(True,'26.3.0 (build 12)',True),(False,'26.3.0',False),(True,'27.0.0',False),(True,'26.3.01',False)]:
+   with self.subTest(connected=connected,version=version):
+    calls=[]
+    class Client:
+     def __init__(self,profile):pass
+     def inspect(self,name,args):
+      calls.append(name)
+      return {'data':{'connected':connected,'premiereVersion':version,'privateProject':{'tracks':'private source data'}}}
+     def close(self):calls.append('close')
+    with patch.object(premiere,'PremiereBridge',Client):result=adapter.doctor()
+    self.assertEqual(calls,['ping','close']);self.assertEqual(result['ready'],ready)
+    self.assertNotIn('private',json.dumps(result));self.assertFalse(result['hostQualified'])
+
+ def test_constructor_verifies_installation_before_loading_or_starting_bridge(self):
+  with patch.object(premiere,'verify_installation',side_effect=RuntimeError('external profile refused')),patch.object(premiere,'Profile') as profile,patch.object(premiere,'PremiereBridge') as client:
+   with self.assertRaisesRegex(RuntimeError,'external profile'):premiere.Adapter({'premiereProfile':'/external/profile.json'})
+   profile.assert_not_called();client.assert_not_called()
+
+ def test_missing_panel_reports_unready_without_inspecting_or_switching_projects(self):
+  adapter=premiere.Adapter.__new__(premiere.Adapter);adapter.profile=types.SimpleNamespace(mode='scoped-edit');adapter.installation={'verified':True}
+  calls=[]
+  class Client:
+   def __init__(self,profile):pass
+   def inspect(self,name,args):calls.append(name);raise RuntimeError('Panel probe timed out')
+   def close(self):calls.append('close')
+  with patch.object(premiere,'PremiereBridge',Client):result=adapter.doctor()
+  self.assertEqual(calls,['ping','close']);self.assertFalse(result['ready']);self.assertIsNone(result['connected'])
+  self.assertIn('Panel probe timed out',result['connectionError']);self.assertIn('isolated ACQ Edit Agent',result['repair'])
+
 class PremiereAdapterTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.root=Path(self.temp.name).resolve()
@@ -122,7 +156,7 @@ class PremiereAdapterTests(unittest.TestCase):
 
  def test_missing_profile_never_falls_back_to_global_production_connector(self):
   for config in [{},{'premiereProfile':''},{'premiereProfile':'relative.json'},{'premiereProfile':str(self.root/'missing.json')}]:
-   with self.subTest(config=config),self.assertRaisesRegex(RuntimeError,'global fallback is disabled'):premiere.Adapter(config)
+   with self.subTest(config=config),self.assertRaisesRegex(RuntimeError,'production profiles are refused'):premiere.Adapter(config)
 
  def test_entire_operation_packet_is_preflighted_before_any_mutation(self):
   for change,reason in [

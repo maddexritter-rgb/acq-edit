@@ -130,6 +130,8 @@ class PremiereRuntimeTests(unittest.TestCase):
         (self.root / 'lab').mkdir()
         self.source = self.root / 'src/resources/adobe-uxp-coverage.json'
         self.source.write_text('{"entries":[]}')
+        (self.root / 'dist/lab').mkdir(parents=True)
+        (self.root / 'dist/lab/index.js').write_text('export {};')
         self.cli = self.root / 'fixture.py'
 
     def test_resources_preserve_bytes_and_refuse_conflicts_before_copy(self):
