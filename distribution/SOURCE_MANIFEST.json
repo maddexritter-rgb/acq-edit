@@ -5619,9 +5619,13 @@
       "path": "live-clip/scripts/live_common.py",
       "source": "canonical-skills/live-clip/scripts/live_common.py",
       "source_sha256": "655ad817f0ab529d4dbc317001a1acc2fcddf63c24b700a561dfe0e02f884069",
-      "distribution_sha256": "655ad817f0ab529d4dbc317001a1acc2fcddf63c24b700a561dfe0e02f884069",
-      "bytes": 2626,
-      "transforms": []
+      "distribution_sha256": "212758f6115c215ed1343a5009f9eaa351e816caf92221a96f1a5595bc51bf04",
+      "bytes": 3673,
+      "transforms": [
+        {
+          "patch": "live-capture-completion-receipt"
+        }
+      ]
     },
     {
       "path": "live-clip/scripts/live_extract.py",
@@ -5635,9 +5639,15 @@
       "path": "live-clip/scripts/live_ingest.py",
       "source": "canonical-skills/live-clip/scripts/live_ingest.py",
       "source_sha256": "ed617facbe2dc716d95e71eda56cbf7be5569982a904efdfdfb219637112f8d1",
-      "distribution_sha256": "ed617facbe2dc716d95e71eda56cbf7be5569982a904efdfdfb219637112f8d1",
-      "bytes": 4471,
-      "transforms": []
+      "distribution_sha256": "ed5bfb90066e9e82928d879b49ab2e7480380046b9b44a04a3a210607af80c05",
+      "bytes": 10392,
+      "transforms": [
+        {
+          "patch": "portable-execution-owner",
+          "replacement": "scripts/portable_overrides/live-clip/scripts/live_ingest.py",
+          "replacementSha256": "ed5bfb90066e9e82928d879b49ab2e7480380046b9b44a04a3a210607af80c05"
+        }
+      ]
     },
     {
       "path": "live-clip/scripts/live_qc_gate.py",

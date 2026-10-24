@@ -10,7 +10,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from portable_patches import private_references, portable_distribution
+from portable_patches import private_references, portable_distribution, OVERRIDES
 
 
 class PortableDistributionTests(unittest.TestCase):
@@ -78,7 +78,7 @@ class PortableDistributionTests(unittest.TestCase):
             self.assertTrue(private_references(text))
         self.assertFalse(private_references('/System/Volumes/Data'))
         manifest=json.loads((ROOT/'distribution/SOURCE_MANIFEST.json').read_text())
-        for name in ['footage-fetch/SKILL.md','footage-fetch/scripts/gdrive_pull.sh','edit/scripts/cut_by_phrase.py']:
+        for name in sorted(OVERRIDES):
             generated,transforms=portable_distribution('legacy source',name)
             self.assertEqual(generated,(ROOT/'distribution/skills'/name).read_text())
             entry=next(e for e in manifest['files'] if e['path']==name)

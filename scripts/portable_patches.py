@@ -2,7 +2,7 @@
 import json,re,hashlib
 from pathlib import Path
 
-OVERRIDES = {'footage-fetch/SKILL.md', 'footage-fetch/scripts/gdrive_pull.sh', 'edit/scripts/cut_by_phrase.py'}
+OVERRIDES = {'footage-fetch/SKILL.md', 'footage-fetch/scripts/gdrive_pull.sh', 'edit/scripts/cut_by_phrase.py', 'live-clip/scripts/live_ingest.py'}
 
 def private_references(text):
  return re.findall(r'__ACQ_(?:LEGACY_HOME|EXTERNAL_VOLUME)__|\$(?:HOME|\{HOME\})/(?:Downloads/cluade|\.(?:agents|claude)/skills)',text)
@@ -10,6 +10,33 @@ def private_references(text):
 def portable_distribution(text,relative):
  """Apply reviewed portable replacements after canonical paths are normalized."""
  changes=[]
+ if relative=='live-clip/scripts/live_common.py':
+  text=text.replace('import json, re, subprocess','import hashlib, json, re, subprocess')
+  old='''    chunks = list_chunks(work)
+    if (work / "chunks" / "INGEST_DONE").exists():
+        return chunks
+    return chunks[:-1]  # last one may still be written'''
+  replacement='''    chunks = list_chunks(work)
+    if [p.name for p in chunks] != [f'seg_{i:05d}.ts' for i in range(len(chunks))]:
+        raise RuntimeError('Live chunk sequence is not contiguous; inspect the retained capture')
+    marker = work / 'chunks' / 'INGEST_DONE'
+    if marker.exists():
+        receipt = json.loads(marker.read_text())
+        state_bytes = (work / 'ingest-state.json').read_bytes()
+        state = json.loads(state_bytes)
+        if (receipt.get('schema') != 'acq-edit/live-completion-v1'
+                or state.get('schema') != 'acq-edit/live-capture-v1'
+                or state.get('status') != 'succeeded'
+                or receipt.get('captureId') != state.get('id')
+                or receipt.get('stateSha256') != hashlib.sha256(state_bytes).hexdigest()
+                or any(p.is_symlink() or not p.is_file() or p.stat().st_size == 0 for p in chunks)
+                or receipt.get('chunks') != [{'file': p.name, 'bytes': p.stat().st_size} for p in chunks]):
+            raise RuntimeError('Live completion receipt differs; preserve the capture for inspection')
+        return chunks
+    return chunks[:-1]  # last one may still be written or truncated by a failed capture'''
+  if text.count(old)!=1:raise ValueError('Live closed-chunk source changed')
+  text=text.replace(old,replacement)
+  changes.append({'patch':'live-capture-completion-receipt'})
  if relative=='edit/scripts/assembled_gate.py':
   old='''    print(f"\\n{'🛑 BLOCK — fix the openers/endings before any render or import'
             if bad else '✅ all assembled texts open and end clean'}")'''

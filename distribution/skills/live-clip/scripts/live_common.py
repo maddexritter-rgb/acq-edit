@@ -9,7 +9,7 @@ segmenter cuts land on keyframes, so durations are NOT uniform and must be
 measured, never assumed.
 """
 from __future__ import annotations
-import json, re, subprocess
+import hashlib, json, re, subprocess
 from pathlib import Path
 
 CHUNK_RE = re.compile(r"seg_(\d{5})\.ts$")
@@ -41,9 +41,23 @@ def list_chunks(work: Path) -> list[Path]:
 
 def closed_chunks(work: Path) -> list[Path]:
     chunks = list_chunks(work)
-    if (work / "chunks" / "INGEST_DONE").exists():
+    if [p.name for p in chunks] != [f'seg_{i:05d}.ts' for i in range(len(chunks))]:
+        raise RuntimeError('Live chunk sequence is not contiguous; inspect the retained capture')
+    marker = work / 'chunks' / 'INGEST_DONE'
+    if marker.exists():
+        receipt = json.loads(marker.read_text())
+        state_bytes = (work / 'ingest-state.json').read_bytes()
+        state = json.loads(state_bytes)
+        if (receipt.get('schema') != 'acq-edit/live-completion-v1'
+                or state.get('schema') != 'acq-edit/live-capture-v1'
+                or state.get('status') != 'succeeded'
+                or receipt.get('captureId') != state.get('id')
+                or receipt.get('stateSha256') != hashlib.sha256(state_bytes).hexdigest()
+                or any(p.is_symlink() or not p.is_file() or p.stat().st_size == 0 for p in chunks)
+                or receipt.get('chunks') != [{'file': p.name, 'bytes': p.stat().st_size} for p in chunks]):
+            raise RuntimeError('Live completion receipt differs; preserve the capture for inspection')
         return chunks
-    return chunks[:-1]  # last one may still be written
+    return chunks[:-1]  # last one may still be written or truncated by a failed capture
 
 
 def load_manifest(work: Path) -> dict:

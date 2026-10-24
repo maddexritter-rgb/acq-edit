@@ -72,3 +72,40 @@ project commands. A clean marker report alone would not prove arbitrary helper,
 asset, model, editor or clean-Mac compatibility; the pilot gates remain separate.
 
 The hook distribution exposes its owner's already measured native text/shape coordinates without changing layout policy. The assembled-text gate's summary print is rewritten for the installer's Python 3.11 runtime; its prior multiline f-string required Python 3.12+. Both transformations retain canonical source hashes.
+
+
+## Live capture failure preservation
+
+The packaged `live-clip/scripts/live_ingest.py` now has a distribution-only capture
+implementation; the original canonical source hash remains in the manifest. It
+requires a fresh capture workspace, retains an exclusive reservation and process
+journal, uses non-overwriting FFmpeg outputs and records the input/mode/parameters.
+It never sources shell startup files, starts an agent or publishes clips. This
+repairs the capture component only; the launcher and unattended editorial workflow
+above remain unavailable pending their separate portability and native integration.
+
+`INGEST_DONE` is now a structured completion receipt written only after the required
+capture processes return successfully and produce contiguous nonempty chunks. Both
+downloader and segmenter must succeed in pipe mode. The receipt binds the final
+state hash and chunk names/sizes. `live_common.closed_chunks` checks those bindings
+before exposing the final chunk; legacy empty markers, changed state, a truncated
+tail or missing chunks are refused. This is producer-completion evidence, not proof
+that a network stream included its entire broadcast or that chunk clocks preserve
+all source continuity. Registered source hashes and editorial timing still need the
+normal intake/design checks.
+
+Graceful interruption stops and reaps this capture's child process groups, records
+an interrupted state and does not create a completion receipt. A killed owner leaves
+its last process journal and reservation intact. Do not delete the reservation or
+restart into the same folder: inspect the recorded processes, stop only the capture's
+confirmed children if needed, and start a distinct attempt. Retain partial chunks and
+logs for recovery. This helper does not provide automatic crash reconciliation.
+
+Eight regression tests use real FFmpeg segmentation/decoding, invalid media, a
+controlled downloader that emits valid media then fails, graceful interruption and
+an actual killed capture owner with a verified live child. They check that retries
+preserve existing bytes and that incomplete captures cannot expose their final
+chunk as completed. A fresh materialized runtime in a path with spaces also produced
+three decodable chunks without changing its generated source. The full Python suite
+passes 314 tests. No live YouTube session, rolling transcription, selected-engine
+editing or clean-Mac acceptance is claimed by this component qualification.
