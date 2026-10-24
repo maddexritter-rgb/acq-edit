@@ -16,6 +16,14 @@ The parser rejects duplicate keys, executable expressions outside quoted strings
 
 Resolve snapshots also include item enabled state, media-pool source paths, native track enabled/locked state and timeline markers alongside the existing timing, source IDs, properties, fades, link IDs, settings and Fusion graphs. These checks are preconditions for revisions; they do not establish that every unexposed color/Fairlight effect or other native project property has been inspected. Broader native-state coverage remains a pilot gate.
 
+## Before the first timeline
+
+Inspecting the exact selected toolkit project with zero timelines returns a `resolve-project-without-timelines` state instead of an operation failure. It records the project identity/settings, media-pool folder and clip identities/properties, and render state. Imported media is reported even when no timeline exists; this state does not mean the whole project is empty. Inspection never creates a timeline, changes selection or switches projects.
+
+If timelines exist but none is selected, inspection still refuses and asks for the intended timeline. It also refuses a timeline appearing during the read. Normal timeline snapshots, revision fingerprints and rendering preconditions remain unchanged. This removes the avoidable first-use reconciliation seen when agents inspected a newly prepared empty Resolve project before construction. Project opening remains explicit: build can create its named project when no project is open, but it does not close or switch an unrelated current project. The CLI `open` command restores review state, not the native host selection.
+
+A live Studio 21.1.1 probe inspected a separate empty toolkit project, then imported one verified project-owned source and inspected it again. Both inspections succeeded without creating a timeline; the imported clip/path was reported and its addition changed the fingerprint. The prior synthetic review snapshot and render queue were restored unchanged. Three regression tests cover empty state, imported media and unselected/changing timeline refusal.
+
 ## Existing projects and receipts
 
 New snapshots declare `fusionFingerprintSchema: acq-edit/fusion-state-v3`. Version 1 introduced parsed graphs and the additional native state fields; version 2 narrowly normalizes the three cache/empty-preference forms above. Version 3 additionally normalizes the qualified owned-expression caches below. Fingerprints from either an earlier schema or raw exports will differ. Do not rewrite historical inspection files or change a queued operation's expected fingerprint automatically. Inspect the current native timeline, compare it with the saved plan/version and reconcile any differences before preparing a new operation. Published versions and their review decisions remain unchanged.

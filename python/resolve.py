@@ -40,7 +40,12 @@ class Adapter:
    track_state[kind]=[{'enabled':t.GetIsTrackEnabled(kind,n),'locked':t.GetIsTrackLocked(kind,n)} for n in range(1,t.GetTrackCount(kind)+1)]
   return {'project':p.GetName(),'timeline':t.GetUniqueId(),'name':t.GetName(),'settings':t.GetSettings(),'fusionFingerprintSchema':FUSION_STATE_SCHEMA,'tracks':tracks,'trackState':track_state,'markers':t.GetMarkers()}
  def inspect(self,project,packet):
-  r,p=self.selected(project);state=self.snapshot(p);return {'state':state,'fingerprint':fingerprint(state),'version':r.GetVersionString()}
+  r,p=self.selected(project)
+  if p.GetCurrentTimeline():state=self.snapshot(p)
+  else:
+   from resolve_project import inspect_without_timeline
+   state=inspect_without_timeline(p)
+  return {'state':state,'fingerprint':fingerprint(state),'version':r.GetVersionString()}
  def build(self,project,packet):
   self.project_root=Path(project['root']);spec=plan(project,packet)
   require(not spec.get('hookContract'),'Add a prepared hook to its inspected finished native base; do not rebuild that base')
