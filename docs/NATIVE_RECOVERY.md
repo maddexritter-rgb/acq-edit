@@ -40,9 +40,25 @@ Save the observed findings inside this project:
 
 These descriptions are operator assertions backed by the inspection performed, not an automatic host-status proof. Never generate them before inspecting. Reconciliation pins the evidence file's hash in the event record and marks the operation `reconciled`; it does not label an uncertain render successful. All old media, packets, logs, partial files and published versions remain in place. It does not consume review notes or reset decisions.
 
+## Failure before the native command starts
+
+New operation records include `dispatchPhase`. `not-started` is committed before runtime verification; `launching` is committed to SQLite and exported to the operation journal before the process runner is invoked. A spawn callback records `spawned`, and a returned command records `returned`. The phase never moves backward. Missing phase data on older operations is not proof that no command started, and null PIDs alone are insufficient.
+
+If the runtime check or cancellation fails while the phase is still `not-started`, inspect the exact operation and its process records. After its owner is confirmed dead, the evidence above may additionally specify:
+
+```json
+"nativeOutcome": "not-dispatched"
+```
+
+Describe the observed preflight failure in `nativeInspection`, making clear that no host inspection or native outcome is claimed. This route works even when Python or the chosen engine is unavailable. It requires the explicit durable phase, null child PID, no pending launch, no native result and no child journals. It refuses live owners, legacy records, contradictory evidence and every phase at or after `launching`. Do not also provide a `premiereLifecycle` outcome: no lifecycle request was made.
+
+Recovery writes a separate immutable proof containing the original operation and the submitted evidence hash, then marks only that operation reconciled. It starts no native command, contacts no editor, and does not claim that the host is globally idle. The owning job, if any, still needs its normal reconciliation. Setup must be repaired before a new editing attempt; this does not retry the failed request.
+
+A real CLI check used an intentionally absent configured Python: runtime verification failed, the operation retained `not-started`, and a new CLI process reconciled it without a working Python or Premiere connection. The original packet was unchanged. An additional subprocess regression kills a real owner during preflight, refuses recovery while it is live, then reopens SQLite and recovers after confirmed termination; its native-command sentinel is never created. This establishes preflight recovery only, not interrupted editor/export or clean-Mac acceptance.
+
 ## Premiere lifecycle recovery
 
-For Premiere `native ... open` operations, generic evidence alone cannot clear the reservation. Add the observed `premiereLifecycle.outcome` and follow [PREMIERE_STATE.md](PREMIERE_STATE.md). The CLI journals recovery attempts separately, refuses live or uncertain prior recovery processes, and verifies the Lab's immutable report before settling its own operation. The original native request is never replayed. Missing/legacy/non-uncertain lifecycle journals require explicit repair; this route does not infer that their locks are safe to remove.
+For Premiere `native ... open` operations that reached dispatch, generic evidence alone cannot clear the reservation. Add the observed `premiereLifecycle.outcome` and follow [PREMIERE_STATE.md](PREMIERE_STATE.md). The CLI journals recovery attempts separately, refuses live or uncertain prior recovery processes, and verifies the Lab's immutable report before settling its own operation. The original native request is never replayed. Missing/legacy/non-uncertain lifecycle journals require explicit repair; this route does not infer that their locks are safe to remove.
 
 ## Resolve the owning editing job separately
 

@@ -81,7 +81,9 @@ The Lab requires its original bridge PID to be gone, the original hash-pinned sc
 
 An immutable reconciliation report commits before the exact original writer lock is released. A retry with the same evidence can finish that release or return the same report. The original uncertain operation journal remains unchanged, and repeating its operation ID still returns that original result without dispatch. Only after verifying the derived request and report does the outer CLI mark its own operation reconciled. Job recovery and publication remain separate.
 
-This automatic route requires a version-2 uncertain lifecycle journal and its original scope/lock. Legacy records, failures before a lifecycle journal exists, and failures after a committed lifecycle response need explicit repair; they cannot be cleared through text-only evidence. A hard crash while writing a reconciliation report or holding its reconciliation mutex also requires inspection and repair of that exact retained record. No stale-lock takeover is implemented. PID reuse is conservatively treated as a live process.
+A toolkit operation with verified `dispatchPhase: not-started` instead uses the shared `nativeOutcome: not-dispatched` recovery in [NATIVE_RECOVERY.md](NATIVE_RECOVERY.md). That path does not require Python or the Lab because the original native command never started.
+
+This automatic route requires a version-2 uncertain lifecycle journal and its original scope/lock. Legacy records, dispatched failures before a lifecycle journal exists, and failures after a committed lifecycle response need explicit repair; they cannot be cleared through text-only evidence. A hard crash while writing a reconciliation report or holding its reconciliation mutex also requires inspection and repair of that exact retained record. No stale-lock takeover is implemented. PID reuse is conservatively treated as a live process.
 
 ## Verification
 

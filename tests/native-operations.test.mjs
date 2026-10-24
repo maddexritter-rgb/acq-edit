@@ -137,3 +137,73 @@ for(const corruption of ['unreleased','replayed','report-changed','unbound','evi
  await assert.rejects(reconcileNative(f.store,f.op.id,f.file,{...f.tools,execute}));
  assert.equal(f.store.nativeOperation(f.op.id).state,'reconciliation_required');
 });
+
+for(const backend of ['filmcraft','premiere','resolve'])test(`${backend} preflight failure can be reconciled without an installed engine or native dispatch`,async t=>{
+ const f=await fixture(t,backend);let calls=0;
+ await assert.rejects(executeNative(f.store,f.config,'p','open',f.packet,{verifyRuntime:async()=>{throw Error('installation unavailable')},execute:async()=>{calls++;return '{}'}}),/installation unavailable/);
+ const op=f.store.nativeOperations('p')[0],packet=await readFile(f.packet),file=await f.evidence(op.id,{nativeOutcome:'not-dispatched'});
+ assert.equal(op.dispatchPhase,'not-started');assert.equal(JSON.parse(await readFile(path.join(op.directory,'operation.json'))).dispatchPhase,'not-started');
+ const recovered=await reconcileNative(f.store,op.id,file,{execute:async()=>{calls++;throw Error('must not contact host')}});
+ assert.equal(recovered.state,'reconciled');assert.equal(calls,0);assert.deepEqual(await readFile(f.packet),packet);
+ const {readdir}=await import('node:fs/promises'),dir=path.join(op.directory,'reconciliation-attempts');
+ const files=await readdir(dir);assert.equal(files.length,1);
+ const proof=JSON.parse(await readFile(path.join(dir,files[0])));
+ assert.deepEqual(proof.originalOperation,op);assert.equal(proof.nativeCommandStarted,false);assert.equal(proof.nativeRequestReplayed,false);
+ assert.equal(proof.evidenceSha256,await sha256(file));f.store.assertNativeSettled('p');
+});
+for(const phase of ['launching','spawned','returned'])test(`a ${phase} command cannot use not-dispatched recovery even with cleared PIDs`,async t=>{
+ const f=await fixture(t,'premiere');
+ const execute=async(c,a,o)=>{assert.equal(f.store.nativeOperations('p')[0].dispatchPhase,'launching');
+  const disk=JSON.parse(await readFile(path.join(o.env.ACQ_EDIT_NATIVE_OPERATION_DIR,'operation.json')));assert.equal(disk.dispatchPhase,'launching');assert.equal(disk.childPending,true);
+  if(phase==='launching')throw Error('uncertain launch');
+  o.onSpawn(2147483647);assert.equal(f.store.nativeOperations('p')[0].dispatchPhase,'spawned');
+  if(phase==='spawned')throw Error('lost command');return 'invalid-json';
+ };
+ await assert.rejects(executeNative(f.store,f.config,'p','open',f.packet,{execute}));
+ const op=f.store.nativeOperations('p')[0];assert.equal(op.dispatchPhase,phase);
+ f.store.updateNativeOperation(op.id,{childPid:null,childPending:false});
+ await assert.rejects(reconcileNative(f.store,op.id,await f.evidence(op.id,{nativeOutcome:'not-dispatched'})),/No durable proof/);
+ assert.equal(f.store.nativeOperation(op.id).state,'reconciliation_required');
+});
+for(const contradiction of ['legacy','pending','child','result','child-journal','two-outcomes'])test(`not-dispatched recovery refuses ${contradiction} evidence`,async t=>{
+ const f=await fixture(t,'premiere');await assert.rejects(executeNative(f.store,f.config,'p','open',f.packet,{verifyRuntime:async()=>{throw Error('test setup failure')}}));
+ const op=f.store.nativeOperations('p')[0];
+ if(contradiction==='legacy')f.store.updateNativeOperation(op.id,{dispatchPhase:undefined});
+ if(contradiction==='pending')f.store.updateNativeOperation(op.id,{childPending:true});
+ if(contradiction==='child')f.store.updateNativeOperation(op.id,{childPid:2147483647});
+ if(contradiction==='result')f.store.updateNativeOperation(op.id,{resultPath:path.join(op.directory,'result.json')});
+ if(contradiction==='child-journal'){await mkdir(path.join(op.directory,'children'));await writeFile(path.join(op.directory,'children/engine.json'),JSON.stringify({operationId:op.id,pid:null,pending:false}))}
+ const file=await f.evidence(op.id,{nativeOutcome:'not-dispatched',...(contradiction==='two-outcomes'?{premiereLifecycle:{outcome:'unchanged'}}:{})});
+ await assert.rejects(reconcileNative(f.store,op.id,file),/No durable proof|child records contradict|cannot also claim/);
+ assert.equal(f.store.nativeOperation(op.id).state,'reconciliation_required');
+});
+test('already cancelled native request keeps explicit not-started state',async t=>{
+ const f=await fixture(t,'premiere'),controller=new AbortController();controller.abort();let calls=0;
+ await assert.rejects(executeNative(f.store,f.config,'p','open',f.packet,{signal:controller.signal,execute:async()=>{calls++;return '{}'}}));
+ const op=f.store.nativeOperations('p')[0];assert.equal(op.dispatchPhase,'not-started');assert.equal(calls,0);
+ await reconcileNative(f.store,op.id,await f.evidence(op.id,{nativeOutcome:'not-dispatched'}));
+});
+test('killed preflight owner is recoverable after restart without ever launching an editor command',{timeout:10000},async t=>{
+ const {spawn}=await import('node:child_process'),{once}=await import('node:events'),{access,readdir}=await import('node:fs/promises');
+ const f=await fixture(t,'premiere'),marker=path.join(f.root,'unexpected-native-call');
+ const code=`import {Store} from ${JSON.stringify(new URL('../dist/store.js',import.meta.url).href)};
+ import {executeNative} from ${JSON.stringify(new URL('../dist/native-operations.js',import.meta.url).href)};
+ import {writeFile} from 'node:fs/promises';
+ const store=new Store(${JSON.stringify(path.join(f.root,'state.sqlite'))});
+ await executeNative(store,${JSON.stringify(f.config)},'p','open',${JSON.stringify(f.packet)},{
+ verifyRuntime:async()=>{process.stdout.write('preflight-ready\\n');await new Promise(resolve=>setTimeout(resolve,60000));throw Error('test deadline')},
+ execute:async()=>{await writeFile(${JSON.stringify(marker)},'unexpected');return '{}'}});`;
+ const child=spawn(process.execPath,['--input-type=module','-e',code],{stdio:['ignore','pipe','pipe']});
+ const closed=once(child,'close');let stderr='';child.stderr.on('data',b=>stderr+=b);
+ t.after(async()=>{if(child.exitCode===null&&child.signalCode===null)child.kill('SIGKILL');await closed});
+ const first=await Promise.race([once(child.stdout,'data').then(([data])=>String(data)),closed.then(()=>{throw Error('preflight owner exited before readiness: '+stderr)})]);
+ assert.equal(first,'preflight-ready\n');const op=f.store.nativeOperations('p')[0];assert.equal(op.ownerPid,child.pid);assert.equal(op.dispatchPhase,'not-started');
+ const file=await f.evidence(op.id,{nativeOutcome:'not-dispatched'});
+ await assert.rejects(reconcileNative(f.store,op.id,file),/still live/);
+ child.kill('SIGKILL');await closed;assert.throws(()=>process.kill(op.ownerPid,0),{code:'ESRCH'});
+ const restarted=new Store(path.join(f.root,'state.sqlite'));
+ try{assert.equal((await reconcileNative(restarted,op.id,file)).state,'reconciled')}finally{restarted.close()}
+ await assert.rejects(access(marker),{code:'ENOENT'});
+ const proofs=await readdir(path.join(op.directory,'reconciliation-attempts'));assert.equal(proofs.length,1);
+ assert.equal(JSON.parse(await readFile(path.join(op.directory,'reconciliation-attempts',proofs[0]))).originalOperation.state,'running');
+});

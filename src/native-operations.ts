@@ -24,7 +24,7 @@ async function children(operation:NativeOperation,allowUnknown=false){
 }
 export async function executeNative(store:Store,config:Config,projectId:string,action:NativeAction,packetFile:string,tools:{execute?:typeof run;verifyRuntime?:typeof verifyRuntime;signal?:AbortSignal}={}){
  const project=store.project(projectId),packetPath=await containedFile(project.root,packetFile),id=randomUUID();
- const operation:NativeOperation={id,projectId,backend:project.backend,action,jobId:process.env.ACQ_EDIT_JOB_ID||null,packetPath,packetSha256:await sha256(packetPath),directory:path.join(project.root,'10_WORK','native-operations',id),state:'running',ownerPid:process.pid,childPid:null,childPending:false,createdAt:now(),updatedAt:now(),error:null};
+ const operation:NativeOperation={id,projectId,backend:project.backend,action,jobId:process.env.ACQ_EDIT_JOB_ID||null,packetPath,packetSha256:await sha256(packetPath),directory:path.join(project.root,'10_WORK','native-operations',id),state:'running',ownerPid:process.pid,childPid:null,childPending:false,dispatchPhase:'not-started',createdAt:now(),updatedAt:now(),error:null};
  store.addNativeOperation(operation);
  try{
   await record(store,id);
@@ -35,9 +35,12 @@ export async function executeNative(store:Store,config:Config,projectId:string,a
   }
   await (tools.verifyRuntime||verifyRuntime)(config);
   const env={...process.env,...await secretEnv(),ACQ_EDIT_ROOT:ROOT,ACQ_EDIT_NATIVE_OPERATION_ID:id,ACQ_EDIT_NATIVE_OPERATION_DIR:operation.directory};
-  store.updateNativeOperation(id,{childPending:true});
-  const result=await (tools.execute||run)(project.backend==='resolve'&&!['compile','captions','hooks'].includes(action)?config.resolvePython!:config.python,[path.join(ROOT,'python','native.py'),action,'--backend',project.backend,'--config',path.join(HOME,'config.json'),'--project',path.join(project.root,'project.json'),'--packet',packetPath],{timeout:4*3600_000,env,signal:tools.signal,onSpawn:pid=>{store.updateNativeOperation(id,{childPid:pid,childPending:false})}});
-  store.updateNativeOperation(id,{childPid:null,childPending:false});
+  tools.signal?.throwIfAborted();
+  // Commit uncertainty before invoking the process runner. A crash in this gap
+  // must never be misclassified as proof that no editor command was dispatched.
+  await record(store,id,{childPending:true,dispatchPhase:'launching'});
+  const result=await (tools.execute||run)(project.backend==='resolve'&&!['compile','captions','hooks'].includes(action)?config.resolvePython!:config.python,[path.join(ROOT,'python','native.py'),action,'--backend',project.backend,'--config',path.join(HOME,'config.json'),'--project',path.join(project.root,'project.json'),'--packet',packetPath],{timeout:4*3600_000,env,signal:tools.signal,onSpawn:pid=>{store.updateNativeOperation(id,{childPid:pid,childPending:false,dispatchPhase:'spawned'})}});
+  store.updateNativeOperation(id,{childPid:null,childPending:false,dispatchPhase:'returned'});
   await children(operation);
   invariant(await sha256(packetPath)===operation.packetSha256,'Native packet changed during execution');
   const resultPath=path.join(operation.directory,'result.json');await atomicJson(resultPath,{operationId:id,projectId,backend:project.backend,action,packetSha256:operation.packetSha256,stdout:result});
@@ -48,6 +51,15 @@ export async function executeNative(store:Store,config:Config,projectId:string,a
   await record(store,id,{state:'succeeded',ownerPid:null});
   return value as Record<string,unknown>;
  }catch(e){await record(store,id,{state:'reconciliation_required',ownerPid:null,error:(e as Error).message});throw new Error(`Native operation ${id} requires reconciliation: ${(e as Error).message}`)}
+}
+async function reconcileNotDispatched(operation:NativeOperation,evidencePath:string,evidenceSha256:string){
+ invariant(operation.dispatchPhase==='not-started'&&operation.childPid===null&&!operation.childPending&&!operation.resultPath&&!operation.resultSha256,'No durable proof that this native command was never dispatched; inspect its native outcome');
+ let entries:string[]=[];try{entries=await readdir(path.join(operation.directory,'children'))}catch(e:any){if(e.code!=='ENOENT')throw e}
+ invariant(entries.length===0,'Native child records contradict the not-dispatched outcome');
+ const resultPath=path.join(operation.directory,'reconciliation-attempts',randomUUID()+'-not-dispatched.json');
+ await atomicJson(resultPath,{schema:'acq-edit/native-not-dispatched-reconciliation-v1',operationId:operation.id,projectId:operation.projectId,backend:operation.backend,
+  originalOperation:operation,evidencePath,evidenceSha256,nativeCommandStarted:false,nativeRequestReplayed:false,verifiedAt:now()});
+ return {resultPath,resultSha256:await sha256(resultPath)};
 }
 async function reconcilePremiere(store:Store,operation:NativeOperation,file:string,evidenceSha256:string,tools:{config?:Config;execute?:typeof run;verifyRuntime?:typeof verifyRuntime}){
  const config=tools.config;invariant(config,'Configured Premiere runtime required for lifecycle recovery');
@@ -95,12 +107,17 @@ export async function reconcileNative(store:Store,id:string,evidencePath:string,
  invariant(!intakeProcessAlive(operation.ownerPid)&&!intakeProcessAlive(operation.childPid),'Native operation owner or command is still live');
  await children(operation,true);
  let premiereRecovery:{resultPath:string;resultSha256:string;attemptFile:string}|undefined;
- if(operation.backend==='premiere'&&operation.action==='open'){
+ let preflightRecovery:{resultPath:string;resultSha256:string}|undefined;
+ invariant(evidence.nativeOutcome===undefined||evidence.nativeOutcome==='not-dispatched','Unsupported native recovery outcome');
+ if(evidence.nativeOutcome==='not-dispatched'){
+  invariant(evidence.premiereLifecycle===undefined,'A command that never started cannot also claim a Premiere lifecycle outcome');
+  preflightRecovery=await reconcileNotDispatched(operation,file,evidenceSha256);
+ }else if(operation.backend==='premiere'&&operation.action==='open'){
   invariant(evidence.premiereLifecycle&&['unchanged','target-open','artifacts-retained'].includes(evidence.premiereLifecycle.outcome),'Premiere lifecycle recovery requires an explicit observed outcome');
   premiereRecovery=await reconcilePremiere(store,operation,file,evidenceSha256,tools);
  }
  invariant(await sha256(file)===evidenceSha256,'Recovery evidence changed during reconciliation');
- store.transaction(()=>{const current=store.nativeOperation(id);invariant(JSON.stringify(current)===JSON.stringify(operation),'Native operation changed during reconciliation');invariant(!intakeProcessAlive(current.ownerPid)&&!intakeProcessAlive(current.childPid),'Native process is still live');store.updateNativeOperation(id,{state:'reconciled',ownerPid:null,childPid:null,childPending:false,error:'Operator inspected the native outcome; original files and result retained'});store.event(operation.projectId,{type:'native.reconciled',operationId:id,evidence:file,evidenceSha256,...(premiereRecovery?{premiereRecovery}:{})})});
+ store.transaction(()=>{const current=store.nativeOperation(id);invariant(JSON.stringify(current)===JSON.stringify(operation),'Native operation changed during reconciliation');invariant(!intakeProcessAlive(current.ownerPid)&&!intakeProcessAlive(current.childPid),'Native process is still live');store.updateNativeOperation(id,{state:'reconciled',ownerPid:null,childPid:null,childPending:false,error:'Operator inspected the native outcome; original files and result retained'});store.event(operation.projectId,{type:'native.reconciled',operationId:id,evidence:file,evidenceSha256,...(premiereRecovery?{premiereRecovery}:{}),...(preflightRecovery?{preflightRecovery}:{})})});
  return record(store,id);
 }
 export async function reconcileJob(store:Store,id:string,outcome:'ready'|'failed',evidencePath:string){

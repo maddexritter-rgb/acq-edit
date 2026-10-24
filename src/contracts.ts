@@ -20,6 +20,8 @@ export interface NativeOperation {
  packetPath:string;packetSha256:string;directory:string;
  state:'running'|'succeeded'|'reconciliation_required'|'reconciled';
  ownerPid:number|null;childPid:number|null;childPending:boolean;
+ // Absent on older journals. Never infer not-started from absent or cleared PIDs.
+ dispatchPhase?:'not-started'|'launching'|'spawned'|'returned';
  createdAt:string;updatedAt:string;error:string|null;resultPath?:string;resultSha256?:string;
 }
 export interface DriveBatch {
