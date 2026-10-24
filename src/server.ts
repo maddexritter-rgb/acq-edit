@@ -31,7 +31,7 @@ export function serve(store:Store,config:Config,runWorker=true){const token=rand
     if(start>=size||start>end){res.writeHead(416,{'Content-Range':`bytes */${size}`});res.end();return}res.writeHead(206,{'Content-Range':`bytes ${start}-${end}/${size}`,'Content-Length':end-start+1});createReadStream(file,{start,end}).pipe(res);
    }else{res.writeHead(200,{'Content-Length':size});createReadStream(file).pipe(res)}return;
   }
-  const assets:Record<string,string>={'/':'index.html','/app.js':'app.js','/style.css':'style.css'};const asset=assets[url.pathname];if(asset&&req.method==='GET'){res.setHeader('Content-Type',asset.endsWith('.html')?'text/html; charset=utf-8':asset.endsWith('.css')?'text/css':'text/javascript');res.end(await readFile(path.join(ROOT,'web',asset)));return}
+  const assets:Record<string,string>={'/':'index.html','/app.js':'app.js','/activity.js':'activity.js','/style.css':'style.css'};const asset=assets[url.pathname];if(asset&&req.method==='GET'){res.setHeader('Content-Type',asset.endsWith('.html')?'text/html; charset=utf-8':asset.endsWith('.css')?'text/css':'text/javascript');res.end(await readFile(path.join(ROOT,'web',asset)));return}
   json(res,{error:'Not found'},404);
  }catch(e){json(res,{error:(e as Error).message},400)}});
  server.on('listening',()=>{if(runWorker)timer=setInterval(()=>{if(worker||closing)return;worker=workOne(store,config,controller.signal).catch(e=>console.error('Worker:',e.message)).finally(()=>worker=undefined)},1500)});

@@ -12,6 +12,12 @@ acq-edit reconcile JOB_ID ready /absolute/project/10_WORK/completed-result.json
 acq-edit reconcile JOB_ID failed /absolute/project/10_WORK/failed-job-evidence.json
 ```
 
+## Review-room guidance
+
+The Activity panel shows unresolved editor and source-transfer reservations even when no editing job exists. It distinguishes awaiting a result from an outcome requiring recovery review. These labels describe persisted state; they do not certify that a process is still running. Queued revisions wait, and existing clips and feedback remain available.
+
+Use **Copy request for your agent** to obtain the exact project, backend and outstanding operation identifiers. Paste the request into the editing chat; the room does not send a message or clear any reservation. Expand **Recovery details** for original diagnostics and a selectable request if clipboard copying is unavailable. The agent must reread current state and inspect actual processes/native results before reconciliation.
+
 ## Establish the actual native outcome
 
 A hard-killed CLI can leave its Python command alive. That command can own an independent FilmCraft process or have started an export inside an external Resolve/Premiere host. CLI exit, timeout, a stale-looking log and a stopped service do not establish that the native export stopped. Do not replay the original packet, clear a reservation, cancel unrelated exports or replace an existing media file merely to get the queue moving.
