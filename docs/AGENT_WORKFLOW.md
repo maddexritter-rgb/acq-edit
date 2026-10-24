@@ -54,6 +54,8 @@ Brand fonts, music, footage, stock assets, template donors, FFmpeg models and pr
 
 ## Process lifecycle and recovery
 
+Follow [NATIVE_RECOVERY.md](NATIVE_RECOVERY.md) for each native command's durable operation record. List `native-operations PROJECT_ID` after an interruption. Settle the exact operation only after process and native-host inspection; unresolved operations block publication, job reconciliation and further edits. `native-reconcile` releases a verified terminal operation without claiming render success. Then reconcile the owning job using its existing verified versions or explicit failed-job evidence. Never clear a job with an arbitrary file or rerun an uncertain export packet.
+
 Agent completion must match the exact Codex thread and turn, or a successful Claude result from the exact session. Exit code alone is insufficient. JSONL logs are flushed before the worker checks published artifacts. Missing results, errors, disconnects and interactive input requests leave the job in reconciliation.
 
 The default agent deadline is six hours; `agentTimeoutMs` in local configuration can set another positive duration in milliseconds. Protocol requests time out after 60 seconds. A deadline does not authorize replay. Native subprocess timeouts likewise terminate the owned command before returning failure.

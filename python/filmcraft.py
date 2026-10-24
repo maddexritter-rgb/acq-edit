@@ -6,6 +6,8 @@ from audio_plan import linear_fade_points
 from framing_plan import filmcraft_motion,filmcraft_tracking,verify_filmcraft_framing
 sys.path.insert(0,str(SKILLS/'edit/scripts'))
 from filmcraft_client import Filmcraft
+from native_lifecycle import tracked_client
+Filmcraft=tracked_client(Filmcraft)
 TICKS=254016000000
 class Adapter:
  def __init__(self,config):self.config=config

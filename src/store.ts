@@ -4,7 +4,7 @@ import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import {
   type Project, type Source, type Clip, type Version, type Feedback,
-  type Job, type Submission, type JobState, type DeferredFeedback, type Intake, type DriveBatch,
+  type Job, type Submission, type JobState, type DeferredFeedback, type Intake, type DriveBatch, type NativeOperation,
   now, hash, invariant, routeRevision,
 } from './contracts.js';
 
@@ -30,6 +30,8 @@ export class Store {
       CREATE UNIQUE INDEX IF NOT EXISTS one_intake ON intakes(project_id) WHERE state IN ('downloading','verifying','copying','reconciliation_required');
       CREATE TABLE IF NOT EXISTS drive_batches(id TEXT PRIMARY KEY,project_id TEXT NOT NULL REFERENCES projects(id),state TEXT NOT NULL,data TEXT NOT NULL);
       CREATE UNIQUE INDEX IF NOT EXISTS one_drive_batch ON drive_batches(project_id) WHERE state NOT IN ('ready','abandoned');
+      CREATE TABLE IF NOT EXISTS native_operations(id TEXT PRIMARY KEY,project_id TEXT NOT NULL REFERENCES projects(id),state TEXT NOT NULL,data TEXT NOT NULL);
+      CREATE UNIQUE INDEX IF NOT EXISTS one_native_operation ON native_operations(project_id) WHERE state IN ('running','reconciliation_required');
       CREATE TABLE IF NOT EXISTS deferred_feedback(
         id TEXT PRIMARY KEY, clip_id TEXT NOT NULL REFERENCES clips(id),
         consumed_by TEXT REFERENCES versions(id), data TEXT NOT NULL);
@@ -63,6 +65,7 @@ export class Store {
   addIntake(value:Intake) {
     return this.transaction(()=>{
       this.project(value.projectId);
+      this.assertNativeSettled(value.projectId);
       const active=this.jobs(value.projectId).find(j=>activeStates.includes(j.state));
       invariant(!active||(active.id===process.env.ACQ_EDIT_JOB_ID&&active.state!=='reconciliation_required'),'An editing job owns this project; intake must belong to that job');
       const batch=this.driveBatches(value.projectId).find(b=>!['ready','abandoned'].includes(b.state));
@@ -84,6 +87,7 @@ export class Store {
   driveBatch(id:string){const b=parse<DriveBatch>(this.db.prepare('SELECT data FROM drive_batches WHERE id=?').get(id));invariant(b,'Drive batch not found');return b}
   driveBatches(projectId:string){this.project(projectId);return this.db.prepare('SELECT data FROM drive_batches WHERE project_id=? ORDER BY rowid DESC').all(projectId).map(r=>parse<DriveBatch>(r)!)}
   addDriveBatch(b:DriveBatch){return this.transaction(()=>{
+    this.assertNativeSettled(b.projectId);
     this.project(b.projectId);const job=this.jobs(b.projectId).find(j=>activeStates.includes(j.state));
     invariant(!job||job.id===process.env.ACQ_EDIT_JOB_ID&&job.state!=='reconciliation_required','An editing job owns this project');
     invariant(!this.intakes(b.projectId).some(i=>!['ready','failed'].includes(i.state)),'An intake needs completion or reconciliation');
@@ -91,6 +95,18 @@ export class Store {
     this.db.prepare('INSERT INTO drive_batches VALUES (?,?,?,?)').run(b.id,b.projectId,b.state,JSON.stringify(b));this.event(b.projectId,{type:'drive-batch.created',batchId:b.id});return b;
   })}
   updateDriveBatch(id:string,patch:Partial<DriveBatch>){const old=this.driveBatch(id),value={...old,...patch,id:old.id,projectId:old.projectId,updatedAt:now()};this.db.prepare('UPDATE drive_batches SET state=?,data=? WHERE id=?').run(value.state,JSON.stringify(value),id);return value}
+  nativeOperation(id:string){const value=parse<NativeOperation>(this.db.prepare('SELECT data FROM native_operations WHERE id=?').get(id));invariant(value,'Native operation not found');return value}
+  nativeOperations(projectId:string){this.project(projectId);return this.db.prepare('SELECT data FROM native_operations WHERE project_id=? ORDER BY rowid DESC').all(projectId).map(row=>parse<NativeOperation>(row)!)}
+  assertNativeSettled(projectId:string){invariant(!this.nativeOperations(projectId).some(o=>['running','reconciliation_required'].includes(o.state)),'Native operation is active or requires reconciliation; inspect native-operations first')}
+  addNativeOperation(value:NativeOperation){return this.transaction(()=>{
+    const project=this.project(value.projectId);invariant(project.backend===value.backend,'Native operation backend differs');this.assertNativeSettled(project.id);
+    const job=this.jobs(project.id).find(j=>activeStates.includes(j.state));
+    invariant(!job||job.id===value.jobId&&job.state!=='reconciliation_required','An editing job owns this project');
+    if(value.jobId){const owner=this.job(value.jobId);invariant(owner.projectId===project.id&&['editing','rendering'].includes(owner.state),'Native operation belongs to another or inactive job')}
+    invariant(!this.intakes(project.id).some(i=>!['ready','failed'].includes(i.state))&&!this.driveBatches(project.id).some(b=>!['ready','abandoned'].includes(b.state)),'Finish or reconcile intake before native work');
+    this.db.prepare('INSERT INTO native_operations VALUES (?,?,?,?)').run(value.id,project.id,value.state,JSON.stringify(value));this.event(project.id,{type:'native.started',operationId:value.id,jobId:value.jobId});return value;
+  })}
+  updateNativeOperation(id:string,patch:Partial<NativeOperation>){const old=this.nativeOperation(id),value={...old,...patch,id:old.id,projectId:old.projectId,updatedAt:now()};this.db.prepare('UPDATE native_operations SET state=?,data=? WHERE id=?').run(value.state,JSON.stringify(value),id);return value}
   clips(id: string) { return this.db.prepare('SELECT data FROM clips WHERE project_id=? ORDER BY rowid').all(id).map(r => parse<Clip>(r)!); }
   clip(id: string) {
     const c = parse<Clip>(this.db.prepare('SELECT data FROM clips WHERE id=?').get(id));
@@ -216,6 +232,7 @@ export class Store {
         (SELECT 1 FROM jobs b WHERE b.project_id=j.project_id AND b.state IN ('editing','rendering','reconciliation_required'))
         AND NOT EXISTS (SELECT 1 FROM intakes i WHERE i.project_id=j.project_id AND i.state NOT IN ('ready','failed'))
         AND NOT EXISTS (SELECT 1 FROM drive_batches d WHERE d.project_id=j.project_id AND d.state NOT IN ('ready','abandoned'))
+        AND NOT EXISTS (SELECT 1 FROM native_operations n WHERE n.project_id=j.project_id AND n.state IN ('running','reconciliation_required'))
         ORDER BY rowid LIMIT 1`).get();
       const j = parse<Job>(row); if (!j) return;
       if (j.snapshot.some(s => this.clip(s.clipId).currentVersionId !== s.version.id)) {
@@ -228,6 +245,7 @@ export class Store {
   finishJob(id: string, versionIds: string[]) {
     return this.transaction(() => {
       const j = this.job(id);
+      this.assertNativeSettled(j.projectId);
       invariant(activeStates.includes(j.state), 'Only an active or reconciled job can complete');
       invariant(Array.isArray(versionIds) && versionIds.length > 0 && new Set(versionIds).size === versionIds.length, 'Exact distinct published version IDs required');
       const versions = versionIds.map(v => this.version(v));
@@ -257,7 +275,7 @@ export class Store {
     return {
       project: this.project(id), sources: this.sources(id),
       clips: this.clips(id).map(c => ({ ...c, pendingFeedback: this.pendingFeedback(c.id), versions: this.versions(c.id).map(v => ({ ...v, feedback: this.feedback(v.id) })) })),
-      jobs: this.jobs(id),intakes:this.intakes(id),driveBatches:this.driveBatches(id),
+      jobs: this.jobs(id),intakes:this.intakes(id),driveBatches:this.driveBatches(id),nativeOperations:this.nativeOperations(id),
     };
   }
 }

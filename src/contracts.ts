@@ -14,6 +14,14 @@ export interface Intake {
  batchId?:string;driveExpected?:DriveFile;
 }
 export interface DriveFile {id:string;name:string;parentId:string;folders:string[];bytes:number;md5:string}
+export type NativeAction='compile'|'captions'|'inspect'|'build'|'revise'|'render';
+export interface NativeOperation {
+ id:string;projectId:string;jobId:string|null;backend:Backend;action:NativeAction;
+ packetPath:string;packetSha256:string;directory:string;
+ state:'running'|'succeeded'|'reconciliation_required'|'reconciled';
+ ownerPid:number|null;childPid:number|null;childPending:boolean;
+ createdAt:string;updatedAt:string;error:string|null;resultPath?:string;resultSha256?:string;
+}
 export interface DriveBatch {
  id:string;projectId:string;url:string;remote:string;folderId:string;directory:string;
  state:'enumerating'|'transferring'|'ready'|'failed'|'abandoned';

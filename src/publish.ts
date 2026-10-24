@@ -25,6 +25,7 @@ export async function verifyRecutReceipt(store:Store,p:Project,r:RenderReceipt){
  invariant(proof.parentPlanSha256===parent.planSha256&&proof.planSha256===await sha256(r.planPath)&&proof.newNativeSha256===r.nativeFingerprint&&path.resolve(proof.construction.nativeProject)===path.resolve(r.nativeProject),'Recut verification does not describe this parent, plan and native checkpoint');
 }
 export async function publish(store:Store,projectId:string,receiptFile:string):Promise<Version>{
+ store.assertNativeSettled(projectId);
  const p=store.project(projectId);await containedFile(p.root,receiptFile);const receiptHash=await sha256(receiptFile),r=await readJson<RenderReceipt>(receiptFile);
  invariant(r.schema==='acq-edit/render-v1'&&r.projectId===p.id&&r.backend===p.backend&&r.nativeRendered===true,'Render receipt identity/backend mismatch');
  const jobId=r.jobId||process.env.ACQ_EDIT_JOB_ID;

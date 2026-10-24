@@ -110,6 +110,7 @@ export async function recoverIntake(store:Store,id:string,tools:IntakeTools={}){
   const source=store.sources(i.projectId).find(s=>s.id===i.sourceId);invariant(source,'Ready intake has no registered source');invariant(await sha256(source.path)===source.sha256,'Registered source changed');invariant(source.verificationPath&&await sha256(source.verificationPath)===source.verificationSha256,'Verification receipt changed');await record(store,id);await exportState(store,i.projectId);return source;
  }
  store.transaction(()=>{
+  store.assertNativeSettled(i.projectId);
   i=store.intake(id);invariant(!intakeProcessAlive(i.ownerPid)&&!intakeProcessAlive(i.childPid),'Intake owner or child process is still live; do not replay it');
   invariant(!i.childPending,'Process launch outcome was not recorded; inspect processes and reconcile this intake before retrying');
   invariant(!store.intakes(i.projectId).some(x=>x.id!==id&&!['ready','failed'].includes(x.state)),'Another intake owns the project');

@@ -18,6 +18,12 @@ def execute(action,backend,config_path,project_path=None,packet_path=None):
     require(project_path and packet_path,'Native operations require a project and packet')
     project=read(project_path)
     require(project['backend']==backend,'Backend is fixed within a project')
+    if os.environ.get('ACQ_EDIT_NATIVE_OPERATION_DIR'):
+        import uuid
+        operation_id=os.environ.get('ACQ_EDIT_NATIVE_OPERATION_ID','')
+        require(str(uuid.UUID(operation_id))==operation_id,'Invalid native operation identity')
+        directory=inside(Path(project['root'])/'10_WORK',os.environ['ACQ_EDIT_NATIVE_OPERATION_DIR'])
+        require(directory.name==operation_id and directory.parent.name=='native-operations' and directory.is_dir(),'Native operation journal differs from project')
     packet=read(inside(project['root'],packet_path))
     lock=Path(project['root'])/'10_WORK/native.lock'
     with lock.open('a') as stream:
