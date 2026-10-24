@@ -8,9 +8,9 @@ import { spawnSync } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
 
 const [mode, directory, configFile, scenario = 'caption'] = process.argv.slice(2);
-assert(['caption','tracking','panels'].includes(scenario), 'Unknown live fixture scenario');
+assert(['caption','tracking','panels','recut'].includes(scenario), 'Unknown live fixture scenario');
 assert(['prepare', 'check'].includes(mode) && directory,
-  'Usage: node scripts/native_agent_fixture.mjs prepare NEW_DIRECTORY CONFIG_JSON [caption|tracking|panels] | check DIRECTORY');
+  'Usage: node scripts/native_agent_fixture.mjs prepare NEW_DIRECTORY CONFIG_JSON [caption|tracking|panels|recut] | check DIRECTORY');
 const base = path.resolve(directory);
 const json = async file => JSON.parse(await readFile(file, 'utf8'));
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -27,6 +27,7 @@ if (mode === 'prepare') {
   assert(['filmcraft', 'resolve'].includes(existing.backend),
     'This fixture supports FilmCraft or Resolve; it never switches an existing project backend');
   assert(['codex', 'claude'].includes(existing.agent), 'Unknown configured agent');
+  if(scenario==='recut')assert.equal(existing.backend,'filmcraft','Recut live checker currently qualifies FilmCraft only');
   if (existing.backend === 'filmcraft') run(existing.filmcraft, ['--help']);
   else { assert(existing.resolvePython, 'Configured ResolvePython required'); run(existing.resolvePython, ['-c', 'print("ResolvePython available")']); }
   run('ffmpeg', ['-version']);
@@ -50,7 +51,7 @@ if (mode === 'prepare') {
     const project = await createProject(store, config.storageRoot, 'Synthetic native agent loop', config.backend, config.agent);
     const seed = path.join(base, 'synthetic.mp4');
     run('ffmpeg', ['-v', 'error', '-n', '-f', 'lavfi', '-i', scenario==='panels'?'color=red:size=640x360:rate=25:duration=4,drawbox=x=220:y=100:w=16:h=100:color=white:t=fill':'testsrc2=size=640x360:rate=25:duration=4',
-      '-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=48000:duration=4', '-c:v', 'libx264',
+      '-f', 'lavfi', '-i', scenario==='recut'?'aevalsrc=if(lt(t\\,2)\\,0.12*sin(2*PI*440*t)\\,0.12*sin(2*PI*880*t)):s=48000:d=4':'sine=frequency=440:sample_rate=48000:duration=4', '-c:v', 'libx264',
       '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-shortest', seed]);
     const source = await importLocal(store, project.id, seed);
     const clip = { id: randomUUID(), projectId: project.id, number: 1, title: 'Synthetic native job test', currentVersionId: null };
@@ -87,6 +88,18 @@ if (mode === 'prepare') {
       await atomicJson(seedPlan,plan);await atomicJson(secondPath,second);
       plan=JSON.parse(run(config.python,[path.resolve('scripts/panel_agent_fixture.py'),'prepare',seedPlan,secondPath]));
     }
+    if(scenario==='recut'){
+      const musicSeed=path.join(base,'music.wav');
+      run('ffmpeg',['-v','error','-n','-f','lavfi','-i','sine=frequency=220:sample_rate=48000:duration=4','-c:a','pcm_s16le',musicSeed]);
+      const music=await importLocal(store,project.id,musicSeed),seedPlan=path.join(work,'recut-seed-plan.json'),musicPath=path.join(work,'music-source.json');
+      await atomicJson(seedPlan,plan);await atomicJson(musicPath,music);
+      plan=JSON.parse(run(config.python,[path.resolve('scripts/recut_agent_fixture.py'),'prepare',seedPlan,musicPath]));
+      await atomicJson(path.join(base,'revision-request.json'),{
+        notes:'Remove the first passage cut-0 entirely. Keep only cut-1 with its original source picture and audio ranges, now at recordFrame 0. Make a new synthetic selection receipt explicitly recording that removal. Retain the surviving fixed crop only and create a fresh framing receipt. Change the caption to RETAINED SECOND PASSAGE, startFrame 0, endFrame 25, same style. Retain the existing music asset and gain, but set sourceInSample 48000, samples 48000, startFrame 0 with a fresh music decision receipt. Move the existing 25-frame graphic from startFrame 25 to 0 without changing its asset. Address every finishing owner in a pinned recut-finishing receipt. Use spoken-recut, preserve the published parent and working native state, render natively, pass recutVerification, and publish a new 25-frame version. This is the same explicit synthetic fixture with ACQ_EDIT_TEST_FIXTURE=1; do not fetch brain guidance, transcribe, invent speech evidence or change any other fields.',
+        comment:'Remove the opening passage; retain the second passage and retime its dependent layers.',
+        lateComment:'Added while the recut is running: keep this note for the next submission, bound to the original version.'
+      });
+    }
     const planPath = path.join(work, 'fixture-plan.json');
     await atomicJson(planPath, plan);
     const request = `Mechanical integration fixture: build exactly one existing clip ${clip.id} from the frozen synthetic plan ${planPath}.
@@ -108,6 +121,7 @@ Expected output: ${plan.cuts.reduce((n,c)=>n+c.frames,0)} frames, ${plan.width}x
   } finally { store.close(); }
 } else {
   const f = await json(path.join(base, 'fixture.json'));
+  if(f.scenario==='recut'){console.log(run(f.config.python,[path.resolve('scripts/recut_agent_fixture.py'),'check',path.join(base,'fixture.json')]).toString());process.exit(0)}
   const tracking=f.scenario==='tracking',panels=f.scenario==='panels',vertical=tracking||panels,expectedWidth=vertical?360:640,expectedHeight=vertical?640:360,expectedFrames=panels?75:50;
   if(f.initialPlanSha256)assert.equal(digest(await readFile(f.planPath)),f.initialPlanSha256,'Frozen fixture plan changed');
   const db = new DatabaseSync(path.join(f.home, 'state.sqlite'), { readOnly: true });
