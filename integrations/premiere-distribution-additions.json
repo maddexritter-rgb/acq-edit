@@ -1,0 +1,10 @@
+{
+  "schema": "acq-edit/premiere-distribution-additions-v1",
+  "owner": "acq-edit",
+  "files": [
+    {
+      "path": "src/lab/toolkit-projects.ts",
+      "sha256": "b1874f547bf11e22d4b05f475a54bbb5671540cbc6066838315743a2f3566069"
+    }
+  ]
+}

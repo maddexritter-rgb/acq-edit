@@ -1,6 +1,6 @@
 {
   "schema": "acq-edit/premiere-distribution-overrides-v1",
-  "reason": "Pinned development dependencies and bound assembly compiler helpers to the verified checkout-local skill runtime; native validation and exact-project scope preserved.",
+  "reason": "Pinned dependencies, portable compiler helpers, and dedicated scoped toolkit project lifecycle endpoints; general lifecycle tools remain blocked.",
   "files": [
     {
       "path": "package.json",
@@ -26,6 +26,11 @@
       "path": "scripts/assembly-master-compiler.py",
       "originalSourceSha256": "1250f83ca777a56e14d46b8cad67e0ab215cd54948a57c84c3379114b5d0b280",
       "distributionSha256": "e8b1e5cc4c7b6c1afb526983c39e972e85786e2dd05e3f132369c82dd613fc49"
+    },
+    {
+      "path": "src/lab/server.ts",
+      "originalSourceSha256": "3d43c5f9449b895c3da142d436141cb0575544e3e6bcabb9fe21c9e3ff0f21e9",
+      "distributionSha256": "2dbc2be633a2992adddcbc7b6e96dc569023db51f717393affd69684ca098cbc"
     }
   ]
 }

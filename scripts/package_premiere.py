@@ -12,6 +12,13 @@ def package(source, root):
     override_path = root / 'integrations/premiere-distribution-overrides.json'
     overrides = json.loads(override_path.read_text())
     old = {row['path']: row for row in overrides['files']}
+    additions_path = root / 'integrations/premiere-distribution-additions.json'
+    additions = json.loads(additions_path.read_text())['files'] if additions_path.exists() else []
+    addition_names = {row['path'] for row in additions}
+    for row in additions:
+        target = dest / row['path']
+        if not target.is_file() or hashlib.sha256(target.read_bytes()).hexdigest() != row['sha256']:
+            raise RuntimeError('Toolkit-owned Premiere addition needs review: ' + row['path'])
     entries, changes, prepared = [], [], []
     names = ['src', 'cep-plugin', 'uxp-plugin', 'registry', 'package.json',
              'package-lock.json', 'tsconfig.json', 'LICENSE', 'scripts/lab-prepare.mjs']
@@ -30,6 +37,8 @@ def package(source, root):
             sha = hashlib.sha256(raw).hexdigest()
             data = raw
             key = rel.as_posix()
+            if key in addition_names:
+                raise RuntimeError('Upstream collides with toolkit-owned Premiere addition: ' + key)
             if key in old:
                 prior = old[key]
                 existing = dest / rel

@@ -5,6 +5,7 @@ from pathlib import Path
 from common import *
 from premiere_plan import verify_source_cuts
 from premiere_installation import verify as verify_installation
+from premiere_session import inspect_result, open_project
 Profile=PremiereBridge=execute_operation=None
 class Adapter:
  def __init__(self,config):
@@ -26,7 +27,7 @@ class Adapter:
    return {'backend':'premiere','ready':connected and matches,'installation':self.installation,
            'connected':connected,'hostVersion':version,'expectedHostVersion':self.profile.host_version,
            'versionMatches':matches,'profileMode':self.profile.mode,'hostQualified':False,
-           'projectLifecycle':'requires dedicated project open; automatic creation/reopening not yet implemented',
+           'projectLifecycle':'guarded create/reopen from an empty workspace; native host qualification pending',
            'repair':None if connected and matches else 'Open the isolated ACQ Edit Agent panel in the supported Premiere version; do not select the production connector'}
   except Exception as error:
    return {'backend':'premiere','ready':False,'installation':self.installation,'connected':None,
@@ -34,10 +35,14 @@ class Adapter:
            'repair':'Open the isolated ACQ Edit Agent panel in Premiere 26.3.0, then rerun doctor. No production connector fallback was attempted'}
   finally:client.close()
  def inspect(self,project,packet):
+  native=inside(project['root'],packet['nativeProject']);before_hash=sha(native)
   client=PremiereBridge(self.profile)
   try:
-   state=client.inspect('lab_snapshot',{});require(state['projectPath']==str(inside(project['root'],packet['nativeProject'])),'Wrong native Premiere project');return {'state':state,'fingerprint':fingerprint(state)}
+   state=client.inspect('lab_snapshot',{});result=inspect_result(project,native,state)
+   require(result['nativeSha256']==before_hash,'Saved Premiere project changed during inspection')
+   return result
   finally:client.close()
+ def open(self,project,packet):return open_project(self,project,packet,PremiereBridge)
  def execute(self,project,packet):
   require(self.profile.mode=='scoped-edit','Production stages require scoped-edit profile');state=self.inspect(project,packet);require(state['fingerprint']==packet['expectedFingerprint'],'Native state changed; reconcile user edits')
   # Each operation was compiled by its owning canonical skill. The bridge checks exact
@@ -112,5 +117,5 @@ class Adapter:
   require(after['fingerprint']==before['fingerprint'],'Native state changed during export; reconcile before publication')
   require(sha(native)==native_hash,'Saved native project changed during file verification')
   require(verify_source_cuts(p,after['state'],final_links)==source_verification,'Native source-cut verification changed during export')
-  save(inspection,{'snapshot':after['state'],'exportBaseline':baseline,'exportResult':export,'nativeSha256':native_hash,'mediaVerification':verification,'nativeSourceLinks':final_links,'sourceCutVerification':source_verification})
-  return result_receipt(project,packet,p,native,output,inspection,verification=verification,expected_native_hash=native_hash)
+  save(inspection,{'snapshot':after['state'],'nativeStateFingerprint':after['fingerprint'],'exportBaseline':baseline,'exportResult':export,'nativeSha256':native_hash,'mediaVerification':verification,'nativeSourceLinks':final_links,'sourceCutVerification':source_verification})
+  return result_receipt(project,packet,p,native,output,inspection,verification=verification,expected_native_hash=native_hash,native_reopen=after['reopen'])

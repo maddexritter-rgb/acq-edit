@@ -4,14 +4,22 @@ import { constants } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { Store } from './store.js';
-import { type Backend,type ResolveReopen,type Version,type Project,type EditPlan,invariant,now } from './contracts.js';
+import { type Backend,type NativeReopen,type ResolveReopen,type PremiereReopen,type Version,type Project,type EditPlan,invariant,now } from './contracts.js';
 import { sha256,containedFile,readJson,atomicJson } from './files.js';
 import { run } from './process.js';
 import { exportState } from './projects.js';
-export interface RenderReceipt {schema:'acq-edit/render-v1';projectId:string;backend:Backend;clipId:string;parentId:string|null;jobId?:string;media:string;nativeProject:string;nativeFingerprint:string;planPath:string;expected:{frames:number;width:number;height:number;fps:string};nativeInspectionPath:string;nativeRendered:true;nativeReopen?:ResolveReopen;inputMediaVerification?:{phase:'after-render-verification';files:Array<{role:'source'|'graphic';id:string;path:string;expectedSha256:string;actualSha256:string}>};recutVerificationPath?:string;recutVerificationSha256?:string}
+export interface RenderReceipt {schema:'acq-edit/render-v1';projectId:string;backend:Backend;clipId:string;parentId:string|null;jobId?:string;media:string;nativeProject:string;nativeFingerprint:string;planPath:string;expected:{frames:number;width:number;height:number;fps:string};nativeInspectionPath:string;nativeRendered:true;nativeReopen?:NativeReopen;inputMediaVerification?:{phase:'after-render-verification';files:Array<{role:'source'|'graphic';id:string;path:string;expectedSha256:string;actualSha256:string}>};recutVerificationPath?:string;recutVerificationSha256?:string}
 /** A saved host target is bound to the exact inspected version, never a startup placeholder. */
-export function verifyNativeReopen(p:Project,value:unknown,state:any,inspectionHash:string):ResolveReopen|undefined {
+export function verifyNativeReopen(p:Project,value:unknown,state:any,inspectionHash:string):NativeReopen|undefined {
  if(value===undefined)return;
+ if(p.backend==='premiere'){
+  const v=value as PremiereReopen;
+  invariant(v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).sort().join(',')==='expectedFingerprint,inspectionSha256,nativeProject,nativeSha256,schema,sequenceId','Unexpected native reopen fields');
+  invariant(v.schema==='acq-edit/premiere-reopen-v1'&&typeof v.nativeProject==='string'&&path.isAbsolute(v.nativeProject)&&path.resolve(v.nativeProject)===v.nativeProject&&v.nativeProject.startsWith(path.resolve(p.root)+path.sep)&&v.nativeProject.endsWith('.prproj'),'Native reopen project path differs');
+  invariant(typeof v.nativeSha256==='string'&&/^[a-f0-9]{64}$/.test(v.nativeSha256)&&typeof v.expectedFingerprint==='string'&&/^[a-f0-9]{64}$/.test(v.expectedFingerprint)&&(v.sequenceId===null||typeof v.sequenceId==='string')&&v.inspectionSha256===inspectionHash,'Native reopen inspection pin differs');
+  invariant(state?.snapshot?.projectPath===v.nativeProject&&state.snapshot.sequenceId===v.sequenceId&&state.nativeSha256===v.nativeSha256&&state.nativeStateFingerprint===v.expectedFingerprint,'Native reopen Premiere state differs from inspection');
+  return v;
+ }
  const v=value as ResolveReopen;
  invariant(p.backend==='resolve'&&v!==null&&typeof v==='object'&&!Array.isArray(v),'Native reopen metadata requires Resolve');
  invariant(Object.keys(v).sort().join(',')==='database,expectedFingerprint,inspectionSha256,nativeProjectId,timelineId','Unexpected native reopen fields');

@@ -8,7 +8,8 @@ import subprocess
 import sys
 
 REQUIRED_TOOLS = {'lab_snapshot', 'lab_import_compiled_assembly', 'lab_apply_assembly_audio_edges',
-                  'lab_export_exact_range', 'lab_import_prepared_caption_sequence'}
+                  'lab_export_exact_range', 'lab_import_prepared_caption_sequence',
+                  'lab_inspect_toolkit_workspace', 'lab_toolkit_project'}
 REQUIRED_HELPERS = ('validate-assembly-import.py', 'validate-master-import.py',
                     'assembly-master-compiler.py', 'prepare-assembly-coverage.py')
 

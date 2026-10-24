@@ -39,6 +39,14 @@ if premiere_manifest.exists():
   p=ROOT/'integrations/premiere-agent'/entry['path']
   if not p.is_file() or hashlib.sha256(p.read_bytes()).hexdigest()!=expected:hits.append(entry['path']+': Premiere distribution hash mismatch')
  if set(overrides)-{entry['path'] for entry in source_entries}:hits.append('Unknown Premiere distribution override')
+ additions_path=ROOT/'integrations/premiere-distribution-additions.json'
+ if additions_path.exists():
+  additions=json.loads(additions_path.read_text())
+  if additions.get('schema')!='acq-edit/premiere-distribution-additions-v1' or additions.get('owner')!='acq-edit':hits.append('Invalid Premiere toolkit additions manifest')
+  for entry in additions['files']:
+   p=ROOT/'integrations/premiere-agent'/entry['path']
+   if entry['path'] in {row['path'] for row in source_entries}:hits.append('Premiere toolkit addition collides with canonical source')
+   if not p.resolve().is_relative_to(ROOT/'integrations/premiere-agent') or not p.is_file() or hashlib.sha256(p.read_bytes()).hexdigest()!=entry['sha256']:hits.append(entry['path']+': Premiere toolkit addition hash mismatch')
 try:verify_dependencies(ROOT)
 except (ValueError,KeyError,OSError) as error:hits.append('Skill dependency inventory: '+str(error))
 print(json.dumps({'files_scanned':len(files)-1,'findings':hits},indent=2));sys.exit(bool(hits))

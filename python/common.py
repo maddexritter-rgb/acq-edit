@@ -93,8 +93,12 @@ def result_receipt(project,packet,p,native,media,inspection,*,verification=None,
  receipt={'schema':'acq-edit/render-v1','projectId':project['id'],'backend':project['backend'],'clipId':p['clipId'],'parentId':packet.get('parentId'),'media':str(media),'nativeProject':str(native),'nativeFingerprint':sha(native),'planPath':packet['plan'],'expected':{'frames':sum(c['frames'] for c in p['cuts']),'width':p['width'],'height':p['height'],'fps':str(p['fps']['numerator'])+'/'+str(p['fps']['denominator'])},'nativeInspectionPath':str(inspection),**({'jobId':os.environ['ACQ_EDIT_JOB_ID']} if os.environ.get('ACQ_EDIT_JOB_ID') else {}),'nativeRendered':True,'mediaVerification':verification,'qualification':'mechanical-fixture' if read(p['editorial']['selectionPath']).get('testFixture') else 'editorial-workflow'}
  if native_reopen is not None:
   state=read(inspection)
-  require(project['backend']=='resolve' and state['project']=='ACQ_'+project['id'] and state['timeline']==native_reopen['timelineId'] and fingerprint(state)==native_reopen['expectedFingerprint'],'Native reopen identity/fingerprint differs from rendered inspection')
-  require(set(native_reopen)=={'nativeProjectId','database','timelineId','expectedFingerprint'},'Native reopen packet contains unexpected fields')
+  if project['backend']=='premiere':
+   require(set(native_reopen)=={'schema','nativeProject','nativeSha256','expectedFingerprint','sequenceId'} and native_reopen.get('schema')=='acq-edit/premiere-reopen-v1','Native reopen packet contains unexpected fields')
+   require(native_reopen['nativeProject']==str(native)==state['snapshot']['projectPath'] and native_reopen['nativeSha256']==sha(native)==state['nativeSha256'] and native_reopen['sequenceId']==state['snapshot']['sequenceId'] and fingerprint(state['snapshot'])==native_reopen['expectedFingerprint']==state['nativeStateFingerprint'],'Native reopen identity/fingerprint differs from rendered inspection')
+  else:
+   require(project['backend']=='resolve' and state['project']=='ACQ_'+project['id'] and state['timeline']==native_reopen['timelineId'] and fingerprint(state)==native_reopen['expectedFingerprint'],'Native reopen identity/fingerprint differs from rendered inspection')
+   require(set(native_reopen)=={'nativeProjectId','database','timelineId','expectedFingerprint'},'Native reopen packet contains unexpected fields')
   receipt['nativeReopen']={**native_reopen,'inspectionSha256':sha(inspection)}
  if receipt['qualification']=='editorial-workflow':
   from brain_receipts import verify_saved
