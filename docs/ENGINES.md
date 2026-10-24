@@ -12,6 +12,8 @@ Caption-only revision operates on an inspected copy and changes explicit graphic
 
 Transparent Remotion assets use the shared media preflight and separate ordered video tracks with exact native placement readback. Basic overlapping-asset construction and final native rendering were exercised in FilmCraft and Resolve; see `NATIVE_MOTION.md` for the format contract and Resolve reopen limitation.
 
+Production FilmCraft body captions use the pinned caption-clips handoff and three native graphic layers, with owning-helper timing, shadows and motion. See `NATIVE_CAPTIONS.md` for preparation, explicit limitations and native revision evidence.
+
 ## Premiere Pro
 
 `integrations/premiere-agent` snapshots the current Agent Lab implementation, CEP/UXP panels and source, with original MIT notice. `install_engine.py premiere` builds a separate ignored toolkit installation, generates a new local runtime/token, prepares the separately identified **ACQ Edit Agent** panel, and verifies actual MCP initialization/tool discovery. It does not overwrite an installed panel or global connector configuration.

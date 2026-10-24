@@ -4,11 +4,11 @@ import argparse,importlib,json,sys,fcntl,os
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parent))
 from common import read,inside
-p=argparse.ArgumentParser();p.add_argument('action',choices=['doctor','compile','inspect','build','revise','render']);p.add_argument('--backend',choices=['filmcraft','premiere','resolve'],required=True);p.add_argument('--config',required=True);p.add_argument('--project');p.add_argument('--packet');a=p.parse_args()
+p=argparse.ArgumentParser();p.add_argument('action',choices=['doctor','compile','captions','inspect','build','revise','render']);p.add_argument('--backend',choices=['filmcraft','premiere','resolve'],required=True);p.add_argument('--config',required=True);p.add_argument('--project');p.add_argument('--packet');a=p.parse_args()
 try:
  config=read(a.config)
  if config.get('python'):os.environ['ACQ_EDIT_SHARED_PYTHON']=config['python']
- adapter=importlib.import_module(a.backend).Adapter(config) if a.action!='compile' else None
+ adapter=importlib.import_module(a.backend).Adapter(config) if a.action not in ['compile','captions'] else None
  if a.action=='doctor':result=adapter.doctor()
  else:
   project=read(a.project)
@@ -20,6 +20,9 @@ try:
    if a.action=='compile':
     from assembly_plan import compile_plan
     result=compile_plan(project,packet)
+   elif a.action=='captions':
+    from caption_plan import prepare_plan
+    result=prepare_plan(project,packet)
    else:result=getattr(adapter,a.action)(project,packet)
  print(json.dumps(result,indent=2))
 except Exception as e:

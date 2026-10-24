@@ -24,7 +24,7 @@ class Adapter:
   try:
    sources={}
    for s in p['sources']:sources[s['id']]=c.tool('media_import',{'paths':[s['path']]})['items'][0]
-   c.run('file.newSequence',{'name':p['title'],'width':p['width'],'height':p['height'],'fps':p['fps']['numerator']/p['fps']['denominator'],'sampleRate':sr,'video':max(3,2+len(p.get('graphics',[]))),'audio':2})
+   c.run('file.newSequence',{'name':p['title'],'width':p['width'],'height':p['height'],'fps':p['fps']['numerator']/p['fps']['denominator'],'sampleRate':sr,'video':max(3,(4 if p.get('captionContract') else 2)+len(p.get('graphics',[]))),'audio':2})
    for cut in p['cuts']:
     if cut.get('audioSourceId'):
      before=c.tool('sequence_inspect');ids={i['clip'] for kind in ['video','audio'] for track in before[kind] for i in track['items']}
@@ -52,8 +52,11 @@ class Adapter:
      require((a['start'],a['sourceIn'],a['duration'])==(cut['audioRecordSample']*st,cut['audioInSample']*st,cut['audioSamples']*st),'Reopened audio differs from exact paired samples')
      require(v['link'] is not None and v['link']==a['link'] and v['start']-v['sourceIn']==a['start']-a['sourceIn'],'Reopened native linkage/source clocks differ')
    self.audio(c,p,sources,ft)
-   self.finish(c,p,ft)
+   self.finish(c,p,ft,project)
    c.run('file.saveAs',{'path':str(native)})
+   if p.get('captionContract'):
+    from caption_plan import validate,verify_native
+    save(out/'caption-verification.json',verify_native(native,p,validate(project,p),ft))
    state=c.tool('sequence_inspect');save(out/'inspection.json',state)
   finally:c.close()
   reopened=self.inspect(project,{'nativeProject':str(native),'session':str(out/'reopen')});save(out/'reopened.json',reopened)
@@ -75,19 +78,23 @@ class Adapter:
     for offset,db in linear_fade_points(bed,p['sampleRate']):
      c.run('effects.setParam',{'clip':clip['clip'],'effect':'volume','param':'level','value':db,'time':clip['start']+offset*sample_tick,'keyframe':True})
      c.run('effects.setInterpolation',{'clip':clip['clip'],'effect':'volume','param':'level','mediaTime':clip['sourceIn']+offset*sample_tick,'interpolation':'linear'})
- def finish(self,c,p,ft):
+ def finish(self,c,p,ft,project=None):
   shots=p.get('framing',{}).get('shots',{})
   if shots:
    items=c.tool('sequence_inspect')['video'][0]['items'];require(len(items)==len(p['cuts']),'Picture coverage differs from framing plan')
    for cut,item in zip(p['cuts'],items):
     require(item['start']==cut['recordFrame']*ft and item['sourceIn']==cut['sourceInFrame']*ft and item['duration']==cut['frames']*ft,'Stale native picture range')
     for param,value in filmcraft_motion(p,shots[cut['id']]).items():c.run('effects.setParam',{'clip':item['clip'],'effect':'motion','param':param,'value':value})
-  for card in p.get('captions',[]):
+  if p.get('captionContract'):
+   from caption_plan import validate,build_native
+   build_native(c,p,validate(project,p),ft)
+  for card in ([] if p.get('captionContract') else p.get('captions',[])):
    style=card['style'];graphic=c.run('graphics.newText',{'newClip':True,'text':card['text'],'position':style.get('position',[p['width']/2,p['height']*.78]),'font':style.get('font','Arial'),'fontStyle':style.get('fontStyle','Bold'),'size':style.get('size',64),'time':card['startFrame']*ft,'seconds':(card['endFrame']-card['startFrame'])*p['fps']['denominator']/p['fps']['numerator'],'track':1});c.run('graphics.set',{'clip':graphic['clip'],'layer':graphic['layer'],'props':{'align':'center'}})
   for index,asset in enumerate(p.get('graphics',[])):
    require(sha(asset['path'])==asset['sha256'],'Graphic asset changed');item=c.tool('media_import',{'paths':[asset['path']]})['items'][0]
-   c.run('timeline.place',{'item':item,'track':f'V{index+3}','video':True,'audio':False,'time':asset['startFrame']*ft,'sourceIn':0,'duration':asset['frames']*ft,'insert':False})
-   placed=c.tool('sequence_inspect')['video'][index+2]['items'];require(len(placed)==1,'Unexpected native graphic coverage');graphic=placed[0]
+   track=index+(4 if p.get('captionContract') else 2)
+   c.run('timeline.place',{'item':item,'track':f'V{track+1}','video':True,'audio':False,'time':asset['startFrame']*ft,'sourceIn':0,'duration':asset['frames']*ft,'insert':False})
+   placed=c.tool('sequence_inspect')['video'][track]['items'];require(len(placed)==1,'Unexpected native graphic coverage');graphic=placed[0]
    require(graphic['item']==item and graphic['start']==asset['startFrame']*ft and graphic['duration']==asset['frames']*ft and graphic['sourceIn']==0,'Native graphic source/timing readback mismatch')
  def revise(self,project,packet):
   if packet.get('kind')=='spoken-recut':
@@ -103,8 +110,8 @@ class Adapter:
   before=self.inspect(project,{'nativeProject':packet['nativeProject'],'session':packet['inspectSession']})
   require(before['fingerprint']==packet['expectedFingerprint'],'Native state changed; merge intervening edits before revising')
   require(packet.get('kind') in ['caption-style','music-gain','fixed-framing'],'Use Assembly Design for recuts; this operation supports caption style, music gain or fixed framing only')
-  spec=plan(project,packet) if packet['kind']=='fixed-framing' else None
-  if spec:require(before['state']['settings']['width']==spec['width'] and before['state']['settings']['height']==spec['height'],'Framing revision cannot resize the approved timeline')
+  spec=plan(project,packet) if packet['kind']=='fixed-framing' or (packet['kind']=='caption-style' and packet.get('plan')) else None
+  if spec:require(before['state']['settings']['width']==spec['width'] and before['state']['settings']['height']==spec['height'],'Finishing revision cannot resize the approved timeline')
   target=inside(project['root'],packet['outputProject']);require(not target.exists(),'Revision destination exists');shutil.copy2(packet['nativeProject'],target)
   c=Filmcraft(self.config['filmcraft'],inside(project['root'],packet['session']),str(target))
   try:
@@ -130,6 +137,9 @@ class Adapter:
    c.run('file.save');after=c.tool('sequence_inspect')
    cuts=lambda state:[(i['clip'],i['start'],i['duration'],i['sourceIn'],i['item']) for kind in ['video','audio'] for track in state[kind] for i in track['items']]
    require(cuts(before['state'])==cuts(after),'Finishing revision changed cuts')
+   if spec and spec.get('captionContract'):
+    from caption_plan import validate,verify_native
+    verify_native(target,spec,validate(project,spec),TICKS*spec['fps']['denominator']//spec['fps']['numerator'])
    save(inside(project['root'],packet['inspection']),after)
   finally:c.close()
   return {'nativeProject':str(target),'fingerprint':fingerprint({'state':after,'fileHash':sha(target)}),'status':'revised-native-render-pending'}
@@ -138,6 +148,9 @@ class Adapter:
   c=Filmcraft(self.config['filmcraft'],inside(project['root'],packet['session']),str(native))
   try:
    state=c.tool('sequence_inspect');require(fingerprint({'state':state,'fileHash':sha(native)})==packet['expectedFingerprint'],'Native state changed before export');save(inside(project['root'],packet['inspection']),state)
+   if p.get('captionContract'):
+    from caption_plan import validate,verify_native
+    verify_native(native,p,validate(project,p),TICKS*p['fps']['denominator']//p['fps']['numerator'])
    job=c.run('file.exportMedia',{'path':str(media),'format':'h264','audio':True,'range':'entire','wait':False})
    save(str(media)+'.job.json',job);deadline=time.monotonic()+4*3600
    while True:

@@ -25,6 +25,7 @@ def plan(project,packet):
  if selection.get('testFixture'):
   require(os.environ.get('ACQ_EDIT_TEST_FIXTURE')=='1','Synthetic plans require explicit ACQ_EDIT_TEST_FIXTURE=1 and cannot certify editorial acceptance')
  else:
+  require(p['backend']!='filmcraft' or not p.get('captions') or p.get('captionContract'),'Production FilmCraft body captions require the pinned caption-clips handoff; basic fixture text is not a production fallback')
   from brain_receipts import verify_saved
   guidance=verify_saved(p['brain']['receiptPath'])
   if p['brain'].get('versionsPath'):
@@ -43,6 +44,9 @@ def plan(project,packet):
  for card in p.get('captions',[]):
   require(type(card.get('startFrame'))==int and type(card.get('endFrame'))==int and 0<=card['startFrame']<card['endFrame']<=end,'Caption timing lies outside the current cut plan')
   require(isinstance(card.get('text'),str) and card['text'].strip() and isinstance(card.get('style'),dict),'Caption text and native style required')
+ if p.get('captionContract'):
+  from caption_plan import validate
+  validate(project,p)
  from audio_plan import validate_audio
  validate_audio(project,p,end)
  from framing_plan import validate_framing
@@ -71,6 +75,10 @@ def result_receipt(project,packet,p,native,media,inspection,*,verification=None,
  if receipt['qualification']=='editorial-workflow':
   from brain_receipts import verify_saved
   receipt['brainEvidence']=verify_saved(p['brain']['receiptPath'])
+ if p.get('captionContract'):
+  from caption_plan import validate
+  captions=validate(project,p)
+  receipt['captionEvidence']={'owner':'caption-clips','handoffSha256':p['captionContract']['sha256'],'helperHashes':captions['helperHashes'],'shadowProfile':captions['shadowProfile'],'cards':len(captions['cards'])}
  if packet.get('recutVerification'):
   proof_path=inside(project['root'],packet['recutVerification']);proof=read(proof_path)
   require(proof.get('schema')=='acq-edit/recut-execution-v1' and proof['backend']==project['backend'] and proof['parentVersionId']==packet.get('parentId') and proof['parentPreserved'] is True,'Recut verification identity differs')

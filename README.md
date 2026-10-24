@@ -42,6 +42,7 @@ Use `serve --no-worker` to review without dispatching jobs. `projects` lists per
 
 - One backend per project: FilmCraft, Premiere, or Resolve. No hidden conversion or fallback to another editor.
 - Assembly Design owns word selection and story construction; native adapters execute the design. [Compile exact source-word and paired-audio plans](docs/NATIVE_ASSEMBLY.md) before native construction.
+- FilmCraft body captions use the [pinned caption-clips handoff](docs/NATIVE_CAPTIONS.md), with native text, two shadow layers, profile-selected motion and saved-project verification.
 - `00_SOURCE` contains verified, project-owned copies. Work goes into `10_WORK`; published immutable renders go into `20_DELIVER`.
 - Feedback is bound to an exact version. Applying revisions captures that version and its notes. Later notes stay separate. Changed clips return unreviewed.
 - The [shared brain](docs/EDITORIAL_BRAIN.md) is read-only here. New design fetches current guidance with `brain PROJECT_ID REQUEST.json` and records its versions; approved edits do not change when guidance changes.
