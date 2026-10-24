@@ -7,9 +7,10 @@ import { randomUUID, createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
 
-const [mode, directory, configFile] = process.argv.slice(2);
+const [mode, directory, configFile, scenario = 'caption'] = process.argv.slice(2);
+assert(['caption','tracking'].includes(scenario), 'Unknown live fixture scenario');
 assert(['prepare', 'check'].includes(mode) && directory,
-  'Usage: node scripts/native_agent_fixture.mjs prepare NEW_DIRECTORY CONFIG_JSON | check DIRECTORY');
+  'Usage: node scripts/native_agent_fixture.mjs prepare NEW_DIRECTORY CONFIG_JSON [caption|tracking] | check DIRECTORY');
 const base = path.resolve(directory);
 const json = async file => JSON.parse(await readFile(file, 'utf8'));
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -69,6 +70,16 @@ if (mode === 'prepare') {
       captions: [{ startFrame: 0, endFrame: 50, text: 'NATIVE AGENT LOOP',
         style: { size: 30, font: 'Arial', position: [320, 285] } }], graphics: [], framing: {}, audio: {},
     };
+    if (scenario === 'tracking') {
+      plan.width=360;plan.height=640;
+      plan.captions[0].style.position=[180,550];
+      const decision=path.join(work,'framing-fixture.json');
+      await atomicJson(decision,{owner:'horizontal-to-vertical',testFixture:true,purpose:'Frozen source-local tracking transport; no subject detection claimed'});
+      plan.framing={schema:'acq-edit/framing-v1',receiptPath:decision,receiptSha256:await sha256(decision),shots:Object.fromEntries(plan.cuts.map((cut,index)=>{
+        const xs=Array.from({length:cut.frames},(_,i)=>index===0?100.25+.5*i:350.25-.5*i);
+        return [cut.id,{mode:'tracked-crop',sourceWidth:640,sourceHeight:360,x:xs[0],y:20,width:180,height:320,xByFrame:xs,sourceRange:{sourceId:source.id,sha256:source.sha256,inFrame:cut.sourceInFrame,frames:cut.frames}}];
+      }))};
+    }
     const planPath = path.join(work, 'fixture-plan.json');
     await atomicJson(planPath, plan);
     const request = `Mechanical integration fixture: build exactly one existing clip ${clip.id} from the frozen synthetic plan ${planPath}.
@@ -76,10 +87,11 @@ This is not editorial design, speech content, or human approval. Do not fetch br
 ACQ_EDIT_TEST_FIXTURE=1 must be supplied by the operator. Read the native ${config.backend} adapter and packet documentation.
 Use the toolkit native build/render commands, new packets and operation folders under this job directory. Do not substitute a shell-made final or copy an old render.
 Capture the native fingerprint, inspect the exported geometry, publish the native receipt through the toolkit, and write result.json with the returned version ID.
-Expected output: 50 frames, 640x360, 25 fps, NATIVE AGENT LOOP text. No optional audits, real projects, credentials, global skills or editor installation changes.`;
+Expected output: 50 frames, ${plan.width}x${plan.height}, 25 fps, NATIVE AGENT LOOP text. ${scenario === 'tracking' ? 'Preserve the complete frozen tracking curves and fixed caption; execute native framing, not a pre-rendered replacement.' : ''} No optional audits, real projects, credentials, global skills or editor installation changes.`;
     const job = store.enqueueBuild(project.id, request);
     await exportState(store, project.id);
-    const fixture = { project, clip, jobId: job.id, home: process.env.ACQ_EDIT_HOME, config, planPath };
+    const fixture = { project, clip, jobId: job.id, home: process.env.ACQ_EDIT_HOME, config, planPath, scenario, archivePinsRequired: true };
+    if(scenario==='tracking')await atomicJson(path.join(base,'revision-request.json'),{notes:'Revise only the existing horizontal tracking curve for cut-0: xByFrame[i] = 80.25 + i for all 25 frames, with x = 80.25. Leave cut-1 exactly as it is. Preserve all cuts, source ranges, Y, scale, captions, graphics and audio. Use the tracking-framing operation, pinned previous plan and a fresh framing decision receipt. This is the same synthetic fixture with ACQ_EDIT_TEST_FIXTURE=1; no new editorial design, transcription or brain fetch. Render natively and publish a new version.',comment:'At the opening, change only the specified X curve. Keep the caption wording and second shot unchanged.',lateComment:'Added while tracking revision is running: leave this note for the next submission; do not change the current job.'});
     await atomicJson(path.join(base, 'fixture.json'), fixture);
     console.log(JSON.stringify({ fixture: path.join(base, 'fixture.json'), projectId: project.id,
       home: fixture.home, queuedJob: job.id,
@@ -88,6 +100,7 @@ Expected output: 50 frames, 640x360, 25 fps, NATIVE AGENT LOOP text. No optional
   } finally { store.close(); }
 } else {
   const f = await json(path.join(base, 'fixture.json'));
+  const tracking=f.scenario==='tracking',expectedWidth=tracking?360:640,expectedHeight=tracking?640:360;
   const db = new DatabaseSync(path.join(f.home, 'state.sqlite'), { readOnly: true });
   const rows = (sql, ...args) => db.prepare(sql).all(...args).map(r => JSON.parse(r.data));
   try {
@@ -96,6 +109,8 @@ Expected output: 50 frames, 640x360, 25 fps, NATIVE AGENT LOOP text. No optional
     assert(jobs.every(j => j.state === 'ready' && j.agentSession && !j.error), 'Both real agent jobs must finish ready');
     const versions = rows('SELECT data FROM versions WHERE clip_id=? ORDER BY rowid', f.clip.id);
     assert.equal(versions.length, 2, 'Expected two published versions');
+    const archivedArtifactsPinned = versions.every(v => v.planSha256 && v.receiptSha256 && v.inspectionPath && v.inspectionSha256);
+    if (tracking || f.archivePinsRequired) assert(archivedArtifactsPinned, 'This fixture requires pinned plan, receipt and inspection artifacts');
     const [v1, v2] = versions;
     assert.equal(v2.parentId, v1.id); assert.equal(v1.jobId, jobs[0].id); assert.equal(v2.jobId, jobs[1].id);
     assert.equal(jobs[1].snapshot[0].version.id, v1.id);
@@ -105,25 +120,33 @@ Expected output: 50 frames, 640x360, 25 fps, NATIVE AGENT LOOP text. No optional
     for (const v of versions) {
       assert.equal(digest(await readFile(v.media)), v.sha256, 'Published media changed');
       assert.equal(digest(await readFile(v.nativeCheckpoint)), v.nativeFingerprint, 'Native checkpoint changed');
+      if (v.planSha256) assert.equal(digest(await readFile(v.planPath)), v.planSha256, 'Published plan changed');
+      if (v.receiptSha256) assert.equal(digest(await readFile(v.receiptPath)), v.receiptSha256, 'Published receipt changed');
+      if (v.inspectionSha256) assert.equal(digest(await readFile(v.inspectionPath)), v.inspectionSha256, 'Published inspection changed');
       const receipt = await json(v.receiptPath);
       assert.equal(receipt.backend, f.project.backend); assert.equal(receipt.jobId, v.jobId);
       assert.equal(receipt.nativeRendered, true);
-      assert.deepEqual(receipt.expected, { frames: 50, width: 640, height: 360, fps: '25/1' });
+      assert.deepEqual(receipt.expected, { frames: 50, width: expectedWidth, height: expectedHeight, fps: '25/1' });
       const result = await json(path.join(f.project.root, '10_WORK', 'jobs', v.jobId, 'result.json'));
       assert.deepEqual(result.versionIds, [v.id]); assert.equal(result.jobId, v.jobId);
       const probe = JSON.parse(run('ffprobe', ['-v', 'error', '-count_frames', '-show_streams', '-of', 'json', v.media]));
       const video = probe.streams.filter(s => s.codec_type === 'video');
       assert.equal(video.length, 1); assert.equal(video[0].nb_read_frames, '50');
-      assert.equal(video[0].width, 640); assert.equal(video[0].height, 360); assert.equal(video[0].r_frame_rate, '25/1');
+      assert.equal(video[0].width, expectedWidth); assert.equal(video[0].height, expectedHeight); assert.equal(video[0].r_frame_rate, '25/1');
       assert.equal(probe.streams.filter(s => s.codec_type === 'audio').length, 1);
       const decodedAudio = run('ffmpeg', ['-v', 'error', '-i', v.media, '-map', '0:a:0', '-f', 'f32le', '-']);
       audioData.push(decodedAudio); pcm.push(digest(decodedAudio));
       pictures.push(digest(run('ffmpeg', ['-v', 'error', '-i', v.media, '-map', '0:v:0', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'])));
-      inspections.push(await json(path.join(path.dirname(v.receiptPath), 'inspection.json')));
+      inspections.push(await json(v.inspectionPath || path.join(path.dirname(v.receiptPath), 'inspection.json')));
       plans.push(await json(v.planPath));
+      if (tracking) {
+        const framing = plans.at(-1).framing;
+        assert.equal(digest(await readFile(framing.receiptPath)), framing.receiptSha256,
+          'Framing decision receipt changed');
+      }
     }
     const failures = [];
-    if (pcm[0] !== pcm[1]) failures.push('Caption-only revision changed decoded audio; exact-audio qualification failed');
+    if (pcm[0] !== pcm[1]) failures.push('Finishing revision changed decoded audio; exact-audio qualification failed');
     assert.equal(audioData[0].length, audioData[1].length, 'Decoded audio length changed');
     let signalEnergy = 0, differenceEnergy = 0, maxDifference = 0;
     for (let i = 0; i < audioData[0].length; i += 4) {
@@ -132,16 +155,54 @@ Expected output: 50 frames, 640x360, 25 fps, NATIVE AGENT LOOP text. No optional
       signalEnergy += a * a; differenceEnergy += difference * difference;
       maxDifference = Math.max(maxDifference, Math.abs(difference));
     }
-    assert.notEqual(pictures[0], pictures[1], 'Caption revision produced identical pictures');
-    assert.equal(plans[0].captions[0].text, 'NATIVE AGENT LOOP');
-    assert.equal(plans[1].captions[0].text, 'REVISED AGENT LOOP');
-    plans[1].captions[0].text = plans[0].captions[0].text;
-    assert.deepEqual(plans[1], plans[0], 'Caption wording revision changed other plan fields');
+    assert.notEqual(pictures[0], pictures[1], 'Revision produced identical pictures');
+    if(tracking){
+      assert.equal(plans[0].framing.shots['cut-0'].mode,'tracked-crop');
+      assert.deepEqual(plans[1].framing.shots['cut-0'].xByFrame,Array.from({length:25},(_,i)=>80.25+i));
+      assert.equal(plans[1].framing.shots['cut-0'].x,80.25);
+      assert.notEqual(plans[1].framing.receiptSha256,plans[0].framing.receiptSha256);
+      const adjusted=structuredClone(plans[1]);adjusted.framing.receiptPath=plans[0].framing.receiptPath;adjusted.framing.receiptSha256=plans[0].framing.receiptSha256;
+      adjusted.framing.shots['cut-0'].x=plans[0].framing.shots['cut-0'].x;adjusted.framing.shots['cut-0'].xByFrame=plans[0].framing.shots['cut-0'].xByFrame;
+      assert.deepEqual(adjusted,plans[0],'Tracking revision changed another plan field');
+    }else{
+      assert.equal(plans[0].captions[0].text, 'NATIVE AGENT LOOP');
+      assert.equal(plans[1].captions[0].text, 'REVISED AGENT LOOP');
+      plans[1].captions[0].text = plans[0].captions[0].text;
+      assert.deepEqual(plans[1], plans[0], 'Caption wording revision changed other plan fields');
+    }
     if (f.project.backend === 'filmcraft') {
-      const native1 = JSON.stringify(inspections[0]), native2 = JSON.stringify(inspections[1]);
-      assert(native1.includes('NATIVE AGENT LOOP') && native2.includes('REVISED AGENT LOOP'));
-      assert.equal(native2.replaceAll('REVISED AGENT LOOP', 'NATIVE AGENT LOOP'), native1,
-        'Native state changed beyond caption wording');
+      if(tracking){
+        const data=await Promise.all(versions.map(v=>json(v.nativeCheckpoint)));
+        assert.equal(data[1].view.active_sequence,data[0].view.active_sequence,'Active native sequence changed');
+        assert.equal(data[1].project.name,path.basename(v2.nativeProject,'.fcproj'));
+        assert.equal(data[1].project.root.name,data[1].project.name);
+        data[0].project.name=data[1].project.name;data[0].project.root.name=data[1].project.root.name;
+        const frameTicks=254016000000/25;
+        for(let versionIndex=0;versionIndex<data.length;versionIndex++){
+          const d=data[versionIndex];
+          const sequence=d.project.items[String(d.view.active_sequence)].kind.Sequence;
+          const shot=plans[versionIndex].framing.shots['cut-0'];
+          const nativeAnchor=sequence.video_tracks[0].items[0].effects.find(e=>e.effect==='motion').params.anchor;
+          assert.equal(nativeAnchor.keyframes.length,25);
+          assert.deepEqual(nativeAnchor.value,{Vec2:{x:shot.x+shot.width/2,y:shot.y+shot.height/2}});
+          nativeAnchor.keyframes.forEach((key,i)=>{
+            assert.equal(key.time,(plans[versionIndex].cuts[0].sourceInFrame+i)*frameTicks);
+            assert.equal(key.interp,'Linear');
+            assert.deepEqual(key.value,{Vec2:{x:shot.xByFrame[i]+shot.width/2,y:shot.y+shot.height/2}});
+          });
+          const anchor=sequence.video_tracks[0].items[0].effects.find(e=>e.effect==='motion').params.anchor;
+          delete anchor.value;delete anchor.keyframes;
+        }
+        assert.deepEqual(data[1].project,data[0].project,'Tracking changed protected saved native data');
+        const v1cut=inspections[0].video[0].items[0],v2cut=inspections[1].video[0].items[0];
+        const m1=v1cut.effects.find(e=>e.effect==='motion').params,m2=v2cut.effects.find(e=>e.effect==='motion').params;
+        assert.equal(m1.anchor.keyframes,25);assert.equal(m2.anchor.keyframes,25);
+      }else{
+        const native1 = JSON.stringify(inspections[0]), native2 = JSON.stringify(inspections[1]);
+        assert(native1.includes('NATIVE AGENT LOOP') && native2.includes('REVISED AGENT LOOP'));
+        assert.equal(native2.replaceAll('REVISED AGENT LOOP', 'NATIVE AGENT LOOP'), native1,
+          'Native state changed beyond caption wording');
+      }
     } else {
       // Resolve duplicates native timelines for revisions. IDs/names and Fusion
       // graph hashes legitimately change; do not misreport full graph equivalence.
@@ -168,9 +229,9 @@ Expected output: 50 frames, 640x360, 25 fps, NATIVE AGENT LOOP text. No optional
     assert.equal(pending[0].submitted.comments.length, 1);
     assert.equal(pending[0].latest.comments.length, 2);
     assert.equal(jobs[1].snapshot[0].feedback.comments.length, 1, 'Late feedback leaked into submitted snapshot');
-    console.log(JSON.stringify({ passed: failures.length === 0, failures, scope: `synthetic ${f.project.backend} agent/review integration, not editorial approval`,
+    console.log(JSON.stringify({ passed: failures.length === 0, failures, scope: `synthetic ${f.project.backend} ${f.scenario||'caption'} agent/review integration, not editorial approval`,
       agent: f.project.agent, nativeJobs: jobs.length, versions: versions.map(v => v.id),
-      sourceAndPublishedHashesPreserved: true, nativeChange: f.project.backend === 'filmcraft' ? 'caption text only' : 'caption plan changed; native cuts/sources/properties/links preserved; Fusion appearance requires inspection',
+      sourceAndPublishedHashesPreserved: true, archivedArtifactsPinned: Boolean(archivedArtifactsPinned), nativeChange: f.project.backend === 'filmcraft' ? (tracking?'selected X curve only; protected saved native project data preserved':'caption text only') : 'finishing plan changed; native cuts/sources/properties/links preserved; Fusion appearance requires inspection',
       decodedAudioIdentical: pcm[0] === pcm[1],
       audioDifference: {maxSampleDifference: maxDifference, rmsRelativeDb: differenceEnergy && signalEnergy ? 10 * Math.log10(differenceEnergy / signalEnergy) : null},
       renderedPicturesChanged: true, lateCommentPreserved: true }, null, 2));
