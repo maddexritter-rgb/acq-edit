@@ -7,6 +7,7 @@ import time,math,tempfile
 from pathlib import Path
 from common import *
 from audio_plan import resolve_music_frames
+from resolve_framing import write_tracking,verify_timeline as verify_framing
 from framing_plan import fusion_crop,require_static_fusion_crop
 from resolve_precision import patch_checkpoint
 from fusion_state import fusion_hash,SCHEMA as FUSION_STATE_SCHEMA
@@ -105,6 +106,7 @@ class Adapter:
    placed=pool.AppendToTimeline([{'mediaPoolItem':media[0],'startFrame':0,'endFrame':graphic['frames'],'recordFrame':graphic['startFrame'],'mediaType':1,'trackIndex':index+2}]);require(placed and len(placed)==1,'Graphics placement failed');item=placed[0]
    require(item.GetStart(True)==graphic['startFrame'] and item.GetDuration(True)==graphic['frames'] and item.GetLeftOffset(True)==0 and Path(item.GetMediaPoolItem().GetClipProperty('File Path')).resolve()==Path(graphic['path']).resolve(),'Native graphic source/timing readback mismatch')
   self.music(timeline,pool,sources,spec)
+  verify_framing(timeline,spec)
   if caption_prepared:
    from resolve_captions import verify_timeline
    verify_timeline(timeline,spec,caption_prepared)
@@ -130,6 +132,7 @@ class Adapter:
    for key,value in fusion_crop(spec,shot).items():crop.SetInput(key,value);require(crop.GetInput(key)==value,'Native crop readback mismatch: '+key)
    for key,value in {'KeepAspect':0,'Width':spec['width'],'Height':spec['height']}.items():resize.SetInput(key,value);require(resize.GetInput(key)==value,'Native resize readback mismatch: '+key)
    crop.ConnectInput('Input',source);resize.ConnectInput('Input',crop);source=resize
+   write_tracking(comp,crop,shot)
   if caption_prepared:
    from resolve_captions import construct
    construct(comp,source,output,cut,spec,caption_prepared)
@@ -176,6 +179,7 @@ class Adapter:
     require(item.GetStart(True)==cut['recordFrame'] and item.GetLeftOffset(True)==cut['sourceInFrame'] and item.GetDuration(True)==cut['frames'],'Framing target range changed')
     source=next(s for s in spec['sources'] if s['id']==cut['sourceId']);require(Path(item.GetMediaPoolItem().GetClipProperty('File Path')).resolve()==Path(source['path']).resolve(),'Framing target source differs')
     comp=item.GetFusionCompByIndex(1);require(comp,'Native framing comp missing');crop=comp.FindTool('ACQ_FramingCrop');require(crop,'Owned native crop missing; do not replace an unrelated graph')
+    require(spec['framing']['shots'][cut['id']]['mode']=='fixed-crop' and not comp.FindTool('ACQ_FramingTrack'),'Use a tracking revision for animated framing; fixed-framing never discards a curve')
     geometry=fusion_crop(spec,spec['framing']['shots'][cut['id']]);require_static_fusion_crop(crop,geometry)
     for key,value in geometry.items():crop.SetInput(key,value);require(crop.GetInput(key)==value,'Framing revision readback mismatch: '+key)
    else:
@@ -184,6 +188,7 @@ class Adapter:
     wanted=item.GetProperties()['AudioVolume']+delta;require(-60<=wanted<=12,'Music gain exceeds supported range');require(item.SetProperties({'AudioVolumeEnabled':True,'AudioVolume':wanted}),'Music gain revision failed');require(abs(item.GetProperties()['AudioVolume']-wanted)<1e-6,'Music gain revision readback mismatch')
   after=self.snapshot(p)
   before_cuts=[(i['start'],i['end'],i['left'],i['source']) for kind in ['video','audio'] for track in before['tracks'][kind] for i in track];after_cuts=[(i['start'],i['end'],i['left'],i['source']) for kind in ['video','audio'] for track in after['tracks'][kind] for i in track];require(before_cuts==after_cuts,'Finishing revision changed cuts')
+  if spec:verify_framing(copy,spec)
   if caption_prepared:
    from resolve_captions import verify_timeline
    verify_timeline(copy,spec,caption_prepared)
@@ -195,6 +200,7 @@ class Adapter:
    from resolve_captions import verify_timeline,verify_fonts
    caption_prepared=validate(project,spec);verify_fonts(r,caption_prepared)
    verify_timeline(p.GetCurrentTimeline(),spec,caption_prepared)
+  verify_framing(p.GetCurrentTimeline(),spec)
   native=inside(project['root'],packet['nativeProject']);checkpoint_hash=sha(native)
   require(not p.IsRenderingInProgress(),'Another Resolve render is active');media=inside(project['root'],packet['media']);require(not media.exists(),'Never overwrite render');media.parent.mkdir(parents=True,exist_ok=True)
   require('H.264 Master' in p.GetRenderPresetList() and p.LoadRenderPreset('H.264 Master'),'Built-in H.264 Master preset unavailable; cannot reset native export state')

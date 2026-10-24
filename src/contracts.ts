@@ -44,7 +44,8 @@ export interface MusicPlacement {
 }
 export interface AudioPlan {gainDb?:number;music?:MusicPlacement[];properties?:Record<string,unknown>}
 export interface FixedCrop {mode:'fixed-crop';sourceWidth:number;sourceHeight:number;x:number;y:number;width:number;height:number}
-export interface FramingPlan {schema:'acq-edit/framing-v1';receiptPath:string;receiptSha256:string;shots:Record<string,FixedCrop>}
+export interface TrackedCrop extends Omit<FixedCrop,'mode'> {mode:'tracked-crop';xByFrame:number[];sourceRange:{sourceId:string;sha256:string;inFrame:number;frames:number}}
+export interface FramingPlan {schema:'acq-edit/framing-v1';receiptPath:string;receiptSha256:string;shots:Record<string,FixedCrop|TrackedCrop>}
 export interface EditPlan {
   schema:'acq-edit/plan-v1'; projectId:string; backend:Backend; clipId:string; title:string;
   fps:{numerator:number;denominator:number}; width:number;height:number; sampleRate:number;

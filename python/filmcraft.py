@@ -3,7 +3,7 @@ import json,sys,time,shutil,math
 from pathlib import Path
 from common import *
 from audio_plan import linear_fade_points
-from framing_plan import filmcraft_motion
+from framing_plan import filmcraft_motion,filmcraft_tracking,verify_filmcraft_framing
 sys.path.insert(0,str(SKILLS/'edit/scripts'))
 from filmcraft_client import Filmcraft
 TICKS=254016000000
@@ -54,6 +54,7 @@ class Adapter:
    self.audio(c,p,sources,ft)
    self.finish(c,p,ft,project)
    c.run('file.saveAs',{'path':str(native)})
+   verify_filmcraft_framing(native,p,ft)
    if p.get('captionContract'):
     from caption_plan import validate,verify_native
     save(out/'caption-verification.json',verify_native(native,p,validate(project,p),ft))
@@ -85,6 +86,7 @@ class Adapter:
    for cut,item in zip(p['cuts'],items):
     require(item['start']==cut['recordFrame']*ft and item['sourceIn']==cut['sourceInFrame']*ft and item['duration']==cut['frames']*ft,'Stale native picture range')
     for param,value in filmcraft_motion(p,shots[cut['id']]).items():c.run('effects.setParam',{'clip':item['clip'],'effect':'motion','param':param,'value':value})
+    filmcraft_tracking(c,item,cut,shots[cut['id']],ft)
   if p.get('captionContract'):
    from caption_plan import validate,build_native
    build_native(c,p,validate(project,p),ft)
@@ -125,6 +127,7 @@ class Adapter:
      ft=TICKS*spec['fps']['denominator']//spec['fps']['numerator']
      require(item['start']==cut['recordFrame']*ft and item['sourceIn']==cut['sourceInFrame']*ft and item['duration']==cut['frames']*ft,'Framing target range changed')
      source=next(s for s in spec['sources'] if s['id']==cut['sourceId']);actual=native_data['project']['items'][str(item['item'])]['kind']['Media']['media']['File']['path'];require(Path(actual).resolve()==Path(source['path']).resolve(),'Framing target source differs')
+     require(spec['framing']['shots'][cut['id']]['mode']=='fixed-crop','Use a tracking revision for animated framing; fixed-framing never discards a curve')
      motion=next(e['params'] for e in item['effects'] if e['effect']=='motion');require(not any(motion[k]['keyframes'] for k in ['anchor','position','scale']),'Animated framing requires a tracking revision; never replace it with a fixed crop')
      for param,value in filmcraft_motion(spec,spec['framing']['shots'][cut['id']]).items():c.run('effects.setParam',{'clip':item['clip'],'effect':'motion','param':param,'value':value})
    else:
@@ -137,6 +140,7 @@ class Adapter:
    c.run('file.save');after=c.tool('sequence_inspect')
    cuts=lambda state:[(i['clip'],i['start'],i['duration'],i['sourceIn'],i['item']) for kind in ['video','audio'] for track in state[kind] for i in track['items']]
    require(cuts(before['state'])==cuts(after),'Finishing revision changed cuts')
+   if spec:verify_filmcraft_framing(target,spec,TICKS*spec['fps']['denominator']//spec['fps']['numerator'])
    if spec and spec.get('captionContract'):
     from caption_plan import validate,verify_native
     verify_native(target,spec,validate(project,spec),TICKS*spec['fps']['denominator']//spec['fps']['numerator'])
@@ -148,6 +152,7 @@ class Adapter:
   c=Filmcraft(self.config['filmcraft'],inside(project['root'],packet['session']),str(native))
   try:
    state=c.tool('sequence_inspect');require(fingerprint({'state':state,'fileHash':sha(native)})==packet['expectedFingerprint'],'Native state changed before export');save(inside(project['root'],packet['inspection']),state)
+   verify_filmcraft_framing(native,p,TICKS*p['fps']['denominator']//p['fps']['numerator'])
    if p.get('captionContract'):
     from caption_plan import validate,verify_native
     verify_native(native,p,validate(project,p),TICKS*p['fps']['denominator']//p['fps']['numerator'])
