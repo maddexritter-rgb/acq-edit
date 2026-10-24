@@ -24,6 +24,8 @@ If timelines exist but none is selected, inspection still refuses and asks for t
 
 A live Studio 21.1.1 probe inspected a separate empty toolkit project, then imported one verified project-owned source and inspected it again. Both inspections succeeded without creating a timeline; the imported clip/path was reported and its addition changed the fingerprint. The prior synthetic review snapshot and render queue were restored unchanged. Three regression tests cover empty state, imported media and unselected/changing timeline refusal.
 
+For first construction, the build packet can use the same freshly observed `emptyWorkspace` pin described below. The adapter rechecks the empty host and saved project-name listing, then creates only the new toolkit project and verifies its native identity/database and idle state before editing. A closed saved project must use reopen; it is never recreated. Native source/geometry/font checks still apply. See `NATIVE_ASSEMBLY.md` for packet examples and `LIVE_AGENT_LOOP.md` for the actual Codex startup-build evidence.
+
 ## Reopen an inspected native version
 
 Resolve `inspect` returns a `reopen` object alongside its state and fingerprint. Keep that exact object in a new project-local JSON file while the intended project/timeline is selected. It pins the native project UUID, current database connection, timeline UUID (or explicit null before any timeline), and inspected state fingerprint. The native-operation result journal retains the original response. Do not substitute a display name, infer an ID, or rewrite its fingerprint to bypass changed state.

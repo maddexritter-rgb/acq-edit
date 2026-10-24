@@ -134,7 +134,7 @@ Expected output: ${plan.cuts.reduce((n,c)=>n+c.frames,0)} frames, ${plan.width}x
     await atomicJson(path.join(base, 'fixture.json'), fixture);
     console.log(JSON.stringify({ fixture: path.join(base, 'fixture.json'), projectId: project.id,
       home: fixture.home, queuedJob: job.id,
-      ...(config.backend === 'resolve' ? {requiredNativeProject: `ACQ_${project.id}`, hostPreparation: 'Create/open this exact empty Resolve project before dispatch. Do not close unrelated work. A blank Untitled Project is not this project.'} : {}),
+      ...(config.backend === 'resolve' ? {requiredNativeProject: `ACQ_${project.id}`, hostPreparation: 'Select the empty startup workspace or this exact toolkit project before dispatch. The agent can pin doctor.native.emptyWorkspace in its build packet to create the project. Do not close unrelated work.'} : {}),
       next: 'After host preparation, run worker with this ACQ_EDIT_HOME and ACQ_EDIT_TEST_FIXTURE=1; see docs/LIVE_AGENT_LOOP.md' }, null, 2));
   } finally { store.close(); }
 } else {

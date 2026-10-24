@@ -43,6 +43,39 @@ The resulting cuts contain exact picture frames, `audioSourceId`, `audioInSample
 
 Apply the existing finishing owners to the compiled plan, then build and render using the selected native adapter. Recompiling a spoken recut starts with empty dependent layers so old captions, framing and music cannot silently remain attached to changed timing. Use the guarded revision and publication route in `NATIVE_RECUTS.md` after preparing fresh dependent layers. Revisions still require fresh native state inspection and preservation of intervening user edits; this compile command is not an automatic merge tool.
 
+## First Resolve construction and export packets
+
+After the shared source/editorial/finishing plan is ready, run `acq-edit doctor`. If the target native project does not exist and Resolve is in its empty startup workspace, copy the entire freshly returned `native.emptyWorkspace` object into the build packet's `emptyWorkspace` field. Do not invent or reuse a stale placeholder ID/fingerprint. A selected matching toolkit project can be used directly; a closed saved project must be reopened through `RESOLVE_STATE.md`, never recreated. The project stays in Resolve throughout.
+
+The construction packet uses a fresh UUID for `versionId` and new paths under the owning job:
+
+```json
+{
+  "plan": "<project>/10_WORK/jobs/<jobId>/finished-plan.json",
+  "versionId": "<fresh UUID>",
+  "nativeProject": "<project>/10_WORK/jobs/<jobId>/v1.drp",
+  "inspection": "<project>/10_WORK/jobs/<jobId>/built-state.json"
+}
+```
+
+Add `emptyWorkspace` only when using the checked startup handoff. Run `acq-edit native PROJECT_ID build BUILD_PACKET.json`. The adapter rechecks the plan, placeholder and native project listing before creation. A saved name collision, changed/populated workspace, active render or wrong project is refused. It never imports an old checkpoint as a replacement. Successful construction returns the native fingerprint and timeline ID; it is not a render or approval.
+
+Render the constructed timeline with a separate packet and fresh output paths:
+
+```json
+{
+  "plan": "<project>/10_WORK/jobs/<jobId>/finished-plan.json",
+  "nativeProject": "<project>/10_WORK/jobs/<jobId>/v1.drp",
+  "expectedFingerprint": "<actual construction or current inspection fingerprint>",
+  "inspection": "<project>/10_WORK/jobs/<jobId>/export-state.json",
+  "media": "<project>/10_WORK/jobs/<jobId>/v1.mp4",
+  "receipt": "<project>/10_WORK/jobs/<jobId>/render-receipt.json",
+  "parentId": null
+}
+```
+
+Run `acq-edit native PROJECT_ID render RENDER_PACKET.json`, inspect the actual output, then `acq-edit publish PROJECT_ID RENDER_RECEIPT.json`. The publisher verifies and copies the new version into `20_DELIVER`; do not write there directly. For revision exports, `parentId` must identify the submitted version and the owning revision route must preserve its native state. The job runner supplies `ACQ_EDIT_JOB_ID`; do not fabricate job attribution. Every failed native operation follows `NATIVE_RECOVERY.md` before another attempt.
+
 ## Native execution evidence and limits
 
 FilmCraft's ordinary placement command snaps audio record positions and duration to frames. The adapter therefore follows the canonical assembly helper's saved-project method: construct linked source clips, save a separate frame assembly, write exact audio sample/tick geometry to the new native project, reopen it, and verify source clocks and link groups before finishing. It saves/reopens again and exports through FilmCraft. No flattened dialogue/video or alternate editor supplies the final render.

@@ -60,18 +60,19 @@ class Adapter:
    from caption_plan import validate
    caption_prepared=validate(project,spec)
   for key in ['nativeProject','inspection']:require(not inside(project['root'],packet[key]).exists(),'Native build checkpoint/inspection exists; reconcile before retrying')
-  r=self.connect();pm=r.GetProjectManager();current=pm.GetCurrentProject();name='ACQ_'+project['id']
+  r=self.connect();pm=r.GetProjectManager();name='ACQ_'+project['id']
   if caption_prepared:
    from resolve_captions import verify_fonts
    verify_fonts(r,caption_prepared)
   precise=any(value*spec['fps']['numerator']%(spec['sampleRate']*spec['fps']['denominator']) for cut in spec['cuts'] for value in [cut['audioInSample'],cut['audioSamples']])
   if precise:require(r.GetVersion()[:4]==[21,1,1,10],'Native sample geometry is qualified only for Resolve Studio 21.1.1 build 10; review the installed archive/API before changing this gate')
   if precise:require(all(c.get('audioSourceId') and 'audioRecordSample' in c for c in spec['cuts']),'Native precision needs compiled paired-source cuts')
-  require(not current or current.GetName()==name,'Another Resolve project is open. Close it before creating this isolated project.');p=current or pm.CreateProject(name);require(p,'Could not create native Resolve project')
-  timeline_name=spec['title']+'_'+packet['versionId'];names={p.GetTimelineByIndex(i).GetName() for i in range(1,p.GetTimelineCount()+1)}
-  require(timeline_name not in names and timeline_name+'_precise' not in names,'Native timeline name exists; use a fresh version identity after inspecting the prior operation')
   for bed in spec.get('audio',{}).get('music',[]):resolve_music_frames(spec,bed)
   require(spec['width']>=256 and spec['height']>=256,'Resolve clamps timeline dimensions below 256 pixels; choose a supported output size')
+  from resolve_project import construction_project
+  p=construction_project(r,project,packet)
+  timeline_name=spec['title']+'_'+packet['versionId'];names={p.GetTimelineByIndex(i).GetName() for i in range(1,p.GetTimelineCount()+1)}
+  require(timeline_name not in names and timeline_name+'_precise' not in names,'Native timeline name exists; use a fresh version identity after inspecting the prior operation')
   fps=spec['fps']['numerator']/spec['fps']['denominator'];require(p.SetSettings({'timelineFrameRate':str(fps),'timelineResolutionWidth':str(spec['width']),'timelineResolutionHeight':str(spec['height'])}),'Could not configure native project')
   pool=p.GetMediaPool();timeline=pool.CreateEmptyTimeline(timeline_name);require(timeline and p.SetCurrentTimeline(timeline),'Could not create selected timeline');require(timeline.SetStartTimecode('00:00:00:00'),'Could not set timeline clock')
   timeline.SetSettings({'useCustomSettings':'1'});timeline.SetSettings({'timelineResolutionWidth':str(spec['width']),'timelineResolutionHeight':str(spec['height'])});settings=timeline.GetSettings();require(int(settings['timelineResolutionWidth'])==spec['width'] and int(settings['timelineResolutionHeight'])==spec['height'] and abs(float(settings['timelineFrameRate'])-fps)<1e-6,'Native timeline geometry readback mismatch')

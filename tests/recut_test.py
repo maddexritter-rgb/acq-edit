@@ -72,9 +72,9 @@ class RecutTests(unittest.TestCase):
   self.assertEqual(recut.prepare(self.project,self.packet)['expected'],fingerprint({'testFixture':True}))
  def test_resolve_duplicate_name_refuses_before_project_settings_or_import(self):
   import resolve
-  p=Mock();p.GetName.return_value='ACQ_project';p.GetTimelineCount.return_value=1;p.GetTimelineByIndex.return_value.GetName.return_value='Test_existing'
+  p=Mock();p.GetName.return_value='ACQ_project';p.GetTimelineCount.return_value=1;p.GetTimelineByIndex.return_value.GetName.return_value='Test_existing';p.IsRenderingInProgress.return_value=False
   r=Mock();r.GetProjectManager.return_value.GetCurrentProject.return_value=p
-  spec={'title':'Test','cuts':[],'fps':{'numerator':25,'denominator':1},'sampleRate':48000}
+  spec={'title':'Test','cuts':[],'fps':{'numerator':25,'denominator':1},'sampleRate':48000,'width':640,'height':360}
   adapter=resolve.Adapter({});packet={'nativeProject':str(self.root/'10_WORK/new.drp'),'inspection':str(self.root/'10_WORK/new.json'),'versionId':'existing'}
   with patch.object(resolve,'plan',return_value=spec),patch.object(adapter,'connect',return_value=r):
    with self.assertRaisesRegex(RuntimeError,'timeline name exists'):adapter.build(self.project,packet)

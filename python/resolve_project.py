@@ -1,4 +1,4 @@
-"""Read native project state before a first timeline exists; never switch hosts."""
+"""Inspect and select explicitly scoped native projects without replacing user work."""
 from common import require,fingerprint
 
 
@@ -41,6 +41,36 @@ def empty_workspace(resolve):
             'fingerprint':fingerprint(state)}
 
 
+def available_project(resolve,name,packet):
+    current=resolve.GetProjectManager().GetCurrentProject()
+    if current and current.GetName()!=name:
+        observed=empty_workspace(resolve)
+        require(observed and packet.get('emptyWorkspace')==observed,
+                'Another Resolve project is open; preserve and close it, or explicitly pin the empty workspace from doctor')
+        return None
+    return current
+
+
+def construction_project(resolve,project,packet):
+    """Use the selected project, or create its fresh name from a pinned empty host."""
+    pm=resolve.GetProjectManager();name='ACQ_'+project['id'];database=pm.GetCurrentDatabase()
+    current=available_project(resolve,name,packet)
+    if not current:
+        names=pm.GetProjectListInCurrentFolder()
+        require(isinstance(names,list) and name not in names,
+                'Saved native project already exists or listing is unavailable; inspect/reopen it instead of recreating')
+        require(not available_project(resolve,name,packet) and pm.GetCurrentDatabase()==database,
+                'Native host changed before project creation; inspect again')
+        current=pm.CreateProject(name)
+        require(current,'Could not create native Resolve project; inspect before retrying')
+    live=pm.GetCurrentProject()
+    require(live and current.GetUniqueId() and live.GetUniqueId()==current.GetUniqueId() and
+            current.GetName()==name and live.GetName()==name and pm.GetCurrentDatabase()==database,
+            'Native project/database selection readback differs; preserve state and reconcile')
+    require(not current.IsRenderingInProgress(),'Native render is active; wait before construction')
+    return current
+
+
 def reopen(resolve,project,packet,snapshot):
     """Select an inspected native version, never import/rebuild or close another project."""
     import re
@@ -57,12 +87,7 @@ def reopen(resolve,project,packet,snapshot):
     pm=resolve.GetProjectManager();name='ACQ_'+project['id']
     require(pm.GetCurrentDatabase()==packet['database'],
             'Resolve database changed; select the original database before reopening')
-    current=pm.GetCurrentProject()
-    if current and current.GetName()!=name:
-        observed=empty_workspace(resolve)
-        require(observed and packet.get('emptyWorkspace')==observed,
-                'Another Resolve project is open; preserve and close it, or explicitly pin the empty workspace from doctor')
-        current=None
+    current=available_project(resolve,name,packet)
     loaded=current or pm.LoadProject(name)
     require(loaded and loaded.GetName()==name,'Saved native project unavailable; no replacement was created')
     def verify_host():
