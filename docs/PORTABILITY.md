@@ -70,3 +70,5 @@ still depends on personal configuration and an unqualified execution route. Do n
 run it as a toolkit workflow. Ordinary local/YouTube/Drive intake uses the supported
 project commands. A clean marker report alone would not prove arbitrary helper,
 asset, model, editor or clean-Mac compatibility; the pilot gates remain separate.
+
+The hook distribution exposes its owner's already measured native text/shape coordinates without changing layout policy. The assembled-text gate's summary print is rewritten for the installer's Python 3.11 runtime; its prior multiline f-string required Python 3.12+. Both transformations retain canonical source hashes.

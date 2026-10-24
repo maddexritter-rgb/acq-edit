@@ -63,6 +63,9 @@ def plan(project,packet):
  if p.get('captionContract'):
   from caption_plan import validate
   validate(project,p)
+ if p.get('hookContract'):
+  from hook_plan import validate
+  validate(project,p)
  from audio_plan import validate_audio
  validate_audio(project,p,end)
  from framing_plan import validate_framing
@@ -95,6 +98,10 @@ def result_receipt(project,packet,p,native,media,inspection,*,verification=None,
   from caption_plan import validate
   captions=validate(project,p)
   receipt['captionEvidence']={'owner':'caption-clips','handoffSha256':p['captionContract']['sha256'],'helperHashes':captions['helperHashes'],'shadowProfile':captions['shadowProfile'],'cards':len(captions['cards'])}
+ if p.get('hookContract'):
+  from hook_plan import validate as validate_hook
+  hook=validate_hook(project,p)
+  receipt['hookEvidence']={'owner':'text-hook','recipeSha256':p['hookContract']['sha256'],'helperSha256':p['hookContract']['helperSha256'],'intervals':len(hook['intervals']),'editableText':True,'userApproved':False}
  if packet.get('recutVerification'):
   proof_path=inside(project['root'],packet['recutVerification']);proof=read(proof_path)
   require(proof.get('schema')=='acq-edit/recut-execution-v1' and proof['backend']==project['backend'] and proof['parentVersionId']==packet.get('parentId') and proof['parentPreserved'] is True,'Recut verification identity differs')

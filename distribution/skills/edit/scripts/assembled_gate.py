@@ -173,8 +173,9 @@ def main():
         else:
             print(f"  [OK]    {name}" + (f"  ({len(warns)} warn)" if warns else ""))
         for w in warns: print(f"        ⚠ {w}")
-    print(f"\n{'🛑 BLOCK — fix the openers/endings before any render or import'
-            if bad else '✅ all assembled texts open and end clean'}")
+    message = ('🛑 BLOCK — fix the openers/endings before any render or import'
+               if bad else '✅ all assembled texts open and end clean')
+    print('\n' + message)
     return 1 if bad else 0
 
 

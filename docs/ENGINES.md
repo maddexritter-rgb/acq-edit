@@ -16,6 +16,8 @@ Transparent Remotion assets use the shared media preflight and separate ordered 
 
 Production FilmCraft body captions use the pinned caption-clips handoff and three native graphic layers, with owning-helper timing, shadows and motion. See `NATIVE_CAPTIONS.md` for preparation, explicit limitations and native revision evidence.
 
+Editable first-hook additions use the measured `text-hook` recipe after a finished base render. One separate native track carries the exact text and rounded boxes through stable placement intervals; existing layers stay protected. See [NATIVE_HOOKS.md](NATIVE_HOOKS.md) for preparation, revision, evidence and remaining limitations.
+
 ## Premiere Pro
 
 `integrations/premiere-agent` snapshots the current Agent Lab implementation, CEP/UXP panels and source, with original MIT notice. `install_engine.py premiere` builds a separate ignored toolkit installation, generates a new local runtime/token, prepares the separately identified **ACQ Edit Agent** panel, and verifies actual MCP initialization/tool discovery. It does not overwrite an installed panel or global connector configuration.

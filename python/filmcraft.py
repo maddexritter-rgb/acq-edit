@@ -19,7 +19,9 @@ class Adapter:
   try:state=c.tool('sequence_inspect');return {'nativeProject':str(native),'fileHash':sha(native),'state':state,'fingerprint':fingerprint({'state':state,'fileHash':sha(native)})}
   finally:c.close()
  def build(self,project,packet):
-  p=plan(project,packet);out=inside(project['root'],packet['output']);out.mkdir(exist_ok=False,parents=True)
+  p=plan(project,packet)
+  require(not p.get('hookContract'),'Add the prepared hook to its inspected finished native base with a text-hook revision; do not rebuild the base')
+  out=inside(project['root'],packet['output']);out.mkdir(exist_ok=False,parents=True)
   require(TICKS*p['fps']['denominator']%p['fps']['numerator']==0,'Unsupported frame tick grid');ft=TICKS*p['fps']['denominator']//p['fps']['numerator'];sr=p['sampleRate'];require(TICKS%sr==0,'Unsupported audio sample grid')
   require(not p.get('audio',{}).get('properties'),'Resolve-specific audio properties cannot be applied by FilmCraft')
   native=out/'edit.fcproj';c=Filmcraft(self.config['filmcraft'],out/'session')
@@ -112,6 +114,7 @@ class Adapter:
    placed=c.tool('sequence_inspect')['video'][track]['items'];require(len(placed)==1,'Unexpected native graphic coverage');graphic=placed[0]
    require(graphic['item']==item and graphic['start']==asset['startFrame']*ft and graphic['duration']==asset['frames']*ft and graphic['sourceIn']==0,'Native graphic source/timing readback mismatch')
  def revise(self,project,packet):
+  if packet.get('kind')=='text-hook':return self.revise_hook(project,packet)
   if packet.get('kind')=='music-replacement':return self.revise_music(project,packet)
   if packet.get('kind')=='graphic-replacement':return self.revise_graphics(project,packet)
   if packet.get('kind')=='panel-framing':return self.revise_panels(project,packet)
@@ -264,6 +267,28 @@ class Adapter:
   verify_filmcraft_replacement(before,read(target),previous,spec,indices,target.stem)
   require(sha(native)==parent_hash,'Parent changed during music reopen');save(inspection,reopened)
   return {'nativeProject':str(target),'fingerprint':reopened['fingerprint'],'status':'revised-native-render-pending'}
+ def revise_hook(self,project,packet):
+  from hook_plan import validate,build_native,verify_addition
+  p=plan(project,packet);prepared=validate(project,p);require(prepared is not None,'Prepare the text-hook contract first')
+  receipt=read(p['hookContract']['baseReceipt']);native=inside(project['root'],packet['nativeProject']);parent_hash=sha(native)
+  require(native==inside(project['root'],receipt['nativeProject']) and parent_hash==receipt['nativeFingerprint'],'Hook base differs from the studied native render; reconcile before revision')
+  observed=self.inspect(project,{'nativeProject':str(native),'session':packet['inspectSession']})
+  require(observed['fingerprint']==packet['expectedFingerprint'],'Native state changed; reconcile user edits before adding the hook')
+  before=read(native);require(sha(native)==parent_hash,'Hook base changed during inspection')
+  target=inside(project['root'],packet['outputProject']);inspection=inside(project['root'],packet['inspection'])
+  require(not target.exists() and not inspection.exists(),'Hook revision outputs exist; reconcile before retrying')
+  require(TICKS*p['fps']['denominator']%p['fps']['numerator']==0,'Unsupported frame tick grid')
+  ft=TICKS*p['fps']['denominator']//p['fps']['numerator']
+  shutil.copy2(native,target);c=Filmcraft(self.config['filmcraft'],inside(project['root'],packet['session']),str(target))
+  try:
+   build_native(c,p,prepared,ft);c.run('file.save')
+   verify_addition(before,read(target),p,prepared,target.stem,ft)
+   require(sha(native)==parent_hash,'Parent changed during hook construction')
+  finally:c.close()
+  reopened=self.inspect(project,{'nativeProject':str(target),'session':packet['reopenSession']})
+  verify_addition(before,read(target),p,prepared,target.stem,ft)
+  require(sha(native)==parent_hash,'Parent changed during hook reopen');save(inspection,reopened)
+  return {'nativeProject':str(target),'fingerprint':reopened['fingerprint'],'status':'revised-native-render-pending'}
  def render(self,project,packet):
   p=plan(project,packet);native=inside(project['root'],packet['nativeProject']);media=inside(project['root'],packet['media']);require(not media.exists(),'Never overwrite renders');media.parent.mkdir(parents=True,exist_ok=True)
   c=Filmcraft(self.config['filmcraft'],inside(project['root'],packet['session']),str(native))
@@ -272,6 +297,9 @@ class Adapter:
    verify_filmcraft_framing(native,p,TICKS*p['fps']['denominator']//p['fps']['numerator'])
    from graphics_revision import filmcraft_items
    filmcraft_items(read(native),p)
+   if p.get('hookContract'):
+    from hook_plan import validate as validate_hook,verify_native as verify_hook
+    verify_hook(read(native),p,validate_hook(project,p),TICKS*p['fps']['denominator']//p['fps']['numerator'])
    if p.get('audio',{}).get('music'):
     from music_revision import filmcraft_items as music_items
     music_items(read(native),p)

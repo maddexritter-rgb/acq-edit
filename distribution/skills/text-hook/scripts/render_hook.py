@@ -233,6 +233,16 @@ def layout(m, width, height, caption_bottom=None, protected_rects=None, forced_s
                 cursor += (b[3]-b[1] if box_mode == 'unified' else h)+line_gap
             for line, tx, ty, font, foreground in rows:
                 draw.text((tx, ty), line, font=font, fill=foreground)
+            native_text = []
+            for line, tx, ty, font, foreground in rows:
+                native_text.append({'text': line, 'origin_px': [tx, ty],
+                                    'baseline_px': [tx, ty+font.getmetrics()[0]],
+                                    'ink_bounds': list(font.getbbox(line)),
+                                    'font_family': font.getname()[0], 'font_style': font.getname()[1]})
+            native_boxes = ([{'bounds': [0, 0, bw, bh], 'color': style['background'], 'radius_px': radius}]
+                            if box_mode == 'unified' else
+                            [{'bounds': box, 'color': (line_specs[index] if line_specs else {'background': '#FFFFFF'})['background'],
+                              'radius_px': radius} for index, box in enumerate(line_box_bounds)])
             first = line_specs[0] if line_specs else {'foreground':'#000000','background':'#FFFFFF'}
             resolved_lines = [{'text': line, 'font_path': str(path), 'font_index': index,
                                'font_sha256': digest(path),
@@ -247,6 +257,7 @@ def layout(m, width, height, caption_bottom=None, protected_rects=None, forced_s
                            'rendered_line_boxes': line_box_bounds,
                            'effective_safe_rect': safe, 'rendered_display_lines': lines,
                            'rendered_line_styles': resolved_lines,
+                           'native_text': native_text, 'native_boxes': native_boxes,
                            'foreground': first['foreground'], 'background': first['background']}
     raise ValueError('Placement conflict: no centered readable hook fits the safe zone around captions and protected regions')
 
@@ -344,7 +355,9 @@ def build(manifest, output_dir, render=False):
         layer.save(out/filename)
         resolved_intervals.append({**interval,'hook_bounds':geometry['bounds'],
                                    'gap_px':geometry['gap_px'],'anchor_side':geometry['anchor_side'],
-                                   'effective_safe_rect':geometry['effective_safe_rect'],'plate':filename})
+                                   'effective_safe_rect':geometry['effective_safe_rect'],
+                                   'native_text':geometry['native_text'], 'native_boxes':geometry['native_boxes'],
+                                   'rendered_line_styles':geometry['rendered_line_styles'], 'plate':filename})
     frame = out/'source-frame.png'
     subprocess.run(['ffmpeg', '-v', 'error', '-n', '-ss', str(min(0.5, duration/2)), '-i', str(source), '-frames:v', '1', str(frame)], check=True)
     still = Image.open(frame).convert('RGBA')
@@ -354,6 +367,7 @@ def build(manifest, output_dir, render=False):
                'canvas': [width, height], 'start_seconds': 0, 'end_seconds': end,
                'base_fit_font_size_px': common_size, 'font_size_multiplier':font_size_multiplier,
                'frame_rate': video['avg_frame_rate'], 'animation': 'none', 'status': 'geometry_checked_preview_unreviewed',
+               'native_explicit_intervals': m.get('placement_intervals') is not None,
                'native_verified': False, 'user_approved': False}
     (out/'resolved.json').write_text(json.dumps(receipt, indent=2)+'\n')
     if render:

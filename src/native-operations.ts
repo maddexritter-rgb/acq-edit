@@ -29,7 +29,7 @@ export async function executeNative(store:Store,config:Config,projectId:string,a
   if(operation.jobId&&action==='render'){store.setJob(operation.jobId,'rendering');await exportState(store,projectId)}
   const env={...process.env,...await secretEnv(),ACQ_EDIT_ROOT:ROOT,ACQ_EDIT_NATIVE_OPERATION_ID:id,ACQ_EDIT_NATIVE_OPERATION_DIR:operation.directory};
   store.updateNativeOperation(id,{childPending:true});
-  const result=await (tools.execute||run)(project.backend==='resolve'&&!['compile','captions'].includes(action)?config.resolvePython!:config.python,[path.join(ROOT,'python','native.py'),action,'--backend',project.backend,'--config',path.join(HOME,'config.json'),'--project',path.join(project.root,'project.json'),'--packet',packetPath],{timeout:4*3600_000,env,signal:tools.signal,onSpawn:pid=>{store.updateNativeOperation(id,{childPid:pid,childPending:false})}});
+  const result=await (tools.execute||run)(project.backend==='resolve'&&!['compile','captions','hooks'].includes(action)?config.resolvePython!:config.python,[path.join(ROOT,'python','native.py'),action,'--backend',project.backend,'--config',path.join(HOME,'config.json'),'--project',path.join(project.root,'project.json'),'--packet',packetPath],{timeout:4*3600_000,env,signal:tools.signal,onSpawn:pid=>{store.updateNativeOperation(id,{childPid:pid,childPending:false})}});
   store.updateNativeOperation(id,{childPid:null,childPending:false});
   await children(operation);
   invariant(await sha256(packetPath)===operation.packetSha256,'Native packet changed during execution');

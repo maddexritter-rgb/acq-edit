@@ -34,13 +34,16 @@ def execute(action,backend,config_path,project_path=None,packet_path=None):
         if action=='captions':
             from caption_plan import prepare_plan
             return prepare_plan(project,packet)
+        if action=='hooks':
+            from hook_plan import prepare_plan
+            return prepare_plan(project,packet)
         adapter=importlib.import_module(backend).Adapter(config)
         return getattr(adapter,action)(project,packet)
 
 
 def main():
     parser=argparse.ArgumentParser()
-    parser.add_argument('action',choices=['doctor','compile','captions','inspect','build','revise','render'])
+    parser.add_argument('action',choices=['doctor','compile','captions','hooks','inspect','build','revise','render'])
     parser.add_argument('--backend',choices=['filmcraft','premiere','resolve'],required=True)
     parser.add_argument('--config',required=True)
     parser.add_argument('--project');parser.add_argument('--packet')

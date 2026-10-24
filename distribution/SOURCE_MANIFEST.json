@@ -1048,9 +1048,13 @@
       "path": "edit/scripts/assembled_gate.py",
       "source": "canonical-skills/edit/scripts/assembled_gate.py",
       "source_sha256": "67d56ee01abd5634401d89fb303ba510f42c30d496209beb11c2b573b86f7a6c",
-      "distribution_sha256": "67d56ee01abd5634401d89fb303ba510f42c30d496209beb11c2b573b86f7a6c",
-      "bytes": 10562,
-      "transforms": []
+      "distribution_sha256": "047ba7ed297a079a02230b746520360c715b4151a74aa9bf6019a2e27842acb5",
+      "bytes": 10589,
+      "transforms": [
+        {
+          "patch": "python311-assembled-gate-summary"
+        }
+      ]
     },
     {
       "path": "edit/scripts/assembly_job.py",
@@ -3710,9 +3714,13 @@
       "path": "text-hook/scripts/render_hook.py",
       "source": "canonical-skills/text-hook/scripts/render_hook.py",
       "source_sha256": "60d8c5d1e0a3fdfd22d957f492b9cbc3356b186fdd921ee5ae9a6632b352c13b",
-      "distribution_sha256": "60d8c5d1e0a3fdfd22d957f492b9cbc3356b186fdd921ee5ae9a6632b352c13b",
-      "bytes": 24600,
-      "transforms": []
+      "distribution_sha256": "ad2cdffc446c0582145e6c5248ee8b4da28e9825e8dc5fe70cd9da9d62dc248a",
+      "bytes": 25797,
+      "transforms": [
+        {
+          "patch": "native-hook-drawing-coordinates"
+        }
+      ]
     },
     {
       "path": "text-hook/scripts/style_library.py",
