@@ -112,6 +112,7 @@ class Adapter:
    placed=c.tool('sequence_inspect')['video'][track]['items'];require(len(placed)==1,'Unexpected native graphic coverage');graphic=placed[0]
    require(graphic['item']==item and graphic['start']==asset['startFrame']*ft and graphic['duration']==asset['frames']*ft and graphic['sourceIn']==0,'Native graphic source/timing readback mismatch')
  def revise(self,project,packet):
+  if packet.get('kind')=='music-replacement':return self.revise_music(project,packet)
   if packet.get('kind')=='graphic-replacement':return self.revise_graphics(project,packet)
   if packet.get('kind')=='panel-framing':return self.revise_panels(project,packet)
   if packet.get('kind')=='tracking-framing':return self.revise_tracking(project,packet)
@@ -237,6 +238,32 @@ class Adapter:
   verify_filmcraft_replacement(before,read(target),previous,spec,indices,target.stem)
   require(sha(native)==parent_hash,'Parent changed during graphic reopen');save(inspection,reopened)
   return {'nativeProject':str(target),'fingerprint':reopened['fingerprint'],'status':'revised-native-render-pending'}
+ def revise_music(self,project,packet):
+  from music_revision import prepare,filmcraft_items,verify_filmcraft_replacement
+  previous,spec,indices=prepare(project,packet);native=inside(project['root'],packet['nativeProject']);parent_hash=sha(native)
+  observed=self.inspect(project,{'nativeProject':str(native),'session':packet['inspectSession']})
+  require(observed['fingerprint']==packet['expectedFingerprint'],'Native state changed; reconcile user edits before replacing music')
+  require(sha(native)==parent_hash,'Parent changed during music inspection')
+  before=read(native);clips=filmcraft_items(before,previous,indices)
+  target=inside(project['root'],packet['outputProject']);inspection=inside(project['root'],packet['inspection'])
+  require(not target.exists() and not inspection.exists(),'Music revision outputs exist; reconcile before retrying')
+  shutil.copy2(native,target);c=Filmcraft(self.config['filmcraft'],inside(project['root'],packet['session']),str(target))
+  try:
+   for index in indices:
+    clip=clips[index];bed=spec['audio']['music'][index];source=next(s for s in spec['sources'] if s['id']==bed['sourceId'])
+    require(sha(source['path'])==source['sha256'],'Replacement music changed')
+    imported=c.tool('media_import',{'paths':[source['path']]})['items'];require(len(imported)==1,'Unexpected imported music count');item=imported[0]
+    c.run('edit.deselectAll');c.run('project.select',{'items':[item]});c.run('edit.label',{'label':clip['label']})
+    result=c.run('clip.replaceFromBin',{'clips':[clip['id']],'item':item,'keepSourceIn':True})
+    require(result['clips']==[clip['id']] and not result['short'] and not result.get('sourceInClamped'),'Replacement changed another clip or lacks source coverage')
+    c.run('clip.rename',{'clip':clip['id'],'name':clip['name']})
+   c.run('file.save');verify_filmcraft_replacement(before,read(target),previous,spec,indices,target.stem)
+   require(sha(native)==parent_hash,'Parent changed during music replacement')
+  finally:c.close()
+  reopened=self.inspect(project,{'nativeProject':str(target),'session':packet['reopenSession']})
+  verify_filmcraft_replacement(before,read(target),previous,spec,indices,target.stem)
+  require(sha(native)==parent_hash,'Parent changed during music reopen');save(inspection,reopened)
+  return {'nativeProject':str(target),'fingerprint':reopened['fingerprint'],'status':'revised-native-render-pending'}
  def render(self,project,packet):
   p=plan(project,packet);native=inside(project['root'],packet['nativeProject']);media=inside(project['root'],packet['media']);require(not media.exists(),'Never overwrite renders');media.parent.mkdir(parents=True,exist_ok=True)
   c=Filmcraft(self.config['filmcraft'],inside(project['root'],packet['session']),str(native))
@@ -245,6 +272,9 @@ class Adapter:
    verify_filmcraft_framing(native,p,TICKS*p['fps']['denominator']//p['fps']['numerator'])
    from graphics_revision import filmcraft_items
    filmcraft_items(read(native),p)
+   if p.get('audio',{}).get('music'):
+    from music_revision import filmcraft_items as music_items
+    music_items(read(native),p)
    if p.get('captionContract'):
     from caption_plan import validate,verify_native
     verify_native(native,p,validate(project,p),TICKS*p['fps']['denominator']//p['fps']['numerator'])

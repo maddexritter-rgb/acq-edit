@@ -39,7 +39,34 @@ Synthetic 640×360, 25 fps tests used a 440 Hz dialogue signal and an 880 Hz ste
 
 Resolve's duplicated timeline retained the source ranges and caption input values, but its rendered picture showed small differences. An unchanged repeat render was identical to the revised render. Do not claim exact picture identity for Resolve duplication from this fixture. Native Fusion exports contain changing cache paths and internal IDs. `RESOLVE_STATE.md` now qualifies stable graph inspection across reopening the same timeline; different native IDs/cache paths still prevent treating duplicated timeline fingerprints as equivalent.
 
-These are mechanical measurements, not real music auditioning, difficult speech-join acceptance, human approval, or proof of full finishing. Arbitrary ducking envelopes, overlapping beds, music replacement/reselection and general audio cleanup still need supported native operations and acceptance. Premiere continues to use the packaged canonical music-stage bridge and requires its own dedicated toolkit render fixture.
+These are mechanical measurements, not real music auditioning, difficult speech-join acceptance, human approval, or proof of full finishing. Arbitrary ducking envelopes, overlapping beds, changed music sections and general audio cleanup still need supported native operations and acceptance. Premiere continues to use the packaged canonical music-stage bridge and requires its own dedicated toolkit render fixture.
+
+## FilmCraft music-source replacement
+
+`kind: "music-replacement"` replaces selected existing beds on an inspected copy. The `music` owner must choose/audition the replacement first, import it as a new project-owned source, and write a new immutable selection receipt. Append the new source record to the plan; retain all old records. Only selected beds' `sourceId`, `receiptPath` and `receiptSha256` may change. Cuts, other beds, framing, captions, graphics, dialogue treatment, placement, source offset, duration, gain and fades remain fixed.
+
+```json
+{
+  "kind": "music-replacement",
+  "previousPlan": "<project>/10_WORK/published-plan.json",
+  "previousPlanSha256": "<pinned hash>",
+  "plan": "<project>/10_WORK/replacement-plan.json",
+  "musicIndices": [0],
+  "nativeProject": "<project>/10_WORK/parent.fcproj",
+  "expectedFingerprint": "<fresh inspection fingerprint>",
+  "outputProject": "<project>/10_WORK/replacement.fcproj",
+  "inspection": "<project>/10_WORK/replacement-inspection.json",
+  "inspectSession": "<project>/10_WORK/replacement-preflight",
+  "session": "<project>/10_WORK/replacement-session",
+  "reopenSession": "<project>/10_WORK/replacement-reopen"
+}
+```
+
+Indices are zero-based. Replacement sources must be distinct audio-only PCM files, at the project sample rate, with the original mono/stereo channel count and enough samples for the preserved source range. Preflight probes and fully decodes them. The adapter refuses locked, linked, grouped, retimed or custom-channel-routed targets. It imports through FilmCraft and replaces only the selected clip's media binding. A complete saved-project comparison protects names, labels, effects, source-relative fade keys, other clips, tracks and existing bin items, both before and after reopen. The parent is never overwritten. Rendering revalidates native music source bindings/timing against the plan; use the usual native render/publication path afterward. Failed operations retain their journal and require reconciliation; inspection session paths must be fresh on a reconciled retry.
+
+A direct native fixture replaced the first of two mono music placements at a one-second source offset, keeping 80 ms fades and a 0.6-second duration. Both native exports decoded 50 frames; all picture pixels were identical. The selected 220 Hz test tone was replaced by 1320 Hz, with more than 40 dB separation in each direction. The second bed and the 440/880 Hz dialogue signals changed by less than 0.01 dB in the checked windows. All protected native fields, twelve prior artifacts, source/parent files and feedback remained intact. An initial preflight assumption that audio had an intrinsic time-remap effect was corrected from native evidence; no replacement had occurred in that failed attempt. The measurement script's original assumed music frequency was also corrected against the actual source.
+
+This proves bounded native execution on synthetic tones, not real auditioning, audio-quality approval, agent orchestration or reference fidelity. Different source offsets, channel conversions, overlapping beds, and new automation remain unsupported by this operation. Resolve and Premiere do not yet implement music-source replacement; they must report that limitation without switching engines.
 
 ## Live Resolve agent-loop audio finding
 
