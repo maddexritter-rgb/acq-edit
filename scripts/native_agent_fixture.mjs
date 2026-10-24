@@ -26,7 +26,6 @@ if (mode === 'prepare') {
   const existing = await json(path.resolve(configFile));
   assert(['filmcraft', 'resolve'].includes(existing.backend),
     'This fixture supports FilmCraft or Resolve; it never switches an existing project backend');
-  if(scenario==='caption-visibility')assert.equal(existing.backend,'filmcraft','Native caption visibility is currently FilmCraft-only');
   assert(['codex', 'claude'].includes(existing.agent), 'Unknown configured agent');
   if (existing.backend === 'filmcraft') run(existing.filmcraft, ['--help']);
   else { assert(existing.resolvePython, 'Configured ResolvePython required'); run(existing.resolvePython, ['-c', 'print("ResolvePython available")']); }
@@ -283,6 +282,7 @@ Expected output: ${plan.cuts.reduce((n,c)=>n+c.frames,0)} frames, ${plan.width}x
         return state;
       };
       if(hook)for(const state of inspections){state.tracks.video.pop();state.trackState.video.pop();}
+      if(visibility){inspections[1].tracks.video.pop();inspections[1].trackState.video.pop();}
       assert.deepEqual(normalize(inspections[1]), normalize(inspections[0]), 'Resolve revision changed cuts, sources, properties, links or track state');
     }
     for (const source of rows('SELECT data FROM sources WHERE project_id=?', f.project.id)) {

@@ -1,5 +1,5 @@
 """Opt-in synthetic hook replacement through the actual agent and review room."""
-import copy,json,sys
+import copy,json,sys,os,subprocess,tempfile
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'python'))
 from common import read,save,sha,require
@@ -76,10 +76,14 @@ def check(fixture,versions):
 def prepare_visibility(seed,directory,font):
     from caption_plan import prepare_plan
     from common import fingerprint
-    spec=read(seed);require(spec['backend']=='filmcraft','Visibility fixture requires FilmCraft')
+    spec=read(seed);require(spec['backend'] in ['filmcraft','resolve'],'Unsupported native visibility fixture')
     work=Path(seed).parent;profile=work/'caption-profile.json'
-    save(profile,{'allow_quote_italics':True,'guest_turn_italics':False,'caption_hold_through_seconds':.75,'caption_trailing_hold_seconds':.1,'filmcraft_caption_motion':'measured_fast_settle'})
+    settings={'allow_quote_italics':True,'guest_turn_italics':False,'caption_hold_through_seconds':.75,'caption_trailing_hold_seconds':.1}
+    if spec['backend']=='filmcraft':settings['filmcraft_caption_motion']='measured_fast_settle'
+    else:settings.update(resolve_caption_motion='measured_fast_settle',resolve_caption_shadows={'id':'synthetic-two-shadows','wide':{'offset':[.003,-.003],'softness':[6,6],'opacity':1},'tight':{'offset':[.006,-.009],'softness':[2,2],'opacity':1}})
+    save(profile,settings)
     style={'font':'Arial','fontStyle':'Bold','italicStyle':'Bold Italic','size':30,'renderedFontPx':30,'position':[320,285],'color':'#ffffff'}
+    if spec['backend']=='resolve':style={'font':'Arial','fontStyle':'Bold','italicStyle':'Bold Italic','fusionSize':.08,'center':[.5,.35],'color':'#ffffff'}
     cards=[{'id':f'card-{i}','start_frame':start,'speech_end':end,'text':text,'quote':False,'style':style} for i,(start,end,text) in enumerate([(0,.9,'NATIVE AGENT LOOP'),(25,3.1,'Second caption'),(80,5.9,'Caption across the boundary'),(150,6.9,'Later caption unchanged')])]
     handoff=work/'caption-handoff.json';output=work/'caption-prepared-plan.json'
     save(handoff,{'schema':'acq-edit/caption-handoff-v1','owner':'caption-clips','projectId':spec['projectId'],'clipId':spec['clipId'],'cutsFingerprint':fingerprint(spec['cuts']),'profile':{'path':str(profile),'sha256':sha(profile)},'cards':cards})
@@ -87,7 +91,7 @@ def prepare_visibility(seed,directory,font):
     prepare_plan(project,{'plan':seed,'handoff':str(handoff),'handoffSha256':sha(handoff),'output':str(output)})
     require(Path(font).is_file(),'Supply an installed fixture font')
     transcript=work/'hook-fixture-transcript.txt';transcript.write_text('Keep the meaning. Synthetic copy fixture, not a speech transcript.\n')
-    save(work/'visibility-hook-seed.json',{'schema':'text-hook/v1','clip_id':spec['clipId'],'source':'FILL_FROM_HIDDEN_NATIVE_RENDER','transcript':str(transcript),'transcript_sha256':sha(transcript),'transcript_revision':'synthetic-fixture','selected_text':'Keep the meaning','display_lines':['Keep the meaning'],'font_path':str(Path(font).resolve()),'existing_hook':'none','delivery_platform':'custom','caption_strategy':'replace','caption_strategy_reason':'Replace the native speech captions only during the opening','replacement_hook_top_px':265,'safe_rect':[38,24,564,310],'protected_rects':[],'supporting_passages':[{'quote':'Keep the meaning.','location':'Synthetic copy fixture'}]})
+    save(work/'visibility-hook-seed.json',{'schema':'text-hook/v1','clip_id':spec['clipId'],'source':'FILL_FROM_HIDDEN_NATIVE_RENDER','transcript':str(transcript),'transcript_sha256':sha(transcript),'transcript_revision':'synthetic-fixture','selected_text':'Keep the meaning','display_lines':['Keep the meaning'],'font_path':str(Path(font).resolve()),'existing_hook':'none','delivery_platform':'custom','caption_strategy':'replace','caption_strategy_reason':'Replace the native speech captions only during the opening','replacement_hook_top_px':265 if spec['backend']=='filmcraft' else 213,'safe_rect':[38,24,564,310],'protected_rects':[],'supporting_passages':[{'quote':'Keep the meaning.','location':'Synthetic copy fixture'}]})
     save(Path(directory)/'revision-request.json',{'notes':f'Add the opening text hook Keep the meaning on one line, replacing the native speech captions only on frames 0 through 125 inclusive. Preserve all source cuts, audio, caption words/style/arrival/timing and every later caption. Read NATIVE_CAPTIONS.md and NATIVE_HOOKS.md. Use caption-clips caption-visibility on a new inspected native copy; hide exactly [0,126). Render this clean native intermediate. Use the recipe seed {work / "visibility-hook-seed.json"}; fill source/source_sha256 and clean_opening_source/clean_opening_sha256 from that exact native render. Inspect the original caption region and supply measured caption_bounds, caption_bottom_px, protected regions and geometry_evidence through the text-hook owner. Keep the seed copy, font, safe region and replacement_hook_top_px. Prepare/add the editable native headline and render again. Publish ONLY the final result against submitted V1. Do not publish the hidden intermediate. This is the same explicit synthetic fixture with ACQ_EDIT_TEST_FIXTURE=1; no speech, transcription, new editorial design or brain fetch is claimed.',
         'comment':'Show the headline instead of speech captions during the opening; resume the original captions exactly at frame 126.',
         'lateComment':'Added during caption hiding: keep this note for the next submission, bound to the original version.'})
@@ -120,25 +124,102 @@ def protected_visibility_native(first,second):
 
 def check_visibility(fixture,versions):
     from caption_plan import validate as captions,verify_native as verify_captions
-    f=read(fixture);require(f['project']['backend']=='filmcraft','Visibility checker requires FilmCraft')
+    f=read(fixture);require(f['project']['backend'] in ['filmcraft','resolve'],'Unsupported visibility fixture backend')
     plans=[read(v['planPath']) for v in versions];compare_visibility_plans(*plans,read(f['planPath']))
     ft=254016000000//25
     for spec,version in zip(plans,versions):
         require(sha(version['nativeProject'])==version['nativeFingerprint'],'Working native checkpoint changed')
-        verify_captions(version['nativeCheckpoint'],spec,captions(f['project'],spec),ft)
+        if f['project']['backend']=='filmcraft':verify_captions(version['nativeCheckpoint'],spec,captions(f['project'],spec),ft)
     prepared=validate(f['project'],plans[1]);recipe=prepared['recipe']
     require(recipe['selected_text']=='Keep the meaning' and recipe['display_lines']==['Keep the meaning'] and recipe['caption_strategy']=='replace','Requested replacement recipe differs')
     require(prepared['intervals'][-1]['endFrame']==126,'Hook cutoff differs')
     receipt=read(plans[1]['hookContract']['baseReceipt'])
     require(receipt['jobId']==versions[1]['jobId'],'Clean native render belongs to another job')
-    verify_native(read(versions[1]['nativeCheckpoint']),plans[1],prepared,ft)
-    protected_visibility_native(*[read(v['nativeCheckpoint']) for v in versions])
+    if f['project']['backend']=='filmcraft':
+        verify_native(read(versions[1]['nativeCheckpoint']),plans[1],prepared,ft)
+        protected_visibility_native(*[read(v['nativeCheckpoint']) for v in versions])
+    else:
+        result=subprocess.run([f['config']['resolvePython'],str(Path(__file__).resolve()),'inspect-visibility-resolve',str(fixture),json.dumps(versions)],capture_output=True,text=True)
+        require(result.returncode==0,'Resolve visibility live inspection failed: '+result.stderr[-3000:])
+        require(json.loads(result.stdout)['protectedNativeStatePreserved'],'Native visibility protection failed')
     return {'nativeGraph':'native caption opacity and editable hook verified; protected native tracks preserved','hiddenRange':[0,126],'freshHookContext':True,'originalWorkingCheckpointsPreserved':True,'humanApproved':False}
+
+
+def protected_resolve_visibility(state,graphs,targets,extra):
+    """Independent comparison of both published graphs, excluding only allowed gates."""
+    from common import fingerprint
+    from fusion_state import canonical_fusion,field,remove_field
+    value=copy.deepcopy(state);value.pop('timeline');value.pop('name')
+    identities={i['id']:f'{kind}:{track}:{index}' for kind,tracks in value['tracks'].items() for track,items in enumerate(tracks) for index,i in enumerate(items)}
+    used=set()
+    for kind,tracks in value['tracks'].items():
+        for track,items in enumerate(tracks):
+            for index,item in enumerate(items):
+                require(all(i in identities for i in item['linkedIds']),'Unexpected native link outside protected tracks')
+                item['id']=identities[item['id']];item['linkedIds']=sorted(identities[i] for i in item['linkedIds'])
+                for comp in range(len(item['fusion'])):
+                    key=(kind,track,index,comp);require(key in graphs,'Missing protected Fusion graph');used.add(key)
+                    graph=canonical_fusion(graphs[key]);root=graph['composition'];tools=field(root,'Tools')
+                    for name in targets.get(key,[]):
+                        tool=field(tools,name);require(tool and tool.get('constructor')=='Merge','Missing owned visibility Merge')
+                        slot=field(field(tool,'Inputs'),'Blend');require(field(slot,'Expression'),'Missing owned visibility expression');remove_field(slot,'Expression')
+                    paths=field(field(field(field(root,'Prefs'),'Comp'),'Paths'),'Map');cache=field(paths,'ResolveCaches:')
+                    if cache is not None:
+                        require(cache.get('tag')=='string' and cache['value'].endswith('/Fusion'),'Unknown native cache path');remove_field(paths,'ResolveCaches:')
+                    item['fusion'][comp]=fingerprint(graph)
+    require(used==set(graphs),'Unexpected protected Fusion graph')
+    return fingerprint({'state':value,'extra':extra})
+
+
+def inspect_visibility_resolve(fixture,versions):
+    from resolve import Adapter
+    from caption_plan import validate as captions
+    from resolve_captions import verify_timeline as verify_captions,card_nodes
+    from resolve_sources import verify_timeline as verify_sources
+    from resolve_hooks import verify_timeline as verify_hooks
+    from resolve_graphics import inspect
+    f=read(fixture);os.environ['ACQ_EDIT_SHARED_PYTHON']=f['config']['python'];a=Adapter(f['config']);a.project_root=Path(f['project']['root']);r,p=a.selected(f['project'])
+    require(not p.IsRenderingInProgress(),'Resolve render active; wait before acceptance inspection')
+    plans=[read(v['planPath']) for v in versions];expected=[read(v['inspectionPath']) for v in versions]
+    original=p.GetCurrentTimeline();require(original.GetUniqueId()==expected[1]['timeline'],'Select the final fixture timeline before inspection')
+    original_state=a.snapshot(p);require(original_state==expected[1],'Final native state changed');jobs=p.GetRenderJobList();page=r.GetCurrentPage();protected=[]
+    try:
+        for n,(spec,snapshot) in enumerate(zip(plans,expected)):
+            matches=[p.GetTimelineByIndex(i) for i in range(1,p.GetTimelineCount()+1) if p.GetTimelineByIndex(i).GetUniqueId()==snapshot['timeline']];require(len(matches)==1,'Published native timeline missing')
+            timeline=matches[0];require(p.SetCurrentTimeline(timeline) and a.snapshot(p)==snapshot,'Published native snapshot differs')
+            prepared=captions(f['project'],spec);verify_captions(timeline,spec,prepared);verify_sources(timeline,spec)
+            if n:verify_hooks(timeline,spec,validate(f['project'],spec))
+            state=copy.deepcopy(snapshot);detail=inspect(a,p);extra=detail['extra'];graphs={};targets={}
+            if n:
+                last=len(state['tracks']['video'])-1;state['tracks']['video'].pop();state['trackState']['video'].pop()
+                extra={k:v for k,v in extra.items() if not k.startswith(f'video:{last}:')}
+            with tempfile.TemporaryDirectory(prefix='visibility-check-',dir=a.project_root/'10_WORK') as folder:
+                for kind,tracks in state['tracks'].items():
+                    for track,items in enumerate(tracks):
+                        native=timeline.GetItemListInTrack(kind,track+1)
+                        for index,saved in enumerate(items):
+                            for comp_index in range(len(saved['fusion'])):
+                                key=(kind,track,index,comp_index);item=native[index];comp=item.GetFusionCompByIndex(comp_index+1);path=Path(folder)/f'{kind}-{track}-{index}-{comp_index}.comp'
+                                require(item.ExportFusionComp(str(path),comp_index+1),'Cannot inspect complete native graph');graphs[key]=path.read_text(encoding='utf-8')
+                                if kind=='video' and track==0 and comp_index==0:
+                                    old,new=(card_nodes(plan,prepared,plan['cuts'][index],comp.GetAttrs()['COMPN_RenderStart']) for plan in plans)
+                                    targets[key]=[b['mergeName'] for a,b in zip(old,new) if a['blend']!=b['blend']]
+            protected.append(protected_resolve_visibility(state,graphs,targets,extra))
+            require(a.snapshot(p)==snapshot,'Acceptance inspection changed native state')
+        require(protected[0]==protected[1],'Visibility changed other native graph/state/metadata')
+    finally:
+        require(p.GetCurrentTimeline().GetUniqueId() in [s['timeline'] for s in expected],'Unexpected concurrent timeline selection')
+        require(p.SetCurrentTimeline(original) and a.snapshot(p)==original_state,'Cannot preserve final native selection')
+        require(p.GetRenderJobList()==jobs,'Native render queue changed');require(r.OpenPage(page),'Cannot restore prior page')
+    return {'publishedSnapshotsVerified':True,'nativeCaptionAndHookVerified':True,'protectedNativeStatePreserved':True,'sourceClocksVerified':True,'humanApproved':False}
 
 
 if __name__=='__main__':
     if sys.argv[1]=='prepare':prepare(*sys.argv[2:])
     elif sys.argv[1]=='prepare-visibility':print(json.dumps(prepare_visibility(*sys.argv[2:])))
+    elif sys.argv[1]=='inspect-visibility-resolve':
+        sys.path.insert(0,'/Library/Application Support/Blackmagic Design/DaVinci Resolve/Developer/Scripting/Modules')
+        print(json.dumps(inspect_visibility_resolve(sys.argv[2],json.loads(sys.argv[3]))))
     elif sys.argv[1]=='check-visibility':print(json.dumps(check_visibility(sys.argv[2],json.loads(sys.argv[3]))))
     elif sys.argv[1]=='check':print(json.dumps(check(sys.argv[2],json.loads(sys.argv[3]))))
     else:raise SystemExit('Expected prepare or check')

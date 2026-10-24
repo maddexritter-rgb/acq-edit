@@ -1,9 +1,25 @@
 import copy,json,sys,unittest
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
-from hook_agent_fixture import compare_plans,protected_native,protected_regions,compare_visibility_plans,protected_visibility_native
+from hook_agent_fixture import compare_plans,protected_native,protected_regions,compare_visibility_plans,protected_visibility_native,protected_resolve_visibility
 
 class HookAgentFixtureTests(unittest.TestCase):
+ def resolve_fixture(self):
+  state={'timeline':'first','name':'first','tracks':{'video':[[{'id':'clip','linkedIds':[],'fusion':['hash'],'start':0}]],'audio':[]},'trackState':{'video':[{'locked':False}],'audio':[]}}
+  graph='Composition { Tools = { ACQ_CaptionMerge_0_text = Merge { Inputs = { Blend = Input { Expression = "old", Value = 1 }, Foreground = Input { SourceOp = "ACQ_Caption_0_text", Source = "Output" } } }, ACQ_Caption_0_text = TextPlus { Inputs = { StyledText = Input { Value = "Original" } } } } }'
+  key=('video',0,0,0);return state,{key:graph},{key:['ACQ_CaptionMerge_0_text']},{'video:0:0':{'flags':['Blue']}}
+ def test_resolve_visibility_checker_keeps_text_connections_and_metadata(self):
+  state,graphs,targets,extra=self.resolve_fixture();baseline=protected_resolve_visibility(state,graphs,targets,extra);key=next(iter(graphs))
+  changed={key:graphs[key].replace('"old"','"new"')};other=copy.deepcopy(state);other['timeline']='new';other['name']='new';other['tracks']['video'][0][0]['id']='new-clip'
+  self.assertEqual(baseline,protected_resolve_visibility(other,changed,targets,extra))
+  for before,after in [('"Original"','"Changed"'),('Source = "Output"','Source = "Other"')]:
+   self.assertNotEqual(baseline,protected_resolve_visibility(state,{key:graphs[key].replace(before,after)},targets,extra))
+  self.assertNotEqual(baseline,protected_resolve_visibility(state,graphs,targets,{'video:0:0':{'flags':[]}}))
+ def test_resolve_visibility_checker_refuses_incomplete_graph_or_unknown_link(self):
+  state,graphs,targets,extra=self.resolve_fixture()
+  with self.assertRaisesRegex(RuntimeError,'Missing protected Fusion'):protected_resolve_visibility(state,{},targets,extra)
+  state['tracks']['video'][0][0]['linkedIds']=['unknown']
+  with self.assertRaisesRegex(RuntimeError,'outside protected tracks'):protected_resolve_visibility(state,graphs,targets,extra)
  def test_visibility_checker_only_allows_mask_and_new_hook_in_plan(self):
   first={'cuts':[{'frames':175}],'captions':[{'text':'original'}]}
   second={**copy.deepcopy(first),'captionVisibility':{'hiddenRanges':[{'startFrame':0,'endFrame':126}]},'hookContract':{'sha256':'new'}}
