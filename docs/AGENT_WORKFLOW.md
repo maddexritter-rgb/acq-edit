@@ -16,6 +16,8 @@ Deferred feedback is included in each submission when notes changed during a pri
 
 New clips are registered with `clip PROJECT_ID "Source-supported short title"`. The returned clip ID remains stable across versions. Keep work under `10_WORK/jobs/JOB_ID`; use new filenames for every operation receipt. The job runner needs these files for restart recovery.
 
+For camera panels, use `NATIVE_PANELS.md`: Assembly Design pins camera choices/sync/layout to the current cuts, and horizontal-to-vertical supplies each panel's own crop or tracking. FilmCraft constructs native independent nests with one master dialogue mix. This transport currently rejects Resolve/Premiere and does not support panel-layout/framing revisions; report those gaps without switching engines, flattening panels or rebuilding approved work. Caption-only revisions preserve and reverify the nests.
+
 ## References and motion
 
 Use `watch` to study the complete reference with audio. Use `scripts/reference_frames.py` for dense inspection around fast transitions; extracted frames alone are not viewed evidence. Record the timestamped recipe using `REFERENCE_RECIPE.schema.json`, distinguish observation from inference, and cover cuts, pacing, captions, framing, graphics, color, music and sound effects. Compare actual rendered results against those observations. Do not claim reference fidelity from a video-model summary alone.

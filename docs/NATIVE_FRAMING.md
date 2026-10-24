@@ -56,7 +56,7 @@ A revision moved only the first crop 20 source pixels horizontally. At 2× scale
 
 Resolve's duplicated timeline produced a small decoded audio difference despite identical native ranges and levels. This evidence does not establish sample identity or explain the native encoder's variation. The caption fixture used FilmCraft size 36 and Resolve normalized size 0.14, with equal measured glyph width/height but different baselines; this is a fixture calibration, not universal font parity.
 
-Dense subject detection and planning, framing-mode/scale changes, multi-panel/multicamera layouts, mixed source rates and complete real-footage finishing remain separate acceptance work. Native construction from a reviewed X curve is described below. Premiere continues through its canonical native reframe stage and still requires a dedicated toolkit fixture. These measurements do not grant human editorial approval or satisfy the three-engine pilot gate.
+Dense subject detection and planning, framing-mode/scale changes, mixed source rates and complete real-footage finishing remain separate acceptance work. FilmCraft panel construction and its remaining cross-engine/revision gates are described in `NATIVE_PANELS.md`. Native construction from a reviewed X curve is described below. Premiere continues through its canonical native reframe stage and still requires a dedicated toolkit fixture. These measurements do not grant human editorial approval or satisfy the three-engine pilot gate.
 
 ## Source-bound horizontal tracking
 

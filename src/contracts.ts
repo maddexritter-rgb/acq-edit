@@ -33,6 +33,7 @@ export function routeRevision(text:string):string[] {
   if(/\b(cuts?|recut|trim|shorten|remove|passages?|spoken|sentences?|word ending|reorder|hook replacement)\b/i.test(text)) ['assembly-design','horizontal-to-vertical','caption-clips','text-hook','music','promo'].forEach(x=>owners.add(x));
   if(/caption|subtitle|font/i.test(text)) owners.add('caption-clips');
   if(/fram|crop|zoom|camera|\b(tracking|recenter|recentre|centered|centred)\b|\b(track|follow)\s+(the\s+)?(speaker|subject|face)\b/i.test(text)) owners.add('horizontal-to-vertical');
+  if(/\b(split[ -]?screen|panels?|layouts?)\b/i.test(text)) {owners.add('assembly-design');owners.add('horizontal-to-vertical')}
   if(/music|audio|volume|sound/i.test(text)) owners.add('music');
   if(/headline|text hook/i.test(text)) owners.add('text-hook');
   if(/motion|animation|graphic/i.test(text)) owners.add('promo');
@@ -45,7 +46,12 @@ export interface MusicPlacement {
 export interface AudioPlan {gainDb?:number;music?:MusicPlacement[];properties?:Record<string,unknown>}
 export interface FixedCrop {mode:'fixed-crop';sourceWidth:number;sourceHeight:number;x:number;y:number;width:number;height:number}
 export interface TrackedCrop extends Omit<FixedCrop,'mode'> {mode:'tracked-crop';xByFrame:number[];sourceRange:{sourceId:string;sha256:string;inFrame:number;frames:number}}
-export interface FramingPlan {schema:'acq-edit/framing-v1';receiptPath:string;receiptSha256:string;shots:Record<string,FixedCrop|TrackedCrop>}
+export interface PanelLayout {
+  mode:'panel-layout'; cameraReceiptPath:string; cameraReceiptSha256:string;
+  panels:{id:string;sourceRange:{sourceId:string;sha256:string;inFrame:number;frames:number};
+    rect:{x:number;y:number;width:number;height:number};crop:FixedCrop|TrackedCrop}[];
+}
+export interface FramingPlan {schema:'acq-edit/framing-v1';receiptPath:string;receiptSha256:string;shots:Record<string,FixedCrop|TrackedCrop|PanelLayout>}
 export interface EditPlan {
   schema:'acq-edit/plan-v1'; projectId:string; backend:Backend; clipId:string; title:string;
   fps:{numerator:number;denominator:number}; width:number;height:number; sampleRate:number;

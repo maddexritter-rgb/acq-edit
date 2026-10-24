@@ -51,9 +51,19 @@ class Adapter:
     for cut,v,a in zip(p['cuts'],state['video'][0]['items'],state['audio'][0]['items']):
      require((a['start'],a['sourceIn'],a['duration'])==(cut['audioRecordSample']*st,cut['audioInSample']*st,cut['audioSamples']*st),'Reopened audio differs from exact paired samples')
      require(v['link'] is not None and v['link']==a['link'] and v['start']-v['sourceIn']==a['start']-a['sourceIn'],'Reopened native linkage/source clocks differ')
+   panel_layouts={}
+   if any(s.get('mode')=='panel-layout' for s in p.get('framing',{}).get('shots',{}).values()):
+    from filmcraft_panels import construct
+    panel_layouts=construct(c,p,sources,ft)
    self.audio(c,p,sources,ft)
    self.finish(c,p,ft,project)
    c.run('file.saveAs',{'path':str(native)})
+   if panel_layouts:
+    from filmcraft_panels import bind
+    c.close();data=read(native);bind(data,p,panel_layouts,ft)
+    panel_native=out/'panel-assembly.fcproj';save(panel_native,data)
+    c=Filmcraft(self.config['filmcraft'],out/'panel-reopen',str(panel_native))
+    c.run('file.saveAs',{'path':str(native)})
    verify_filmcraft_framing(native,p,ft)
    if p.get('captionContract'):
     from caption_plan import validate,verify_native
@@ -85,6 +95,7 @@ class Adapter:
    items=c.tool('sequence_inspect')['video'][0]['items'];require(len(items)==len(p['cuts']),'Picture coverage differs from framing plan')
    for cut,item in zip(p['cuts'],items):
     require(item['start']==cut['recordFrame']*ft and item['sourceIn']==cut['sourceInFrame']*ft and item['duration']==cut['frames']*ft,'Stale native picture range')
+    if shots[cut['id']]['mode']=='panel-layout':continue
     for param,value in filmcraft_motion(p,shots[cut['id']]).items():c.run('effects.setParam',{'clip':item['clip'],'effect':'motion','param':param,'value':value})
     filmcraft_tracking(c,item,cut,shots[cut['id']],ft)
   if p.get('captionContract'):
@@ -114,6 +125,9 @@ class Adapter:
   require(before['fingerprint']==packet['expectedFingerprint'],'Native state changed; merge intervening edits before revising')
   require(packet.get('kind') in ['caption-style','music-gain','fixed-framing'],'Use Assembly Design for recuts; this operation supports caption style, music gain or fixed framing only')
   spec=plan(project,packet) if packet['kind']=='fixed-framing' or (packet['kind']=='caption-style' and packet.get('plan')) else None
+  if packet['kind']=='fixed-framing':
+   targets={e['cutId'] for e in packet['edits']};shots=spec['framing']['shots']
+   require(targets and targets<=set(shots) and all(shots[i]['mode']=='fixed-crop' for i in targets),'Fixed framing cannot target tracked crops or native panels; use a dedicated revision route')
   if spec:require(before['state']['settings']['width']==spec['width'] and before['state']['settings']['height']==spec['height'],'Finishing revision cannot resize the approved timeline')
   target=inside(project['root'],packet['outputProject']);require(not target.exists(),'Revision destination exists');shutil.copy2(packet['nativeProject'],target)
   c=Filmcraft(self.config['filmcraft'],inside(project['root'],packet['session']),str(target))

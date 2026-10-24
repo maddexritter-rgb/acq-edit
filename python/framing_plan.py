@@ -7,16 +7,19 @@ from fractions import Fraction
 from common import inside,require,sha
 from pathlib import Path
 
-def validate_framing(project,spec):
+def validate_framing(project,spec,source_probes=None):
  framing=spec.get('framing',{})
  if not framing:return {}
  require(framing.get('schema')=='acq-edit/framing-v1','Use the shared framing schema; raw engine properties are not a portable camera plan')
  require(set(framing)<=set(['schema','receiptPath','receiptSha256','shots']),'Unknown framing operation')
  receipt=inside(project['root'],framing['receiptPath']);require(sha(receipt)==framing['receiptSha256'],'Framing decision receipt changed')
  shots=framing['shots'];require(isinstance(shots,dict) and set(shots)=={c['id'] for c in spec['cuts']},'Every source cut needs exactly one framing decision')
- sizes={}
+ sizes=source_probes if source_probes is not None else {}
  for cut in spec['cuts']:
   shot=shots[cut['id']]
+  if shot.get('mode')=='panel-layout':
+   from panel_layout import validate
+   validate(project,spec,cut,shot,sizes);continue
   require(shot.get('mode') in ['fixed-crop','tracked-crop'],'This route accepts fixed crops or explicit source-bound X tracking; panels need their own execution plan')
   tracked=shot['mode']=='tracked-crop'
   require(not tracked or spec.get('backend') in ['filmcraft','resolve'],'Native tracked crops are supported only by the selected FilmCraft or Resolve adapter')
@@ -73,11 +76,28 @@ def filmcraft_tracking(c, item, cut, shot, frame_ticks):
 
 def verify_filmcraft_framing(native,spec,frame_ticks):
  from common import read
+ verify_filmcraft_framing_data(read(native),spec,frame_ticks)
+
+
+def verify_filmcraft_framing_data(data,spec,frame_ticks,sequence_id=None):
  shots=spec.get('framing',{}).get('shots',{})
  if not shots:return
- data=read(native);seq=data['project']['items'][str(data['view']['active_sequence'])]['kind']['Sequence'];items=seq['video_tracks'][0]['items']
+ seq=data['project']['items'][str(sequence_id if sequence_id is not None else data['view']['active_sequence'])]['kind']['Sequence'];items=seq['video_tracks'][0]['items']
  require(len(items)==len(spec['cuts']),'Native framing picture coverage differs')
+ if any(s['mode']=='panel-layout' for s in shots.values()):
+  require(seq['video_tracks'][0]['enabled'] and not any(t['solo'] for t in seq['video_tracks']),'Native panel master track visibility changed')
+  nested_ids=[]
+  for item,cut in zip(items,spec['cuts']):
+   if shots[cut['id']]['mode']!='panel-layout':continue
+   nested_ids.append(item['item'])
+   nested=data['project']['items'][str(item['item'])]['kind'].get('Sequence')
+   require(nested,'Panel nest replaced with flattened media')
+   nested_ids.extend(i['item'] for t in nested['video_tracks'] for i in t['items'])
+  require(len(nested_ids)==len(set(nested_ids)),'Panel occurrences share editable sequences; preserve independent framing')
  for item,cut in zip(items,spec['cuts']):
+  if shots[cut['id']]['mode']=='panel-layout':
+   from filmcraft_panels import verify
+   verify(data,spec,cut,item,frame_ticks);continue
   require((item['start'],item['source_in'],item['duration'])==(cut['recordFrame']*frame_ticks,cut['sourceInFrame']*frame_ticks,cut['frames']*frame_ticks),'Native framing clocks differ')
   source=next(s for s in spec['sources'] if s['id']==cut['sourceId'])
   native_source=data['project']['items'][str(item['item'])]['kind']['Media']['media']['File']['path']

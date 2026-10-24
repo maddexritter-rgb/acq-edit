@@ -10,6 +10,8 @@ Source-linked music, dialogue/bed gain and fades are available through the expli
 
 Selected existing X curves can be revised through `tracking-framing` with a pinned previous plan and a protected native-data comparison. Caption-only revision operates on an inspected copy and changes explicit graphic properties. Native media/render checkpoints are always new files. Guarded source-word recuts build a new native project from freshly compiled cuts and dependent finishing plans; see `NATIVE_RECUTS.md`.
 
+Assembly-bound camera panels construct independent native source sequences inside per-cut layout nests. The master retains one dialogue mix and separate captions/graphics. Fixed and source-bound tracked crops operate in each panel's coordinates. Native graph verification and caption-only preservation are implemented; panel-layout/framing revisions and the other engine implementations remain open. See `NATIVE_PANELS.md`.
+
 Transparent Remotion assets use the shared media preflight and separate ordered video tracks with exact native placement readback. Basic overlapping-asset construction and final native rendering were exercised in FilmCraft and Resolve; see `NATIVE_MOTION.md` for the format contract and Resolve reopen limitation.
 
 Production FilmCraft body captions use the pinned caption-clips handoff and three native graphic layers, with owning-helper timing, shadows and motion. See `NATIVE_CAPTIONS.md` for preparation, explicit limitations and native revision evidence.
