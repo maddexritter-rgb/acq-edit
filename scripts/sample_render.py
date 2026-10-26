@@ -16,7 +16,10 @@ def main():
     for c in p['cuts']:
         for f in sorted({c['recordFrame'],c['recordFrame']+c['frames']//2,c['recordFrame']+c['frames']-1}):add(f,c['id'])
     a.output.mkdir(parents=True,exist_ok=False);frames=sorted(points)
-    expr='+'.join(f'eq(n,{f})' for f in frames)
+    terms=[f'eq(n,{f})' for f in frames]
+    while len(terms)>1:
+        terms=[f'({terms[i]}+{terms[i+1]})' if i+1<len(terms) else terms[i] for i in range(0,len(terms),2)]
+    expr=terms[0]
     subprocess.run(['ffmpeg','-nostdin','-n','-v','error','-i',str(a.media),'-vf',f"select='{expr}',scale=540:960",'-fps_mode','vfr',str(a.output/'frame-%04d.jpg')],check=True)
     images=sorted(a.output.glob('frame-*.jpg'))
     if len(images)!=len(frames):raise RuntimeError('Decoded sample count differs')
