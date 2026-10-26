@@ -111,4 +111,9 @@ def verify_filmcraft_framing_data(data,spec,frame_ticks,sequence_id=None):
   if shot['mode']=='fixed-crop':require(not keys,'Fixed crop gained tracking');continue
   require(len(keys)==len(shot['xByFrame']),'Native tracking key count differs')
   for index,(key,x) in enumerate(zip(keys,shot['xByFrame'])):
-   require(key['time']==(cut['sourceInFrame']+index)*frame_ticks and key['interp']=='Linear' and key['value']=={'Vec2':{'x':x+shot['width']/2,'y':shot['y']+shot['height']/2}},'Native tracking clock/curve differs')
+   actual=key['value'].get('Vec2',{})
+   # JSON/Rust/Python round trips can differ by one floating-point ULP after
+   # adding the half-width. Keep clocks/interpolation exact; tolerate only a
+   # billionth of a source pixel, not visible motion or relaxed framing bounds.
+   coordinates=set(actual)=={'x','y'} and all(type(actual[k]) in (int,float) and math.isfinite(actual[k]) and math.isclose(actual[k],v,rel_tol=0,abs_tol=1e-9) for k,v in [('x',x+shot['width']/2),('y',shot['y']+shot['height']/2)])
+   require(key['time']==(cut['sourceInFrame']+index)*frame_ticks and key['interp']=='Linear' and coordinates,'Native tracking clock/curve differs')

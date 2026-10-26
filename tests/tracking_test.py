@@ -40,6 +40,12 @@ class TrackingTests(unittest.TestCase):
   def verify(value):
    file=self.root/'native.json';file.write_text(json.dumps(value));verify_filmcraft_framing(file,self.spec,ft)
   verify(data)
+  rounded=copy.deepcopy(data)
+  point=rounded['project']['items']['1']['kind']['Sequence']['video_tracks'][0]['items'][0]['effects'][0]['params']['anchor']['keyframes'][1]['value']['Vec2']
+  point['x']+=1e-13
+  verify(rounded)
+  point['x']+=1e-4
+  with self.assertRaisesRegex(RuntimeError,'clock/curve differs'):verify(rounded)
   for field,value in [('time',251),('interp','Bezier'),('value',{'Vec2':{'x':190.5,'y':181}})]:
    changed=copy.deepcopy(data);changed['project']['items']['1']['kind']['Sequence']['video_tracks'][0]['items'][0]['effects'][0]['params']['anchor']['keyframes'][1][field]=value
    with self.assertRaisesRegex(RuntimeError,'clock/curve differs'):verify(changed)
