@@ -12,6 +12,7 @@ def write(p,v):Path(p).write_text(json.dumps(v,indent=2))
 def main():
  p=argparse.ArgumentParser(description=__doc__)
  for n in ('project','plan','output','clock','home','shadow-profile'):p.add_argument('--'+n,type=Path,required=True)
+ p.add_argument('--parent-version',help='Current published version for an explicitly requested rebuild; publication refuses stale parents')
  a=p.parse_args();project=read(a.project);spec=read(a.plan);out=a.output.resolve();root=Path(project['root']).resolve()
  if project['backend']!='filmcraft' or spec['projectId']!=project['id'] or spec['backend']!='filmcraft':raise ValueError('Exact FilmCraft project required')
  if not out.is_relative_to(root/'10_WORK'):raise ValueError('Execution output must be project-owned work')
@@ -32,7 +33,7 @@ def main():
   run('native_split_shadow',[sys.executable,ROOT/'.local/skills/horizontal-to-vertical/scripts/filmcraft_split_shadow.py','--project',target,'--binary',config['filmcraft'],'--out',out/'shadow','--profile',a.shadow_profile,'--targets',out/'shadow-targets.json'],out/'shadow-result.txt',parse=False)
   shadow=out/'shadow/receipt.json';target=str(out/'shadow/edit.fcproj')
  inspected=native('inspect',{'nativeProject':target,'session':str(out/'inspection-session')},'native_inspection')
- packet={'plan':str(a.plan.resolve()),'nativeProject':target,'expectedFingerprint':inspected['fingerprint'],'media':str(out/'export/clip.mp4'),'session':str(out/'export/session'),'inspection':str(out/'export/inspection.json'),'receipt':str(out/'export/receipt.json'),'parentId':None}
+ packet={'plan':str(a.plan.resolve()),'nativeProject':target,'expectedFingerprint':inspected['fingerprint'],'media':str(out/'export/clip.mp4'),'session':str(out/'export/session'),'inspection':str(out/'export/inspection.json'),'receipt':str(out/'export/receipt.json'),'parentId':a.parent_version}
  if shadow:packet.update(shadowReceipt=str(shadow),shadowReceiptSha256=hashlib.sha256(shadow.read_bytes()).hexdigest())
  native('render',packet,'native_export_and_integrity')
  # Publication does not approve the clip. It preserves the native checkpoint and

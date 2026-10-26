@@ -15,6 +15,28 @@ from common import sha, fingerprint
 
 
 class CaptionPlanTests(unittest.TestCase):
+    def test_batched_curves_preserve_every_other_native_field(self):
+        prepared, _ = self.derive()
+        before=copy.deepcopy(self.native)
+        rebuilt=caption_plan.bind_native_curves(before,self.spec,prepared,254016000000//25)
+        self.assertEqual(before,self.native)
+        self.native=rebuilt
+        self.assertEqual(self.verify()['status'],'NATIVE_CAPTION_CONTRACT_VALID')
+        for data in [before,rebuilt]:
+            for lane in data['project']['items']['1']['kind']['Sequence']['video_tracks'][1:4]:
+                for item in lane['items']:
+                    for effect in item['effects']:
+                        if effect['effect']=='motion':effect['params'].pop('position')
+                        if effect['effect']=='opacity':effect['params'].pop('opacity')
+        self.assertEqual(before,rebuilt)
+
+    def test_batched_curves_reject_stale_caption_timing_or_text(self):
+        prepared,_=self.derive()
+        for field,value in [('start',-1),('duration',1)]:
+            data=copy.deepcopy(self.native)
+            data['project']['items']['1']['kind']['Sequence']['video_tracks'][1]['items'][0][field]=value
+            with self.assertRaisesRegex(RuntimeError,'timing differs'):
+                caption_plan.bind_native_curves(data,self.spec,prepared,254016000000//25)
     def test_bad_caption_handoff_refused_before_media_hashing(self):
         with patch.object(caption_plan,'read',return_value={'projectId':'p','backend':'filmcraft'}), patch.object(caption_plan,'inside',side_effect=lambda root,p:p), patch.object(caption_plan,'derive',side_effect=RuntimeError('bad timing')), patch('common.plan') as expensive:
             with self.assertRaisesRegex(RuntimeError,'bad timing'):

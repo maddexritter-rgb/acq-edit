@@ -43,6 +43,10 @@ test('publication archives the exact frozen recipe and later working changes lea
  await run('ffmpeg',['-v','error','-f','lavfi','-i','testsrc2=size=160x90:rate=25:duration=0.08','-c:v','libx264','-pix_fmt','yuv420p',media]);
  await writeFile(native,'Synthetic native stand-in; this test does not qualify an editor');await writeFile(inspection,'{}');await writeFile(plan,JSON.stringify({...f.plan,projectId:'p',backend:'resolve',clipId:'c'}));
  await writeFile(receipt,JSON.stringify({schema:'acq-edit/render-v1',projectId:'p',backend:'resolve',clipId:'c',parentId:null,media,nativeProject:native,nativeFingerprint:await sha256(native),nativeInspectionPath:inspection,planPath:plan,nativeRendered:true,expected:{width:160,height:90,frames:2,fps:'25/1'},referenceEvidence:f.evidence}));
+ const originalReceipt=JSON.parse(await readFile(receipt));
+ await writeFile(receipt,JSON.stringify({...originalReceipt,expected:{...originalReceipt.expected,frames:3}}));
+ await assert.rejects(publish(store,'p',receipt),/decoded frame count mismatch/);
+ await writeFile(receipt,JSON.stringify(originalReceipt));
  const version=await publish(store,'p',receipt),before=await readFile(version.receiptPath);
  assert.deepEqual(JSON.parse(before).referenceEvidence,f.evidence);assert.equal(store.feedback(version.id).decision,null);
  await writeFile(f.origin,'{"revision":2}');await writeFile(f.file,'{"new":"working file must not rewrite archived receipt"}');

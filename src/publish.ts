@@ -61,9 +61,11 @@ export async function publish(store:Store,projectId:string,receiptFile:string):P
  const nativeReopen=verifyNativeReopen(p,r.nativeReopen,r.nativeReopen===undefined?undefined:await readJson(r.nativeInspectionPath),inspectionHash);
  invariant(await sha256(r.nativeProject)===r.nativeFingerprint,'Native project changed after its receipt');
  const renderedHash=await sha256(r.media);
- const probe=JSON.parse(await run('ffprobe',['-v','error','-count_frames','-show_streams','-of','json',r.media],{timeout:3600_000}));const video=probe.streams.find((s:any)=>s.codec_type==='video');
- invariant(video&&video.width===r.expected.width&&video.height===r.expected.height&&Number(video.nb_read_frames)===r.expected.frames&&video.r_frame_rate===r.expected.fps,'Render frame geometry/rate/count mismatch');
- await run('ffmpeg',['-v','error','-xerror','-i',r.media,'-f','null','-'],{timeout:3600_000});
+ const probe=JSON.parse(await run('ffprobe',['-v','error','-show_streams','-of','json',r.media],{timeout:3600_000}));const videos=probe.streams.filter((s:any)=>s.codec_type==='video'),video=videos[0];
+ invariant(videos.length===1&&video.width===r.expected.width&&video.height===r.expected.height&&video.r_frame_rate===r.expected.fps,'Render frame geometry/rate/count mismatch');
+ const decoded=await run('ffmpeg',['-v','error','-xerror','-i',r.media,'-map','0:v:0','-map','0:a?','-fps_mode','passthrough','-progress','pipe:1','-nostats','-f','null','-'],{timeout:3600_000});
+ const frameCounts=[...decoded.matchAll(/^frame=\s*(\d+)\s*$/gm)].map(m=>Number(m[1]));
+ invariant(decoded.includes('progress=end')&&frameCounts.at(-1)===r.expected.frames,'Render decoded frame count mismatch');
  const id=randomUUID(),number=store.versions(c.id).length+1;const folder=path.join(p.root,'20_DELIVER',c.id,`v${number}-${id}`);await mkdir(folder,{recursive:true});
  const media=path.join(folder,'clip'+path.extname(r.media));await copyFile(r.media,media,constants.COPYFILE_EXCL);const sum=await sha256(media);invariant(sum===renderedHash&&renderedHash===await sha256(r.media),'Render changed during verification or delivery copy');await chmod(media,0o444);
  const archive:Record<string,string>={},archiveHashes:Record<string,string>={};for(const [label,source] of Object.entries({native:r.nativeProject,plan:r.planPath,receipt:receiptFile,inspection:r.nativeInspectionPath,...(r.recutVerificationPath?{recut:r.recutVerificationPath}:{})})){const before=await sha256(source),target=path.join(folder,label+path.extname(source));await copyFile(source,target,constants.COPYFILE_EXCL);invariant(await sha256(target)===before&&await sha256(source)===before,'Publication input changed during archival');await chmod(target,0o444);archive[label]=target;archiveHashes[label]=before;}

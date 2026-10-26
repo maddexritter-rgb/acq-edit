@@ -61,11 +61,15 @@ class Adapter:
     from filmcraft_panels import construct
     panel_layouts=construct(c,p,sources,ft)
    self.audio(c,p,sources,ft)
-   self.finish(c,p,ft,project)
+   self.finish(c,p,ft,project,defer_caption_curves=True)
    c.run('file.saveAs',{'path':str(native)})
-   if panel_layouts:
+   if panel_layouts or p.get('captionContract'):
     from filmcraft_panels import bind
-    c.close();data=read(native);bind(data,p,panel_layouts,ft)
+    c.close();data=read(native)
+    if panel_layouts:bind(data,p,panel_layouts,ft)
+    if p.get('captionContract'):
+     from caption_plan import validate,bind_native_curves
+     data=bind_native_curves(data,p,validate(project,p),ft)
     panel_native=out/'panel-assembly.fcproj';save(panel_native,data)
     c=Filmcraft(self.config['filmcraft'],out/'panel-reopen',str(panel_native))
     c.run('file.saveAs',{'path':str(native)})
@@ -98,7 +102,7 @@ class Adapter:
     for offset,db in linear_fade_points(bed,p['sampleRate']):
      c.run('effects.setParam',{'clip':clip['clip'],'effect':'volume','param':'level','value':db,'time':clip['start']+offset*sample_tick,'keyframe':True})
      c.run('effects.setInterpolation',{'clip':clip['clip'],'effect':'volume','param':'level','mediaTime':clip['sourceIn']+offset*sample_tick,'interpolation':'linear'})
- def finish(self,c,p,ft,project=None):
+ def finish(self,c,p,ft,project=None,*,defer_caption_curves=False):
   shots=p.get('framing',{}).get('shots',{})
   if shots:
    items=c.tool('sequence_inspect')['video'][0]['items'];require(len(items)==len(p['cuts']),'Picture coverage differs from framing plan')
@@ -109,7 +113,7 @@ class Adapter:
     filmcraft_tracking(c,item,cut,shots[cut['id']],ft)
   if p.get('captionContract'):
    from caption_plan import validate,build_native
-   build_native(c,p,validate(project,p),ft)
+   build_native(c,p,validate(project,p),ft,defer_curves=defer_caption_curves)
   for card in ([] if p.get('captionContract') else p.get('captions',[])):
    style=card['style'];graphic=c.run('graphics.newText',{'newClip':True,'text':card['text'],'position':style.get('position',[p['width']/2,p['height']*.78]),'font':style.get('font','Arial'),'fontStyle':style.get('fontStyle','Bold'),'size':style.get('size',64),'time':card['startFrame']*ft,'seconds':(card['endFrame']-card['startFrame'])*p['fps']['denominator']/p['fps']['numerator'],'track':1});c.run('graphics.set',{'clip':graphic['clip'],'layer':graphic['layer'],'props':{'align':'center'}})
   for index,asset in enumerate(p.get('graphics',[])):
@@ -327,6 +331,7 @@ class Adapter:
    if p.get('captionContract'):
     from caption_plan import validate,verify_native
     verify_native(native,p,validate(project,p),TICKS*p['fps']['denominator']//p['fps']['numerator'])
+   render_started=time.monotonic()
    job=c.run('file.exportMedia',{'path':str(media),'format':'h264','audio':True,'range':'entire','wait':False})
    save(str(media)+'.job.json',job);deadline=time.monotonic()+4*3600
    while True:
@@ -334,6 +339,7 @@ class Adapter:
     if not active:
      require(not any(j.get('error') or j.get('cancelled') for j in jobs),'Native export failed');break
     require(time.monotonic()<deadline,'Native export timed out; reconcile original job');time.sleep(1)
+   save(str(media)+'.performance.json',{'nativeExportWallSeconds':time.monotonic()-render_started,'jobs':jobs})
    require(fingerprint({'state':c.tool('sequence_inspect'),'fileHash':sha(native)})==packet['expectedFingerprint'],'Native project changed during export')
   finally:c.close()
   if packet.get('shadowReceipt'):

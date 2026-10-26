@@ -171,7 +171,7 @@ def validate_native_fonts(client, cards):
             require(run['fontStyle'] in fonts.get(style['font'], set()), 'Exact emphasis face missing: ' + run['fontStyle'])
 
 
-def build_native(client, spec, prepared, frame_ticks):
+def build_native(client, spec, prepared, frame_ticks, *, defer_curves=False):
     validate_native_fonts(client, prepared['cards'])
     for role_index, role in enumerate(LAYER_ORDER):
         for card in prepared['cards']:
@@ -192,9 +192,34 @@ def build_native(client, spec, prepared, frame_ticks):
                 card['end_frame'] - card['start_frame'], elapsed_frames=card.get('elapsed_frames', 0),
                 center=(spec['width'] / 2, spec['height'] / 2), canvas_height=spec['height'])
             opacity = opacity_for(spec, prepared, card, frame_ticks)
-            for effect, parameter, value in [('motion', 'position', motion), ('opacity', 'opacity', opacity)]:
-                write_parameter(client, graphic['clip'], effect, parameter, value, card['start_frame'] * frame_ticks)
+            if not defer_curves:
+                for effect, parameter, value in [('motion', 'position', motion), ('opacity', 'opacity', opacity)]:
+                    write_parameter(client, graphic['clip'], effect, parameter, value, card['start_frame'] * frame_ticks)
     return {'status': 'constructed-awaiting-saved-native-verification'}
+
+
+def bind_native_curves(data, spec, prepared, frame_ticks):
+    """First-build-only transport of owner curves; reopen and verify before use.
+
+    Never use this on a revision or an unrelated existing project. Native text,
+    character runs, timing and every non-curve field remain untouched.
+    """
+    result = copy.deepcopy(data)
+    sequence = result['project']['items'][str(result['view']['active_sequence'])]['kind']['Sequence']
+    layers = sequence['video_tracks'][1:4]
+    require(len(layers) == 3, 'Three caption lanes required for curve binding')
+    for lane in layers:
+        require(len(lane['items']) == len(prepared['cards']), 'Caption count differs before curve binding')
+        for item, card in zip(lane['items'], prepared['cards']):
+            require(item['start'] == card['start_frame'] * frame_ticks and item['duration'] == (card['end_frame']-card['start_frame']) * frame_ticks, 'Caption timing differs before curve binding')
+            effects = {e['effect']: e['params'] for e in item['effects']}
+            require(effects['graphic_text']['text']['value'] == {'Text': card['text']}, 'Caption text differs before curve binding')
+            motion, _ = profile_caption_motion(prepared['profile'], frame_ticks,
+                card['end_frame']-card['start_frame'], elapsed_frames=card.get('elapsed_frames', 0),
+                center=(spec['width']/2, spec['height']/2), canvas_height=spec['height'])
+            effects['motion']['position'] = motion
+            effects['opacity']['opacity'] = opacity_for(spec, prepared, card, frame_ticks)
+    return result
 
 
 def verify_native(native_path, spec, prepared, frame_ticks):
