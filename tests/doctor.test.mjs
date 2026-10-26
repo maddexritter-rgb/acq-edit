@@ -13,6 +13,7 @@ function harness(backend,overrides={}){
   calls.push({command,args,options});
   if(args.includes('--version')||args.includes('-version'))return 'Fixture 1.0\n';
   if(args[0].endsWith('materialize.py'))return JSON.stringify({ready:true,verifiedFiles:683,routedEntrypoints:38});
+  if(args[0].endsWith('asset_bundle.py'))return JSON.stringify({ready:true,version:'fixture'});
   if(args[0].endsWith('brain_receipts.py'))return JSON.stringify({ready:true,remoteAccess:'not-checked'});
   if(args[0].endsWith('native.py'))return JSON.stringify(backend==='filmcraft'?{backend,binaryPresent:true}:backend==='resolve'?{backend,studio:true,connected:true}:{backend,ready:true});
   if(command==='/fixture/filmcraft'&&args[0]==='--help')return 'FilmCraft help';

@@ -3844,8 +3844,8 @@
       "path": "music/scripts/pick_music.py",
       "source": "canonical-skills/music/scripts/pick_music.py",
       "source_sha256": "b0a6990d3f9482cdd14f20f670c4b5ec95831d307971559f9c868af7535706f5",
-      "distribution_sha256": "c8d6b442763f67cbb7045fbc3ab671b399fb02fe1728b5c80b8817ac08e31a60",
-      "bytes": 10628,
+      "distribution_sha256": "56a64c4b0c6fe50b5d2027cc356de0b64e6bae7120d53ab840c62f76719867c3",
+      "bytes": 10731,
       "transforms": [
         {
           "from": "asset-library-root",
@@ -3854,6 +3854,9 @@
         {
           "patch": "joined-skill-root",
           "count": 1
+        },
+        {
+          "patch": "bundle-relative-music-catalog"
         }
       ]
     },

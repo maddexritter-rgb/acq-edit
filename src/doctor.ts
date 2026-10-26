@@ -59,6 +59,11 @@ export async function doctor(c:Config,tools:DoctorTools={}){
   }catch{/* report a repair without raw subprocess output */}
  }
  if(!checks.skills.ready)issue('skills','Install the shared dependencies and selected engine in a fresh checkout; preserve any changed or incomplete runtime.');
+ checks.assets={ready:false};
+ if(checks.skills.ready){
+  try{checks.assets=JSON.parse(await execute(c.python,[path.join(ROOT,'scripts/asset_bundle.py'),'runtime-check',ROOT],{env,timeout:60000}));}catch{/* missing or changed bundle */}
+ }
+ if(checks.assets.ready!==true)issue('assets','Install the versioned asset bundle selected by this runtime, then verify its hashes. Do not fall back to personal folders.');
  checks.brain={ready:false,remoteAccess:'not-checked'};
  if(checks.skills.ready&&secretsValid){
   try{const value=JSON.parse(await execute(c.python,[path.join(ROOT,'python/brain_receipts.py'),'--check-config','--config',path.join(HOME,'config.json')],{env:secretValues,timeout:15000}));checks.brain={ready:value?.ready===true,remoteAccess:'not-checked'}}catch{/* local probe failed */}

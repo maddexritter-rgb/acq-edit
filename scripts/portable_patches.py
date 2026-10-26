@@ -10,6 +10,10 @@ def private_references(text):
 def portable_distribution(text,relative):
  """Apply reviewed portable replacements after canonical paths are normalized."""
  changes=[]
+ if relative=='music/scripts/pick_music.py':
+  text=re.sub(r'DEFAULT_REVIEW = Path\([^\n]+\)\.expanduser\(\)', 'DEFAULT_REVIEW = ROOT / "music_review_decisions.json"', text)
+  text=text.replace('  path=Path(track.get("path",key)); low=path.name.lower()', '  path=Path(track.get("path",key))\n  path=path if path.is_absolute() else ROOT/path\n  if not path.resolve().is_relative_to(ROOT.resolve()):raise ValueError("Music must belong to the installed asset bundle")\n  low=path.name.lower()')
+  changes.append({'patch':'bundle-relative-music-catalog'})
  if relative=='live-clip/scripts/live_common.py':
   text=text.replace('import json, re, subprocess','import hashlib, json, re, subprocess')
   old='''    chunks = list_chunks(work)

@@ -5,7 +5,7 @@ import argparse, json, math, re
 from pathlib import Path
 
 ROOT = Path("__ACQ_ASSETS__/content-skill-system/(1) Tik Tok").expanduser()
-DEFAULT_REVIEW = Path("~/Documents/Codex/2026-09-14/we/outputs/music-review-room/music_review_decisions.json").expanduser()
+DEFAULT_REVIEW = ROOT / "music_review_decisions.json"
 PROFILES = {
  "reflective_heavy": dict(valence=-.75,energy=.24,tension=.48,warmth=.45,momentum=.22,dialogue_space=.92,tags=["Emotional","Thought-provoking"]),
  "reflective_hopeful": dict(valence=.35,energy=.34,tension=.18,warmth=.78,momentum=.35,dialogue_space=.90,tags=["Inspirational","Thought-provoking","Chill"]),
@@ -97,7 +97,10 @@ def semantic_query(brief,semantic):
 def rank(index,profile=None,used=(),folders=(),review=None,approved=(),banned=(),duration=0,brief=None,limit=None,semantic=None,query=None):
  brief=brief or make_brief("",{"profile":profile or "confident_modern"}); review=review or {}; tagged=tag_map(); out=[]
  for key,track in index.items():
-  path=Path(track.get("path",key)); low=path.name.lower()
+  path=Path(track.get("path",key))
+  path=path if path.is_absolute() else ROOT/path
+  if not path.resolve().is_relative_to(ROOT.resolve()):raise ValueError("Music must belong to the installed asset bundle")
+  low=path.name.lower()
   if not path.is_file() or "error" in track or track.get("banned"):continue
   try:rel=str(path.relative_to(ROOT))
   except ValueError:rel=key
