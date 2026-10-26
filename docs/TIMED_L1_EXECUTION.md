@@ -119,3 +119,19 @@ composition measurements without changing that delivered version. Its proposal
 still requires explicit visual inspection. Tests also compare old/new assembly
 bindings, refuse incomplete byte-verification sets, and reject caption omissions.
 These checks qualify the helpers, not the next clip's editorial choices.
+
+## Preparation failures found in the second fresh-moment test
+
+Caption handoffs now map emphasis to the caption owner's normalized display text,
+use ceiling frame onsets to preserve the preceding speech release, and verify exact
+native font faces during ink calibration. Caption semantic preflight runs before
+large media verification; a passing packet still receives the full ordinary checks.
+Framing decisions may supply explicit, visually inspected complete-head envelopes
+when an arm or a turn occludes the detector. This is an authored observation, not a
+fabricated detector confidence or automatic approval.
+
+Finish intact-source join checks before native assembly compilation or dependent
+framing/caption work. In the test, starting those stages before the boundary checks
+finished caused repeated assembly binding, camera decoding, and caption-clock
+remapping. Count all such repairs in the original clock. Never start the native
+driver until the caption-binding command has actually succeeded.

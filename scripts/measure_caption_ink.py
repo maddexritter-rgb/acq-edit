@@ -17,6 +17,8 @@ sys.path[:0] = [str(ROOT / '.local/skills/edit/scripts'),
 
 
 def measure(handoff, plan, binary, output):
+    sys.path.insert(0,str(ROOT/'python'))
+    from caption_plan import validate_native_fonts
     from filmcraft_client import Filmcraft
     from filmcraft_caption_contract import prepare_cards, foreground_ink_bounds, centered_text_position, apply_character_styles
     output.mkdir(parents=True, exist_ok=False)
@@ -32,6 +34,7 @@ def measure(handoff, plan, binary, output):
     client = Filmcraft(binary, output / 'session')
     results, cache = [], {}
     try:
+        validate_native_fonts(client,cards)
         client.run('file.newSequence', {'name': 'Caption ink calibration', 'width': plan['width'],
                    'height': plan['height'], 'fps': fps, 'sampleRate': plan['sampleRate'], 'video': 1, 'audio': 0})
         for i, card in enumerate(cards):

@@ -15,6 +15,22 @@ from common import sha, fingerprint
 
 
 class CaptionPlanTests(unittest.TestCase):
+    def test_bad_caption_handoff_refused_before_media_hashing(self):
+        with patch.object(caption_plan,'read',return_value={'projectId':'p','backend':'filmcraft'}), patch.object(caption_plan,'inside',side_effect=lambda root,p:p), patch.object(caption_plan,'derive',side_effect=RuntimeError('bad timing')), patch('common.plan') as expensive:
+            with self.assertRaisesRegex(RuntimeError,'bad timing'):
+                caption_plan.prepare_plan({'id':'p','backend':'filmcraft','root':'/project'},{'plan':'plan','handoff':'handoff','handoffSha256':'hash'})
+            expensive.assert_not_called()
+
+    def test_real_font_face_checked_before_caption_construction(self):
+        class Client:
+            def run(self,command):
+                self.command=command
+                return [{'family':'Example','styles':['Medium','Bold It']}]
+        client=Client();card={'text':'word','italic':True,'style':{'font':'Example','fontStyle':'Medium','italicStyle':'Bold Italic','emphasis':[]}}
+        with self.assertRaisesRegex(RuntimeError,'Exact caption font face'):
+            caption_plan.validate_native_fonts(client,[card])
+        card['style']['italicStyle']='Bold It';caption_plan.validate_native_fonts(client,[card])
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)

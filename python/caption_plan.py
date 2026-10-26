@@ -126,6 +126,10 @@ def validate(project, spec):
 
 def prepare_plan(project, packet):
     from common import plan
+    reference = {'path': str(inside(project['root'], packet['handoff'])), 'sha256': packet['handoffSha256']}
+    preliminary = read(inside(project['root'], packet['plan']))
+    require(preliminary.get('projectId') == project['id'] and preliminary.get('backend') == project['backend'], 'Caption plan identity differs')
+    derive(project, preliminary, reference)  # Cheap semantic refusal before large media hashing.
     spec = plan(project, {'plan': packet['plan']})
     require(not spec.get('captions') and not spec.get('captionContract'), 'Prepare captions from a separate plan with empty caption layers')
     reference = {'path': str(inside(project['root'], packet['handoff'])), 'sha256': packet['handoffSha256']}
@@ -157,14 +161,18 @@ def write_parameter(client, clip, effect, parameter, value, start_ticks):
             'mediaTime': key['time'], 'interpolation': {'Linear':'linear','Hold':'hold'}[key['interp']]})
 
 
-def build_native(client, spec, prepared, frame_ticks):
+def validate_native_fonts(client, cards):
     fonts = {entry['family']: set(entry['styles']) for entry in client.run('fonts.list')}
-    for card in prepared['cards']:
+    for card in cards:
         style = card['style']
         face = style['italicStyle'] if card['italic'] and not style.get('syntheticQuoteItalic') else style['fontStyle']
         require(face in fonts.get(style['font'], set()), 'Exact caption font face missing: ' + style['font'] + ' / ' + face)
         for run in character_styles(card):
             require(run['fontStyle'] in fonts.get(style['font'], set()), 'Exact emphasis face missing: ' + run['fontStyle'])
+
+
+def build_native(client, spec, prepared, frame_ticks):
+    validate_native_fonts(client, prepared['cards'])
     for role_index, role in enumerate(LAYER_ORDER):
         for card in prepared['cards']:
             style = card['style']
