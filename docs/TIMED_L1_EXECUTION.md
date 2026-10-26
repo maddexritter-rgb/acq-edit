@@ -135,3 +135,39 @@ framing/caption work. In the test, starting those stages before the boundary che
 finished caused repeated assembly binding, camera decoding, and caption-clock
 remapping. Count all such repairs in the original clock. Never start the native
 driver until the caption-binding command has actually succeeded.
+
+## Second fresh-moment result — 2026-10-26
+
+The new 97.347-second FilmCraft clip reached checked review-room playback in
+**43:29** with warm sources and transcript. The ten-minute target failed. Initial
+optimization work preceded the clock; every in-run repair and retry stayed inside it.
+This differs from the previous moment, so the 6:09 reduction is not a controlled
+performance comparison or proof of unchanged editorial quality.
+
+| Foreground phase | Wall time |
+| --- | ---: |
+| Intake and skill reading | 2:34 |
+| Editorial and boundaries | 17:04 |
+| Framing and caption finalization | 4:48 |
+| Native preparation and repairs | 7:18 |
+| Native retry and early export | 2:54 |
+| Remaining export, integrity and publication | 7:39 |
+| Render samples and browser playback | 1:12 |
+
+Successful native construction took 121.03 seconds, export plus integrity 413.63
+seconds, and publication 47.86 seconds. These operations alone total 9:43, leaving
+almost no ten-minute budget for design and inspection. Instrument encoder, hashing
+and publication separately before choosing the next performance repair. Preserve
+source-byte verification; do not trade it for a timestamp-only cache.
+
+Boundary rework remains the largest preparation cost: four assembly compilations
+totaled 306.87 seconds, and later changes invalidated dependent framing/caption
+clocks. The prepared helpers did not prevent the agent from starting those stages
+too early. Exact-font and caption-semantic failures now fail earlier, but a future
+run must demonstrate the complete stable path before claiming the target.
+
+The native export passed full decode and frame-count checks. Inspection covered
+182 actual rendered samples, including every caption and cut boundaries, plus
+advancing browser playback of the exact published version. Loudness measured
+-16.09 LUFS and -1.36 dBTP; AAC exceeded the intended -1.5 dBTP ceiling by 0.14 dB.
+Listening and human editorial approval remain incomplete. The version is unreviewed.
