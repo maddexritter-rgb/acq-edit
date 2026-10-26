@@ -364,7 +364,7 @@ How to GROUP the formatted words into single-line caption cues. Runs AFTER all P
 ## S1: Hard constraints
 
 - **One line per cue.**
-- **~3 words per cue** target; **1–6 words** observed range (hard cap ~6).
+- **2–3 words per cue** target; **4 visible words maximum**. Historical six-word examples are not permission for dense cards.
 - **Width: ~13–14 characters median, ~18 soft cadence cap, HARD MAX 25 characters** (incl. quote marks) — the caption safe-zone width. A cue wider than 25 chars overflows / wraps to 2 lines, which is not allowed. Break *before* a word that would exceed 25. Stay well under in general.
 - **5-frame minimum (~208ms @24fps) — ABSOLUTE.** No cue is ever shorter than 5 frames. Guaranteed by a **sequential timing layout**: walking cues in order, `start = max(this cue's first-word start, previous cue's end)` and `end = max(start + 5 frames, next cue's start)`. So every cue is ≥5 frames and no two cues overlap — and nothing is dropped to achieve it: a crammed cue just **pushes** the following cues a few frames later, self-correcting at the next pause. (Compute the floor at ~210ms so whole-ms rounding can't dip below 5 frames.)
 - **No overlap / no co-display (HARD):** two cues never overlap in time; a cue's out-time never exceeds the next cue's in-time. Two speakers must never be on screen simultaneously.

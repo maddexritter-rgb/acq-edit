@@ -32,7 +32,8 @@ class ContractTests(unittest.TestCase):
  def test_letter_names_do_not_corrupt_contraction_suffixes(self):
   for text in ["unless it's that's what's let's account's", "unless it’s that’s what’s let’s account’s"]:
    self.assertEqual(capitalize_letter_names(text),text)
-   self.assertEqual(prepare_cards([card(0,20,text)],P,24,48)[0]['text'],text)
+   for token in text.split():
+    self.assertEqual(prepare_cards([card(0,20,token)],P,24,48)[0]['text'],token)
   self.assertEqual(capitalize_letter_names("cross t's and dot i's"),"cross T's and dot i's")
   self.assertEqual(capitalize_letter_names('cross t’s'), 'cross T’s')
  def test_native_handoff_refuses_mangled_suffixes(self):

@@ -89,7 +89,7 @@ def run(args):
                           'targets':[{'segment_id':identity,'word_index':0,'text':card['words'][0]['text'],'value':'strong'}]},
                 'size':{'status':'not_applicable','reason':'Use the measured recipe size without additional emphasis.'},
                 'italic':{'status':'not_applicable','reason':'Frozen headline uses upright bold lettering.'}}
-        manifest=folder/'manifest.json';write(manifest,{'frame_rate':{'numerator':30,'denominator':1},'canvas_px':[1080,1920],'render_segments':[card],'style_review':review})
+        manifest=folder/'manifest.json';write(manifest,{'caption_role':'text-hook','frame_rate':{'numerator':30,'denominator':1},'canvas_px':[1080,1920],'render_segments':[card],'style_review':review})
         built=folder/'built.prproj'
         receipt=native.build(styled,styled_profile,manifest,built,args.sequence_name)
         receipts.append({'receipt':str(built.with_suffix('.receipt.json')),'track_index':receipt['track_index'],'text':text['text']})

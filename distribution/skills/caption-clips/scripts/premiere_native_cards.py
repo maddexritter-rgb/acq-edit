@@ -219,6 +219,15 @@ def build(project,profile_path,manifest_path,output,sequence_name,revision_path=
     cards=manifest['render_segments'] if 'render_segments' in manifest else manifest.get('cards')
     if cards is None:raise ValueError('Manifest has neither render_segments nor cards')
     all_cards=cards
+    from caption_lint import validate_card_layout
+    from caption_profiles import load_profile
+    from resolve_cards import width_measurer
+    role=manifest.get('caption_role','body')
+    if role not in ('body','text-hook'):raise ValueError('Unknown caption role')
+    layout_profile=load_profile(manifest.get('caption_profile','alex'))
+    if role=='body':
+        for card in all_cards:validate_card_layout(card['text'],layout_profile)
+
     if scope is not None:cards=[c for c in cards if c['id'] in scope['plan']['after_segment_ids']]
     for c in cards:
         for k in ('start_frame','end_frame'):
@@ -243,6 +252,16 @@ def build(project,profile_path,manifest_path,output,sequence_name,revision_path=
             if 'font_postscript' in w and resolved_face!=w['font_postscript']:
                 raise ValueError('Exact requested face not present in selected donor run')
             if w['color']!=donor['color']:raise ValueError('Unsupported color change')
+        if role=='body':
+            box=payload_box(payload(text_node(root,item),shared))
+            budget=min(canvas[0]*layout_profile.get('max_text_width_pct',76.3889)/100,
+                       box[0] if box else canvas[0]) * 0.95
+            measure,_=width_measurer({'max_text_width_px':budget})
+            # Test the entire line in every used face, conservatively including
+            # the heaviest/italic run, with a native-layout safety margin.
+            for face in {w['font_postscript'] for w in c['words']}:
+                validate_card_layout(c['text'],layout_profile,measure=measure,
+                                     face=face,size_px=size,width_px=budget)
         requests=word_requests(c,donor,runs)
         plan.append(dict(id=c['id'],donor_item_id=donor['item_id'],shared_ids=[clip.find('Clip/Source').get('ObjectRef')],
             external_uids=[sub.find('MasterClip').get('ObjectURef')],start_ticks=c['start_frame']*step,

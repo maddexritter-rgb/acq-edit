@@ -139,3 +139,31 @@ Remaining before pilot:
 Use docs/ACCEPTANCE.md as the release gate. The repository is a development handoff, not a claim that the full requested plan is complete.
 
 GitHub Actions: the authenticated OAuth token cannot write workflow files. The CI definition is preserved as `docs/ci-workflow.yml`; an authorized repository maintainer can install it under `.github/workflows/`. No account permissions were changed.
+
+
+## Caption density correction — 2026-10-26
+
+User review rejected crowded body captions and Premiere automatic line wrapping
+with overlapping baselines in the real-clip test. The previous sampled-frame
+inspection did not establish whole-clip caption correctness.
+
+The repository caption owner now targets 2–3 words, caps single-line body cards
+at four visible words and 25 characters, and rejects explicit line breaks.
+Premiere construction measures actual font width against the native paragraph
+box/profile safe width with 5% headroom. FilmCraft handoff uses the same density
+validator and real-font width check. Opening text hooks are explicitly separate.
+Regrouping must preserve source-word clocks and coverage; lowering font size is
+not the default repair. Inspect every rendered card, including entrances.
+
+Validation: 6 density regressions, 15 caption-plan checks, 23 FilmCraft contract
+checks, 36 resolver checks, and 8 native build-gate checks passed. The real prior
+Premiere manifest is now rejected before native-project output. Measured preflight
+flags seven cards in that test. The packaged profile-contract suite has six
+pre-existing failing cases caused by unclassified FilmCraft/guest-style fields;
+the same rejection was reproduced from the unchanged prior resolver. These tests
+are not native render or human approval.
+
+Remaining: the current caption-style revision adapter only changes properties on
+existing cards. Safe one-card-to-many regrouping with source-clock mapping,
+protected native state, new render receipts and immutable V2 publication is still
+needed. The real Premiere/FilmCraft V1 renders have not been revised by this fix.

@@ -483,12 +483,9 @@ def group(words, cuts, frame, gap_threshold, max_words, group_ends,
     sentence onto the start of the next ("fucking communicating? are"), which then
     wraps in Premiere and reads as scrambled word order.
 
-    `group_ends` is an EDITORIAL decision and wins: when it is supplied, the
-    mechanical word cap is not applied, because silently halving a group the editor
-    asked for would contradict the grouping the manifest then claims. A cut, a voice
-    change and a long gap still split -- those are physical facts about the footage,
-    not taste. Supply a cap-only run by omitting `group_ends`.
-    """
+    `group_ends` supplies preferred semantic boundaries. Word, character and
+    measured-width caps remain hard constraints, including reviewed groupings.
+        """
     ends = set(group_ends or [])
     phrases, current = [], []
     for i, w in enumerate(words):
@@ -498,7 +495,8 @@ def group(words, cuts, frame, gap_threshold, max_words, group_ends,
             voice_change = (prev.get('voice', prev['physical_speaker'])
                             != w.get('voice', w['physical_speaker']))
             long_gap = (w['start'] - prev['end']) >= gap_threshold
-            full = (not ends) and len(current) >= max_words
+            full = len(current) >= min(max_words, 4)
+            over_chars = len(' '.join(words[j]['text'] for j in current + [i])) > 25
             forced = bool(ends) and max(prev['source_indices']) in ends
             sentence_end = bool(prev.get('sentence_end'))
             too_wide = False
@@ -510,12 +508,15 @@ def group(words, cuts, frame, gap_threshold, max_words, group_ends,
                              default=0.0)
                 too_wide = len(current) >= 1 and widest > budget
             if (crosses_cut or voice_change or long_gap or full or forced
-                    or sentence_end or too_wide):
+                    or sentence_end or too_wide or over_chars):
                 phrases.append(current)
                 current = []
         current.append(i)
     if current:
         phrases.append(current)
+    from caption_lint import validate_card_layout
+    for phrase in phrases:
+        validate_card_layout(' '.join(words[j]['text'] for j in phrase))
     return phrases
 
 
@@ -755,7 +756,12 @@ def resolve(words, cuts, style, editorial, uniform_request):
     if any(s['start_frame'] < c < s['end_frame'] for s in segments for c in cuts):
         raise AssertionError('A render segment spans a camera cut')
 
+    from caption_lint import validate_card_layout
+    for segment in segments:
+        validate_card_layout(segment['text'],style.get('_profile'))
+
     manifest = dict(
+        caption_profile=(style.get('_profile') or {}).get('id','alex'),
         status='MECHANICALLY_RESOLVED_STRUCTURE_ONLY_NOT_EDITORIAL_APPROVAL',
         frame_rate=dict(style['frame_rate']), cards=cards, render_segments=segments,
         canvas_px=style.get('canvas_px'), nominal_font_size_px=nominal,

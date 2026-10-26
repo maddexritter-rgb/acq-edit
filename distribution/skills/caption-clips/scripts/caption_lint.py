@@ -94,6 +94,34 @@ def cues_from_ass(path):
     return out
 
 
+def validate_card_layout(text, profile=None, *, measure=None, face=None, size_px=None, width_px=None):
+    """Shared body-card gate. Reject bad plans; never trim words or shrink type.
+
+    A measured width is independent of word/character counts. Pass the actual
+    rendered face/size and native text-box budget at construction time.
+    """
+    profile = profile or {}
+    max_lines = profile.get('max_lines', 1)
+    lines = text.replace('\r\n', '\n').replace('\r', '\n').split('\n')
+    if len(lines) > max_lines or any(not line.strip() for line in lines):
+        raise ValueError('Caption layout: unexpected line break; regroup source words')
+    # Multiline profiles keep their own explicitly approved grouping rules.
+    max_words = profile.get('max_words_per_line', 4 if max_lines == 1 else None)
+    max_chars = profile.get('max_chars_per_line', 25 if max_lines == 1 else None)
+    for line in lines:
+        if max_words is not None and len(line.split()) > max_words:
+            raise ValueError(f'Caption layout: more than {max_words} words per line: {line!r}')
+        if max_chars is not None and len(line) > max_chars:
+            raise ValueError(f'Caption layout: more than {max_chars} characters per line: {line!r}')
+        if measure is not None:
+            if not face or not size_px or not width_px:
+                raise ValueError('Caption layout: exact font, size and width budget required')
+            measured = measure(line, face, size_px)
+            if measured > width_px:
+                raise ValueError(f'Caption layout: {measured:.1f}px exceeds {width_px:.1f}px; regroup {line!r}')
+    return True
+
+
 def lint(path, strict=False, expect_guest=False, guest_hex=GUEST_HEX):
     text_ass = _text_layer_path(path)
     cues = cues_from_ass(text_ass)
@@ -113,6 +141,8 @@ def lint(path, strict=False, expect_guest=False, guest_hex=GUEST_HEX):
             words.append(cur); k += 1
         # 1) chunk size — v2 spec (2026-07-06): ~3 words / 18 chars is the soft cadence
         # cap (warn), 25 chars is the HARD safe-zone max (err — overflows/wraps).
+        if len(raw) > 4:
+            add("err", "chunk>4w", f">4 visible words (hard cap): {plain!r}")
         if len(words) > 3:
             add("warn", "chunk>3w", f">3 words: {plain!r}")
         if len(plain) > 25:
@@ -120,7 +150,7 @@ def lint(path, strict=False, expect_guest=False, guest_hex=GUEST_HEX):
         elif len(plain) > 18:
             add("warn", "chunk>18c", f">18 chars (soft cadence cap): {plain!r}")
         if "\\N" in body or "\n" in plain:
-            add("warn", "multiline", f"line break: {plain!r}")
+            add("err", "multiline", f"line break: {plain!r}")
         # 2) spelled-out money/number
         if SPELLED.search(plain):
             add("err", "spelled-number", f"spell-out money/number (use $/K/M/%): {plain!r}")

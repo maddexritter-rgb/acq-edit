@@ -17,5 +17,6 @@
   "font_size_px": 160,
   "caption_hold_through_seconds": 0.75,
   "caption_trailing_hold_seconds": 0.35,
-  "filmcraft_caption_motion": "measured_fast_settle"
+  "filmcraft_caption_motion": "measured_fast_settle",
+  "max_words_per_card": 4
 }

@@ -144,6 +144,8 @@ def prepare_cards(cards, profile, fps, duration_frames, picture_cuts=(), omissio
         card['italic'] = bool((card['quote'] and profile.get('allow_quote_italics')) or
                               (live_guest and profile.get('guest_turn_italics')))
         card['text'] = '“' + text + '”' if card['quote'] else text
+        from caption_lint import validate_card_layout
+        validate_card_layout(card['text'], profile)
         if 'filmcraft_caption_motion' in profile:
             card['animation_preset'] = profile['filmcraft_caption_motion']
         speech_end = float(card['speech_end'])

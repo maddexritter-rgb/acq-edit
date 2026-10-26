@@ -2662,9 +2662,14 @@
       "path": "caption-clips/SKILL.md",
       "source": "canonical-skills/caption-clips/SKILL.md",
       "source_sha256": "347ccefc1594d292b00ab8dab1690466b9ee3b209d34fae1604848cec3c3694e",
-      "distribution_sha256": "347ccefc1594d292b00ab8dab1690466b9ee3b209d34fae1604848cec3c3694e",
-      "bytes": 17368,
-      "transforms": []
+      "distribution_sha256": "28753990c6287fa7fb1503e46f46e05cb38f66b27949d5ae4e08bc8570fb75de",
+      "bytes": 18958,
+      "transforms": [
+        {
+          "from": "repository-caption-density-patch",
+          "to": "single-line-density-and-measured-fit-gates"
+        }
+      ]
     },
     {
       "path": "caption-clips/fonts/clash-grotesk/LICENSE.txt",
@@ -2758,9 +2763,14 @@
       "path": "caption-clips/profiles/alex.json",
       "source": "canonical-skills/caption-clips/profiles/alex.json",
       "source_sha256": "17347be1dd424f84af3778b232a1dab684ef581c010768ece1b0d621766f3b32",
-      "distribution_sha256": "17347be1dd424f84af3778b232a1dab684ef581c010768ece1b0d621766f3b32",
-      "bytes": 638,
-      "transforms": []
+      "distribution_sha256": "dd54f035c816693ccf4e5a4f389b9005d67a2341adee0534b5ba4853fc2ae180",
+      "bytes": 665,
+      "transforms": [
+        {
+          "from": "repository-caption-density-patch",
+          "to": "single-line-density-and-measured-fit-gates"
+        }
+      ]
     },
     {
       "path": "caption-clips/profiles/leila.json",
@@ -2862,9 +2872,14 @@
       "path": "caption-clips/references/oliver_caption_formatting_spec.md",
       "source": "canonical-skills/caption-clips/references/oliver_caption_formatting_spec.md",
       "source_sha256": "d547b39b692c6006c5664e69533c0d0c7d30a9c8584a833a69e76a546287a188",
-      "distribution_sha256": "d547b39b692c6006c5664e69533c0d0c7d30a9c8584a833a69e76a546287a188",
-      "bytes": 39195,
-      "transforms": []
+      "distribution_sha256": "c77758a738d51fec067e007d7ab4aa0090b409dc674cea7d498d69eedd6a4bf1",
+      "bytes": 39246,
+      "transforms": [
+        {
+          "from": "repository-caption-density-patch",
+          "to": "single-line-density-and-measured-fit-gates"
+        }
+      ]
     },
     {
       "path": "caption-clips/references/oliver_qa_locked_recipe.md",
@@ -3004,9 +3019,14 @@
       "path": "caption-clips/scripts/caption_lint.py",
       "source": "canonical-skills/caption-clips/scripts/caption_lint.py",
       "source_sha256": "6199321ce81cf2cc0ec077ba1e07f0097f21004b4aab8b02a7c8068f74c8050f",
-      "distribution_sha256": "6199321ce81cf2cc0ec077ba1e07f0097f21004b4aab8b02a7c8068f74c8050f",
-      "bytes": 12305,
-      "transforms": []
+      "distribution_sha256": "c8b1e622a3b0267da4f3190e69bdf010a0c26a07ce1b658b4866db70a03e77d6",
+      "bytes": 14044,
+      "transforms": [
+        {
+          "from": "repository-caption-density-patch",
+          "to": "single-line-density-and-measured-fit-gates"
+        }
+      ]
     },
     {
       "path": "caption-clips/scripts/caption_manifest.py",
@@ -3065,9 +3085,14 @@
       "path": "caption-clips/scripts/filmcraft_caption_contract.py",
       "source": "canonical-skills/caption-clips/scripts/filmcraft_caption_contract.py",
       "source_sha256": "e98bd94daad66670a935f40b6bc91448f87aa5915fc3e981a9ed5d636cc14e08",
-      "distribution_sha256": "e98bd94daad66670a935f40b6bc91448f87aa5915fc3e981a9ed5d636cc14e08",
-      "bytes": 10755,
-      "transforms": []
+      "distribution_sha256": "32626e5f744910a6d35dfaefbf9ce62d8b9cadad11cd94741505112655fd1bef",
+      "bytes": 10861,
+      "transforms": [
+        {
+          "from": "repository-caption-density-patch",
+          "to": "single-line-density-and-measured-fit-gates"
+        }
+      ]
     },
     {
       "path": "caption-clips/scripts/filmcraft_shadow.py",
@@ -3458,12 +3483,16 @@
       "path": "caption-clips/scripts/premiere_native_cards.py",
       "source": "canonical-skills/caption-clips/scripts/premiere_native_cards.py",
       "source_sha256": "6f23e3207fa1ec6785af051dbfe97562c0861141204917abcfd9243e27d6d461",
-      "distribution_sha256": "07e65c03c6190f802da8928e82b13b1815fcaaac3879717d927f052da5eece51",
-      "bytes": 22474,
+      "distribution_sha256": "f1a9a5519de4a94ea66d64d5a098eff6c6ea33ef3ac748d1c2d0a43cd712928b",
+      "bytes": 23599,
       "transforms": [
         {
           "patch": "joined-skill-root",
           "count": 1
+        },
+        {
+          "from": "repository-caption-density-patch",
+          "to": "single-line-density-and-measured-fit-gates"
         }
       ]
     },
@@ -3495,9 +3524,14 @@
       "path": "caption-clips/scripts/resolve_cards.py",
       "source": "canonical-skills/caption-clips/scripts/resolve_cards.py",
       "source_sha256": "4f1df35ec7633d0dbc79585ece8f95bfeb7e327c272288dfc9f0be768573edc0",
-      "distribution_sha256": "4f1df35ec7633d0dbc79585ece8f95bfeb7e327c272288dfc9f0be768573edc0",
-      "bytes": 47127,
-      "transforms": []
+      "distribution_sha256": "6a5beaf95a464de14869f19144f04d941a7b079a80d0f8352f01893a08cd0f74",
+      "bytes": 47355,
+      "transforms": [
+        {
+          "from": "repository-caption-density-patch",
+          "to": "single-line-density-and-measured-fit-gates"
+        }
+      ]
     },
     {
       "path": "caption-clips/scripts/retarget_native_donor.py",
@@ -3612,9 +3646,14 @@
       "path": "caption-clips/tests/test_filmcraft_caption_contract.py",
       "source": "canonical-skills/caption-clips/tests/test_filmcraft_caption_contract.py",
       "source_sha256": "a5afa25faf24d15b36a1cc0288de960ea4d9246360ce64b823821b28b10614fd",
-      "distribution_sha256": "a5afa25faf24d15b36a1cc0288de960ea4d9246360ce64b823821b28b10614fd",
-      "bytes": 7885,
-      "transforms": []
+      "distribution_sha256": "166d9e2099e3d1ff19e3dc38a7bbd0069eb54152bcb94b5cd2a0b4034e72ff4f",
+      "bytes": 7918,
+      "transforms": [
+        {
+          "from": "repository-caption-density-patch",
+          "to": "single-line-density-and-measured-fit-gates"
+        }
+      ]
     },
     {
       "path": "caption-clips/tests/test_layout_region_plan.py",

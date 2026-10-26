@@ -9,7 +9,7 @@ sys.path.insert(0, str(SKILLS / 'caption-clips/scripts'))
 from filmcraft_caption_contract import prepare_cards, profile_caption_motion, verify_native_layers
 from filmcraft_shadow import shadow_layer_props, LAYER_ORDER, PROFILE_ID
 
-HELPERS = ('filmcraft_caption_contract.py', 'filmcraft_shadow.py', 'caption_profiles.py')
+HELPERS = ('filmcraft_caption_contract.py', 'filmcraft_shadow.py', 'caption_profiles.py', 'caption_lint.py', 'resolve_cards.py')
 
 
 def derive(project, spec, reference):
@@ -82,8 +82,19 @@ def derive(project, spec, reference):
     prepared = prepare_cards(cards, profile, fps, duration,
                              picture_cuts=[c['recordFrame'] for c in spec['cuts'][1:]],
                              omissions=handoff.get('omissions', []))
+    from caption_lint import validate_card_layout
+    from resolve_cards import width_measurer
+    budget = spec['width'] * profile.get('max_text_width_pct', 76.3889) / 100 * 0.95
+    face = profile.get('body_font_postscript')
+    if spec.get('editorial', {}).get('reviewed'):
+        require(face, 'Measured body-caption profile font is required')
+    measure, _ = width_measurer({'max_text_width_px': budget}) if face and spec['backend']=='filmcraft' else (None, None)
     captions = []
     for card in prepared:
+        if measure:
+            card_face = profile.get('italic_font_postscript') if card['italic'] else face
+            validate_card_layout(card['text'], profile, measure=measure, face=card_face,
+                size_px=card['style']['renderedFontPx'], width_px=budget)
         style = copy.deepcopy(card['style'])
         if card['italic']:
             if style.get('syntheticQuoteItalic'):

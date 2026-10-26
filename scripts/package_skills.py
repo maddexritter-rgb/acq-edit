@@ -31,6 +31,15 @@ def main():
    text=re.sub(r'/Users/[^/\s]+/', '__ACQ_LEGACY_HOME__/',text)
    text=re.sub(r'/Volumes/[^\n\"\'`]+',lambda m:'__ACQ_EXTERNAL_VOLUME__/'+m.group(0).split('/',3)[-1],text) if f.suffix=='.md' else text
    text,patches=portable_distribution(text,str(rel));transform.extend(patches)
+   density_path=Path(__file__).with_name('portable_snippets')/'caption-density-patch.json'
+   density=json.loads(density_path.read_text()).get(str(rel))
+   if density:
+    if hashlib.sha256(text.encode()).hexdigest()!=density['beforeSha256']:raise ValueError('Caption density patch needs reconciliation after upstream change: '+str(rel))
+    lines=text.splitlines(keepends=True)
+    for change in reversed(density['changes']):lines[change['start']:change['end']]=[change['replacement']]
+    text=''.join(lines)
+    if hashlib.sha256(text.encode()).hexdigest()!=density['afterSha256']:raise ValueError('Caption density patch output mismatch')
+    transform.append({'from':'repository-caption-density-patch','to':'single-line-density-and-measured-fit-gates'})
    refs=private_references(text)
    if refs:external.append({'path':str(rel),'references':len(refs),'status':'requires-profile-or-portable-replacement'})
    target=out/rel;target.parent.mkdir(parents=True,exist_ok=True);target.write_text(text)

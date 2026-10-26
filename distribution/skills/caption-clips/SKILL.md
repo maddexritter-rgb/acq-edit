@@ -59,6 +59,30 @@ Read the relevant profile only:
 - Leila: [references/leila_profile.md](references/leila_profile.md)
 - Sharran: [references/sharran_profile.md](references/sharran_profile.md)
 
+## Body-caption density and wrapping gate
+
+For single-line body profiles, aim for 2–3 words per card; hard maximum 4 visible
+words and 25 characters including spaces and quote marks. The character limit is
+a ceiling, not a target. Prefer roughly 13–18 characters when meaning permits.
+Never pack six short words onto a line just because they fit. Preserve meaningful
+phrases, negations and exact source-word coverage when splitting cards.
+
+Use `scripts/caption_lint.py:validate_card_layout` at both native handoffs, including
+hand-authored plans and revisions. Enforce the final displayed text after formatting.
+Measure the real font face at the final size against the smaller of the native
+paragraph box and profile safe width, with 5% headroom. Counts alone cannot prove
+fit. Regroup before reducing type size; never rely on native automatic wrapping.
+Multiline profiles retain their explicit reviewed line breaks and spacing; inspect
+visible ink bounds so adjacent lines never overlap. Opening headlines belong to
+text-hook and must be explicitly identified as that role, not exempted body text.
+
+Before delivery inspect an actual rendered frame of **every distinct body card**,
+including the longest/widest cards and entrance frames. Check one-line layout,
+glyph clipping and overlaps; native text readback and a few sampled frames cannot
+clear this gate. Caption-only revisions retain source words, speech clocks, cuts,
+framing, hook and mix, and produce a new immutable version. A regrouping needs
+word-level onsets; never divide a card's duration evenly to invent word timings.
+
 ## Composition- and face-height-aware caption placement
 
 Choose caption position dynamically from the face's height and the clear space in

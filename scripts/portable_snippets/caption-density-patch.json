@@ -1,0 +1,130 @@
+{
+  "caption-clips/SKILL.md": {
+    "beforeSha256": "347ccefc1594d292b00ab8dab1690466b9ee3b209d34fae1604848cec3c3694e",
+    "afterSha256": "28753990c6287fa7fb1503e46f46e05cb38f66b27949d5ae4e08bc8570fb75de",
+    "changes": [
+      {
+        "start": 60,
+        "end": 60,
+        "replacement": "\n## Body-caption density and wrapping gate\n\nFor single-line body profiles, aim for 2\u20133 words per card; hard maximum 4 visible\nwords and 25 characters including spaces and quote marks. The character limit is\na ceiling, not a target. Prefer roughly 13\u201318 characters when meaning permits.\nNever pack six short words onto a line just because they fit. Preserve meaningful\nphrases, negations and exact source-word coverage when splitting cards.\n\nUse `scripts/caption_lint.py:validate_card_layout` at both native handoffs, including\nhand-authored plans and revisions. Enforce the final displayed text after formatting.\nMeasure the real font face at the final size against the smaller of the native\nparagraph box and profile safe width, with 5% headroom. Counts alone cannot prove\nfit. Regroup before reducing type size; never rely on native automatic wrapping.\nMultiline profiles retain their explicit reviewed line breaks and spacing; inspect\nvisible ink bounds so adjacent lines never overlap. Opening headlines belong to\ntext-hook and must be explicitly identified as that role, not exempted body text.\n\nBefore delivery inspect an actual rendered frame of **every distinct body card**,\nincluding the longest/widest cards and entrance frames. Check one-line layout,\nglyph clipping and overlaps; native text readback and a few sampled frames cannot\nclear this gate. Caption-only revisions retain source words, speech clocks, cuts,\nframing, hook and mix, and produce a new immutable version. A regrouping needs\nword-level onsets; never divide a card's duration evenly to invent word timings.\n"
+      }
+    ]
+  },
+  "caption-clips/profiles/alex.json": {
+    "beforeSha256": "17347be1dd424f84af3778b232a1dab684ef581c010768ece1b0d621766f3b32",
+    "afterSha256": "dd54f035c816693ccf4e5a4f389b9005d67a2341adee0534b5ba4853fc2ae180",
+    "changes": [
+      {
+        "start": 19,
+        "end": 20,
+        "replacement": "  \"filmcraft_caption_motion\": \"measured_fast_settle\",\n  \"max_words_per_card\": 4\n"
+      }
+    ]
+  },
+  "caption-clips/references/oliver_caption_formatting_spec.md": {
+    "beforeSha256": "d547b39b692c6006c5664e69533c0d0c7d30a9c8584a833a69e76a546287a188",
+    "afterSha256": "c77758a738d51fec067e007d7ab4aa0090b409dc674cea7d498d69eedd6a4bf1",
+    "changes": [
+      {
+        "start": 366,
+        "end": 367,
+        "replacement": "- **2\u20133 words per cue** target; **4 visible words maximum**. Historical six-word examples are not permission for dense cards.\n"
+      }
+    ]
+  },
+  "caption-clips/scripts/caption_lint.py": {
+    "beforeSha256": "6199321ce81cf2cc0ec077ba1e07f0097f21004b4aab8b02a7c8068f74c8050f",
+    "afterSha256": "c8b1e622a3b0267da4f3190e69bdf010a0c26a07ce1b658b4866db70a03e77d6",
+    "changes": [
+      {
+        "start": 96,
+        "end": 96,
+        "replacement": "def validate_card_layout(text, profile=None, *, measure=None, face=None, size_px=None, width_px=None):\n    \"\"\"Shared body-card gate. Reject bad plans; never trim words or shrink type.\n\n    A measured width is independent of word/character counts. Pass the actual\n    rendered face/size and native text-box budget at construction time.\n    \"\"\"\n    profile = profile or {}\n    max_lines = profile.get('max_lines', 1)\n    lines = text.replace('\\r\\n', '\\n').replace('\\r', '\\n').split('\\n')\n    if len(lines) > max_lines or any(not line.strip() for line in lines):\n        raise ValueError('Caption layout: unexpected line break; regroup source words')\n    # Multiline profiles keep their own explicitly approved grouping rules.\n    max_words = profile.get('max_words_per_line', 4 if max_lines == 1 else None)\n    max_chars = profile.get('max_chars_per_line', 25 if max_lines == 1 else None)\n    for line in lines:\n        if max_words is not None and len(line.split()) > max_words:\n            raise ValueError(f'Caption layout: more than {max_words} words per line: {line!r}')\n        if max_chars is not None and len(line) > max_chars:\n            raise ValueError(f'Caption layout: more than {max_chars} characters per line: {line!r}')\n        if measure is not None:\n            if not face or not size_px or not width_px:\n                raise ValueError('Caption layout: exact font, size and width budget required')\n            measured = measure(line, face, size_px)\n            if measured > width_px:\n                raise ValueError(f'Caption layout: {measured:.1f}px exceeds {width_px:.1f}px; regroup {line!r}')\n    return True\n\n\n"
+      },
+      {
+        "start": 115,
+        "end": 115,
+        "replacement": "        if len(raw) > 4:\n            add(\"err\", \"chunk>4w\", f\">4 visible words (hard cap): {plain!r}\")\n"
+      },
+      {
+        "start": 122,
+        "end": 123,
+        "replacement": "            add(\"err\", \"multiline\", f\"line break: {plain!r}\")\n"
+      }
+    ]
+  },
+  "caption-clips/scripts/filmcraft_caption_contract.py": {
+    "beforeSha256": "e98bd94daad66670a935f40b6bc91448f87aa5915fc3e981a9ed5d636cc14e08",
+    "afterSha256": "32626e5f744910a6d35dfaefbf9ce62d8b9cadad11cd94741505112655fd1bef",
+    "changes": [
+      {
+        "start": 146,
+        "end": 146,
+        "replacement": "        from caption_lint import validate_card_layout\n        validate_card_layout(card['text'], profile)\n"
+      }
+    ]
+  },
+  "caption-clips/scripts/premiere_native_cards.py": {
+    "beforeSha256": "07e65c03c6190f802da8928e82b13b1815fcaaac3879717d927f052da5eece51",
+    "afterSha256": "f1a9a5519de4a94ea66d64d5a098eff6c6ea33ef3ac748d1c2d0a43cd712928b",
+    "changes": [
+      {
+        "start": 221,
+        "end": 221,
+        "replacement": "    from caption_lint import validate_card_layout\n    from caption_profiles import load_profile\n    from resolve_cards import width_measurer\n    role=manifest.get('caption_role','body')\n    if role not in ('body','text-hook'):raise ValueError('Unknown caption role')\n    layout_profile=load_profile(manifest.get('caption_profile','alex'))\n    if role=='body':\n        for card in all_cards:validate_card_layout(card['text'],layout_profile)\n\n"
+      },
+      {
+        "start": 245,
+        "end": 245,
+        "replacement": "        if role=='body':\n            box=payload_box(payload(text_node(root,item),shared))\n            budget=min(canvas[0]*layout_profile.get('max_text_width_pct',76.3889)/100,\n                       box[0] if box else canvas[0]) * 0.95\n            measure,_=width_measurer({'max_text_width_px':budget})\n            # Test the entire line in every used face, conservatively including\n            # the heaviest/italic run, with a native-layout safety margin.\n            for face in {w['font_postscript'] for w in c['words']}:\n                validate_card_layout(c['text'],layout_profile,measure=measure,\n                                     face=face,size_px=size,width_px=budget)\n"
+      }
+    ]
+  },
+  "caption-clips/scripts/resolve_cards.py": {
+    "beforeSha256": "4f1df35ec7633d0dbc79585ece8f95bfeb7e327c272288dfc9f0be768573edc0",
+    "afterSha256": "6a5beaf95a464de14869f19144f04d941a7b079a80d0f8352f01893a08cd0f74",
+    "changes": [
+      {
+        "start": 485,
+        "end": 491,
+        "replacement": "    `group_ends` supplies preferred semantic boundaries. Word, character and\n    measured-width caps remain hard constraints, including reviewed groupings.\n        \"\"\"\n"
+      },
+      {
+        "start": 500,
+        "end": 501,
+        "replacement": "            full = len(current) >= min(max_words, 4)\n            over_chars = len(' '.join(words[j]['text'] for j in current + [i])) > 25\n"
+      },
+      {
+        "start": 512,
+        "end": 513,
+        "replacement": "                    or sentence_end or too_wide or over_chars):\n"
+      },
+      {
+        "start": 518,
+        "end": 518,
+        "replacement": "    from caption_lint import validate_card_layout\n    for phrase in phrases:\n        validate_card_layout(' '.join(words[j]['text'] for j in phrase))\n"
+      },
+      {
+        "start": 757,
+        "end": 757,
+        "replacement": "    from caption_lint import validate_card_layout\n    for segment in segments:\n        validate_card_layout(segment['text'],style.get('_profile'))\n\n"
+      },
+      {
+        "start": 758,
+        "end": 758,
+        "replacement": "        caption_profile=(style.get('_profile') or {}).get('id','alex'),\n"
+      }
+    ]
+  },
+  "caption-clips/tests/test_filmcraft_caption_contract.py": {
+    "beforeSha256": "a5afa25faf24d15b36a1cc0288de960ea4d9246360ce64b823821b28b10614fd",
+    "afterSha256": "166d9e2099e3d1ff19e3dc38a7bbd0069eb54152bcb94b5cd2a0b4034e72ff4f",
+    "changes": [
+      {
+        "start": 34,
+        "end": 35,
+        "replacement": "   for token in text.split():\n    self.assertEqual(prepare_cards([card(0,20,token)],P,24,48)[0]['text'],token)\n"
+      }
+    ]
+  }
+}
