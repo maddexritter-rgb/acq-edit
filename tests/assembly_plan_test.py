@@ -40,6 +40,16 @@ class AssemblyBindingTests(unittest.TestCase):
    with self.assertRaisesRegex(RuntimeError,'Pinned assembly input'):self.bind(p,changed)
    Path(s['sources'][1]['path']).write_bytes(b'changed')
    with self.assertRaisesRegex(RuntimeError,'Played source changed'):self.bind(p,s)
+ def test_verified_media_reuses_only_the_current_complete_byte_check(self):
+  from common import verify_plan_media
+  with tempfile.TemporaryDirectory() as root:
+   p,s=fixture(root);verified=verify_plan_media(p,s);baseline=self.bind(p,s)
+   with patch.object(assembly_plan,'SKILLS',SKILLS),patch('assembly_plan.subprocess.check_output',side_effect=probe),patch.object(assembly_plan,'sha',wraps=sha) as digest:
+    self.assertEqual(assembly_plan.bound_assembly(p,s,verified),baseline)
+    paths=[str(call.args[0]) for call in digest.call_args_list]
+    self.assertFalse(any(x['path'] in paths for x in s['sources']))
+    with self.assertRaisesRegex(RuntimeError,'does not cover'):
+     assembly_plan.bound_assembly(p,s,verified[:1])
  def test_unreviewed_joins_and_wrong_clocks_are_refused(self):
   with tempfile.TemporaryDirectory() as root:
    p,s=fixture(root);changed=copy.deepcopy(s);changed['sampleRate']=44100

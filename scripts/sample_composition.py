@@ -42,7 +42,10 @@ def collect(plan, views, output, workers=1):
         evidence_frames = sample_frames(cut['frames'], fps)
         indices = list(range(cut['frames'])) if view.get('tracking') else evidence_frames
         detector, dw, dh = detector_for(view['sourceWidth'], view['sourceHeight'])
-        select = '+'.join(f'eq(n\\,{n})' for n in indices)
+        terms = [f'eq(n\\,{n})' for n in indices]
+        while len(terms)>1:
+            terms=[f'({terms[i]}+{terms[i+1]})' if i+1<len(terms) else terms[i] for i in range(0,len(terms),2)]
+        select=terms[0]
         filters = f'scale={dw}:{dh}' if view.get('tracking') else f'select={select},scale={dw}:{dh}'
         cmd = ['ffmpeg', '-v', 'error', '-threads', '2', '-ss', f'{start/fps:.9f}',
                '-i', source['path'], '-an', '-vf', filters,

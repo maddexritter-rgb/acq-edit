@@ -90,3 +90,12 @@ The default agent deadline is six hours; `agentTimeoutMs` in local configuration
 Ctrl-C or SIGTERM on `serve` stops dispatch, interrupts the owned agent process group, waits for exit (escalating after five seconds), saves reconciliation state and then releases the service lock. The standalone `worker` uses the same lock and shutdown path; stop `serve` before running it. Do not interpret process termination as proof that an editor-host render or remote task stopped. Inspect the selected host and its receipts before resolving an uncertain job. A hard OS kill still requires native-state reconciliation after restart.
 
 The installed Claude CLI may emit `subtype: success` together with `is_error: true` for an account failure. The toolkit treats that as failure. Fix the operator's account configuration before retrying; do not change accounts or credentials automatically.
+
+### Timed vertical Q&A execution
+
+For a timed L1 short, read [the execution sequence and measured bottlenecks](TIMED_L1_EXECUTION.md).
+Use its repository preparation/driver helpers after the owning skill decisions;
+keep the original run clock through actual review playback. A prepared replay does
+not count as a new-moment end-to-end test. Resolve speech boundaries before spending
+work on dependent framing or captions. These helpers do not replace editorial,
+source-performance, caption-style or complete-head decisions.

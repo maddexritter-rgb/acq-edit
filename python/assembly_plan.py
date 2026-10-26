@@ -11,7 +11,7 @@ from common import SKILLS,inside,read,require,save,sha
 def pinned(project,record,path_key,hash_key):
  path=inside(project['root'],record[path_key]);require(sha(path)==record[hash_key],'Pinned assembly input changed: '+path_key);return path
 
-def bound_assembly(project,spec):
+def bound_assembly(project,spec,verified_media=None):
  editorial=spec['editorial'];selection=pinned(project,editorial,'selectionPath','sha256');design=read(selection)
  require(design.get('schema')=='edit.assembly-selection/v2','Native spoken cuts require canonical v2 source-word design')
  compiled_path=pinned(project,editorial,'compiledPath','compiledSha256');saved=read(compiled_path)
@@ -41,7 +41,12 @@ def bound_assembly(project,spec):
  require(routing.get('source_clock_offset_samples')==0,'Nonzero source clock offsets require an explicit supported conform')
  def source_for(path):
   path=inside(Path(project['root'])/'00_SOURCE',path);items=[s for s in spec['sources'] if Path(s['path']).resolve()==path]
-  require(len(items)==1,'Played source must identify exactly one project-owned source');s=items[0];require(s['projectId']==project['id'] and sha(path)==s['sha256'],'Played source changed or belongs to another project');return s
+  require(len(items)==1,'Played source must identify exactly one project-owned source');s=items[0]
+  if verified_media is None:actual=sha(path)
+  else:
+   matches=[m for m in verified_media if m['role']=='source' and m['id']==s['id'] and Path(m['path']).resolve()==path and m['expectedSha256']==s['sha256']]
+   require(len(matches)==1,'Verified media set does not cover this source');actual=matches[0]['actualSha256']
+  require(s['projectId']==project['id'] and actual==s['sha256'],'Played source changed or belongs to another project');return s
  picture=source_for(routing['picture']);audio=source_for(routing['media']);require(Path(clip['media']).resolve()==Path(audio['path']).resolve(),'Design and played audio identity differ')
  streams=lambda path:json.loads(subprocess.check_output(['ffprobe','-v','error','-show_streams','-of','json',str(path)]))['streams']
  au=[s for s in streams(audio['path']) if s['codec_type']=='audio'];vi=[s for s in streams(picture['path']) if s['codec_type']=='video']
@@ -53,9 +58,13 @@ def bound_assembly(project,spec):
   first,last=span['word_range'];cuts.append({'id':f'span-{index+1}','sourceId':picture['id'],'audioSourceId':audio['id'],'sourceInFrame':fr[0],'frames':fr[1]-fr[0],'recordFrame':cursor,'audioInSample':sm[0],'audioSamples':sm[1]-sm[0],'audioRecordSample':tm[0],'wordIds':[str(i) for i in range(first,last+1)],'boundaryEvidence':str(decisions)});cursor+=fr[1]-fr[0]
  return {'cuts':cuts,'coverage':coverage,'durationFrames':cursor,'qualification':'source-word and paired-geometry binding; no listening or human approval'}
 
-def verify_bound_plan(project,spec):
+def verify_bound_plan(project,spec,verified_media=None):
  # Resolve's bundled interpreter has no scientific dependencies. The configured
  # shared interpreter owns canonical analysis; no other editor is imported.
+ if verified_media is not None and spec['backend']!='resolve':
+  expected=bound_assembly(project,spec,verified_media)['cuts']
+  require(spec['cuts']==expected,'Native cuts differ from canonical source-word, picture or paired-audio ranges; recompile the plan')
+  return
  interpreter=os.environ.get('ACQ_EDIT_SHARED_PYTHON',sys.executable)
  result=subprocess.run([interpreter,str(Path(__file__).resolve()),'verify'],input=json.dumps({'project':project,'spec':spec}),text=True,capture_output=True,timeout=300)
  require(result.returncode==0,'Canonical assembly binding failed: '+result.stderr.strip())

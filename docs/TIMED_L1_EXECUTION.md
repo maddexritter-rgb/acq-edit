@@ -88,3 +88,28 @@ The actual MP4 received full-decode/frame-count checks and 186 visual samples
 covering every caption card and cut boundaries. Automated listening was unavailable
 because its provider returned HTTP 402. Human editorial and listening approval
 remain separate; successful publication is not approval.
+
+## Stable execution helpers
+
+After the owning skills have authored and checked the decisions, use these
+repository helpers instead of writing project-specific procedural scripts:
+
+- `scripts/prepare_caption_handoff.py` maps explicit source-word groups, speaker
+  roles and real-face emphasis onto frozen cut clocks. It refuses missing words,
+  duplicate coverage, ambiguous emphasis and groups crossing cuts. It chooses no
+  phrases, fonts, casing or speakers. Measure its output with `measure_caption_ink.py`.
+- `scripts/prepare_composition.py` transports the framing owner's complete-head
+  calibration, crop height, headroom and camera choices into geometry and source
+  contact sheets. A separate `--accept` is required after actual source-frame
+  inspection. No detector confidence automatically grants visual approval.
+- `scripts/filmcraft_pipeline.py` takes the checked finished plan through the
+  existing native build, default split shadow, inspection, native export and
+  immutable publication routes. It logs each operation under the original run
+  clock, refuses existing execution directories, and stops on failure. Inspect
+  the published render before closing the clock; publication remains unreviewed.
+
+FilmCraft binding now reuses the actual source-byte verification results from the
+same plan check instead of hashing the same cameras again in a subprocess. There
+is no persistent timestamp-only cache. Every native operation still hashes its
+sources, and render completion still performs a fresh full-byte check. Resolve's
+separate interpreter path remains unchanged.

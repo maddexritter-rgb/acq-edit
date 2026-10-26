@@ -35,7 +35,7 @@ def verify_plan_media(project,spec):
  return results
 def plan(project,packet):
  p=read(inside(project['root'],packet['plan']));require(not p.get('hookContract'),'Opening text hooks have been removed; preserve legacy projects and use their pinned toolkit version');require(p['schema']=='acq-edit/plan-v1','Unsupported plan');require(p['projectId']==project['id'] and p['backend']==project['backend'],'Plan identity/backend mismatch')
- verify_plan_media(project,p)
+ verified_media=verify_plan_media(project,p)
  for evidence in [p['brain'],p['editorial']]:
   file=evidence.get('receiptPath') or evidence.get('selectionPath');inside(project['root'],file);require(sha(file)==evidence['sha256'],'Pinned evidence changed')
  require(p['editorial']['reviewed'],'Reviewed source-word selection required')
@@ -50,7 +50,7 @@ def plan(project,packet):
    versions=inside(project['root'],p['brain']['versionsPath']);require(sha(versions)==p['brain'].get('versionsSha256'),'Brain version index changed');index=read(versions)
    require(index.get('projectId')==project['id'] and index.get('sha256')==p['brain']['sha256'] and index.get('versions')==guidance['versions'],'Brain version index does not describe this project/context')
   from assembly_plan import verify_bound_plan
-  verify_bound_plan(project,p)
+  verify_bound_plan(project,p,verified_media=verified_media)
 
  end=0
  for c in p['cuts']:
