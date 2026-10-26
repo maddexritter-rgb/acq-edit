@@ -97,3 +97,7 @@ The thirteen adapter tests cover complete packet preflight, duplicate operation 
 Premiere can return an unavailable native link collection for a generated Graphics item. The export adapter now requests explicit `primary_av_only` link inspection of V1/A1, the exact tracks bound to designed source cuts. Missing or nonreciprocal links on those tracks still fail. The response labels its narrower scope; it does not claim that caption or music links were inspected. The independent complete snapshot still preserves every caption, effect, music track and export mark across rendering. Default whole-timeline inspection retains its strict behavior.
 
 Four native-script fixture tests cover Graphics exclusion, unchanged strict defaults and missing/nonreciprocal primary links. Adapter failure-boundary tests remain required; these fixtures do not certify native rendering.
+
+## Unset In/Out marks
+
+When both marks are Premiere's observed unset sentinel, a full-clip export now uses the native entire-sequence mode and never writes either mark. Before dispatch it requires a zero start and an exact native sequence end matching the planned end; afterward both sentinel values and the bounded timeline must be unchanged. Mixed unset/explicit marks, other negative values and partial ranges remain unsupported. Existing explicit sample-aligned marks continue through the range export and restoration path. Six script-level tests cover these boundaries; native acceptance remains a separate check.

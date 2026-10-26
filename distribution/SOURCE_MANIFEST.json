@@ -1262,9 +1262,13 @@
       "path": "edit/scripts/pp_export_clips.py",
       "source": "canonical-skills/edit/scripts/pp_export_clips.py",
       "source_sha256": "8175b2e74ae36c97784b5a9523d17eca3e0e3fc61eef5fdeef798ca59a684477",
-      "distribution_sha256": "8175b2e74ae36c97784b5a9523d17eca3e0e3fc61eef5fdeef798ca59a684477",
-      "bytes": 9583,
-      "transforms": []
+      "distribution_sha256": "d0b0ccb8ee4ab40f91cef507820c3866f90f888f59ccbe28f171c808118373cc",
+      "bytes": 10272,
+      "transforms": [
+        {
+          "patch": "whole-sequence-export-preserves-unset-marks"
+        }
+      ]
     },
     {
       "path": "edit/scripts/premiere_agent.py",

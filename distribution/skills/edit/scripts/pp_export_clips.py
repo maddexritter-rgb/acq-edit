@@ -43,8 +43,13 @@ def export_script(baseline,clip,preset,output,sample_rate,frame_ticks):
     if end<=start or start%frame_ticks or end%frame_ticks:raise ValueError('Frame-aligned nonempty export range required')
     sample=TICKS//sample_rate
     if start%sample or end%sample:raise ValueError('Export boundaries must be on supported audio sample grid')
-    for name in ['in_ticks','out_ticks']:
-        if exact(baseline[name])%sample:raise ValueError('Original marks cannot be restored on this sample grid')
+    # Premiere's exact unset sentinel is not a negative export boundary.
+    unset='-101606400000000000'
+    whole=baseline['in_ticks']==unset and baseline['out_ticks']==unset
+    if whole and start!=0:raise ValueError('Unset marks support only a complete sequence export')
+    if not whole:
+        for name in ['in_ticks','out_ticks']:
+            if exact(baseline[name])%sample:raise ValueError('Original marks cannot be restored on this sample grid')
     if not Path(preset).is_absolute() or not Path(output).is_absolute():raise ValueError('Absolute preset/output required')
     # Compare bounded live state in host before mutation; no stale source plan replay.
     q=json.dumps
@@ -64,14 +69,19 @@ function setExact(which,ticks){
  if(read()!==ticks)set(seconds+1/('''+str(sample_rate)+'''*256));
  if(read()!==ticks)throw Error('RANGE_SET_MISMATCH_'+which);
 }
+var wholeSequence='''+('true' if whole else 'false')+''';
+if(wholeSequence&&String(s.end)!=='''+q(str(end))+''')throw Error('WHOLE_SEQUENCE_DURATION_MISMATCH');
 var result=null,problem=null,restoreErrors=[];
 try{
- setExact('in','''+q(str(start))+''');setExact('out','''+q(str(end))+''');
- result=s.exportAsMediaDirect('''+q(output)+','+q(preset)+''',app.encoder.ENCODE_IN_TO_OUT);
+ if(!wholeSequence){setExact('in','''+q(str(start))+''');setExact('out','''+q(str(end))+''');}
+ result=s.exportAsMediaDirect('''+q(output)+','+q(preset)+''',wholeSequence?app.encoder.ENCODE_ENTIRE:app.encoder.ENCODE_IN_TO_OUT);
 }catch(e){problem=String(e);}finally{
- try{setExact('in',oldIn);}catch(e){restoreErrors.push(String(e));}
- try{setExact('out',oldOut);}catch(e){restoreErrors.push(String(e));}
+ if(!wholeSequence){
+  try{setExact('in',oldIn);}catch(e){restoreErrors.push(String(e));}
+  try{setExact('out',oldOut);}catch(e){restoreErrors.push(String(e));}
+ }
 }
+if(String(s.getInPointAsTime().ticks)!==oldIn||String(s.getOutPointAsTime().ticks)!==oldOut)restoreErrors.push('MARKS_CHANGED_AFTER_EXPORT');
 if(restoreErrors.length)throw Error('MARK_RESTORE_FAILED '+restoreErrors.join('; ')+' original='+problem);
 if(JSON.stringify(exportState(s))!==JSON.stringify(expected))throw Error('TIMELINE_CHANGED_AFTER_EXPORT');
 if(problem)throw Error(problem);
