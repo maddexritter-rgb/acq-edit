@@ -730,9 +730,14 @@
       "path": "edit/references/l1_qa_cuts.md",
       "source": "canonical-skills/edit/references/l1_qa_cuts.md",
       "source_sha256": "facb4634a8c9e478178933b5e788302c690b6bbe09cba2e1f5acc7c5276e91aa",
-      "distribution_sha256": "facb4634a8c9e478178933b5e788302c690b6bbe09cba2e1f5acc7c5276e91aa",
-      "bytes": 23434,
-      "transforms": []
+      "distribution_sha256": "ccc15951d4d3698606468a6b80e8a3abbcf4c28d7c1da35286e68446a864a496",
+      "bytes": 23539,
+      "transforms": [
+        {
+          "patch": "l1-short-form-calibration-2026-10-26",
+          "scope": "repository-editorial-brief"
+        }
+      ]
     },
     {
       "path": "edit/references/l1_qa_cuts_worked_examples.md",
@@ -1621,9 +1626,14 @@
       "path": "assembly-design/SKILL.md",
       "source": "canonical-skills/assembly-design/SKILL.md",
       "source_sha256": "e6c3fbd51e59c1c3469ee9cecca07f940909368ff4314667ccc90e66d49d8375",
-      "distribution_sha256": "e6c3fbd51e59c1c3469ee9cecca07f940909368ff4314667ccc90e66d49d8375",
-      "bytes": 45783,
-      "transforms": []
+      "distribution_sha256": "bd7fa1eff421377a94e5190df17b9a5227113e8e3ad1f18770f0501220fd0c8a",
+      "bytes": 46035,
+      "transforms": [
+        {
+          "patch": "l1-short-form-calibration-2026-10-26",
+          "scope": "repository-editorial-brief"
+        }
+      ]
     },
     {
       "path": "assembly-design/references/CLIP_CUTTING_PLAYBOOK.md",
@@ -1753,9 +1763,14 @@
       "path": "assembly-design/references/profiles.md",
       "source": "canonical-skills/assembly-design/references/profiles.md",
       "source_sha256": "7fb4da261da70a7802bed3c0b2df234c635fd030fc3b2fb04303840e995340b1",
-      "distribution_sha256": "7fb4da261da70a7802bed3c0b2df234c635fd030fc3b2fb04303840e995340b1",
-      "bytes": 9964,
-      "transforms": []
+      "distribution_sha256": "6470c6b3dcd75801d4096c12b2ca5f36b1b8029887c527d671451473ac2d43f1",
+      "bytes": 14813,
+      "transforms": [
+        {
+          "patch": "l1-short-form-calibration-2026-10-26",
+          "scope": "repository-editorial-brief"
+        }
+      ]
     },
     {
       "path": "assembly-design/references/retired-cut-skill-source.md",
@@ -2279,12 +2294,16 @@
       "path": "find-precedents/SKILL.md",
       "source": "canonical-skills/find-precedents/SKILL.md",
       "source_sha256": "e0e4b3310937d012ad8184b2cb7587f72cf25f7846db87b601900c88bc919bec",
-      "distribution_sha256": "b11e5f1ee4a494da367331d1ec6613970dc4bfd970476b06b7ecb75761f1580e",
-      "bytes": 8690,
+      "distribution_sha256": "c5c2c0b63757c9e44a3b17c147648ec7aae735448cfbe049accf7c95b3ec6a8b",
+      "bytes": 9004,
       "transforms": [
         {
           "from": "canonical-root",
           "to": "__ACQ_SKILLS__"
+        },
+        {
+          "patch": "l1-short-form-calibration-2026-10-26",
+          "scope": "repository-editorial-brief"
         }
       ]
     },

@@ -11,9 +11,9 @@ These include a useful compression, a revision failure, and a reference fidelity
 
 ## Editorial contract
 
-Deliver a useful, intelligible interaction with minimal human correction. A roughly
-90-second short is a starting target, not a reason to damage an explanation. Honor an
-explicit user duration constraint; otherwise report a worthwhile longer candidate.
+Deliver a useful, intelligible interaction with minimal human correction.
+→ Use skill: `assembly-design`; its [L1 short-form calibration](../../assembly-design/references/profiles.md#l1-short-form-calibration--2026-10-26)
+owns duration, cold-viewer hook clarity, early banter and candidate comparison for vertical shorts.
 There is no mandatory seven-beat pattern, revenue-first hook, host-within-five-seconds
 rule, word-count floor, or ban on reordering. These scoped rules supersede conflicting
 legacy Q&A prompts and regex scores. Existing source-value and delivery checks remain.
@@ -52,7 +52,7 @@ the directive follows.
 Before selecting words, make a branch ledger for the full interaction. List each
 substantive diagnosis, objection, alternative, example branch, correction and final
 recap; mark whether it completes, qualifies, reverses or sits outside the selected
-promise. Choose the smallest complete promise with a useful payoff. Do not combine the
+promise. Choose the strongest developed promise with a useful payoff. Do not combine the
 opening of one branch, the mechanism of another and the reaction to a third merely
 because each moment is individually strong.
 
@@ -60,8 +60,9 @@ Rank the viable promises before choosing the shortest one. A surprising measurem
 correction or diagnosis is setup unless the viewer also learns what it means or what to
 do with it. When the raw continuation interprets the number, tests it against the offer,
 or reaches a source-grounded action, prefer that complete value chain over a shorter cut
-that merely ends on the datum. "Smallest complete" means the smallest version of the
-strongest useful promise, not the shallowest technically defensible stopping point.
+that merely ends on the datum. Completeness includes the context, personality and
+development that make the strongest useful promise worth watching, not only a technically
+defensible stopping point.
 
 Do not confuse fidelity with retaining the full discovery history. When the clean answer
 can use a later direct confirmation, keep that confirmation instead of the longer mistaken
@@ -110,7 +111,7 @@ candidate/channel can perform and why the opportunity is attractive or applicabl
 A label such as “hire an agency owner” is not a complete mechanism when the useful lesson
 is the exchange of skills, economics or advantage that makes the match work.
 
-Design backward from that reward. Preserve the minimum context, reasoning, constraints,
+Design backward from that reward. Preserve the necessary context, reasoning, constraints,
 and concrete example that let a cold viewer understand why it follows. Then choose the
 opening from real source words that establish the dilemma. Personal stakes, a contrast,
 or a later explicit question may work; do not force every opening into the same formula.

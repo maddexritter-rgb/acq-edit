@@ -24,7 +24,8 @@ If the source only supports a thin soundbite for the ordinary developed-clip bri
 choose a stronger moment rather than padding it or lowering the selection standard
 to fill the batch. An explicitly requested microtip or a compelling standalone
 short moment can use a different scale. No sentence count, minimum runtime, extra
-worksheet, reviewer or approval gate is added.
+worksheet, reviewer or approval gate is added by this universal rule. Apply the
+scoped L1 short-form duration brief below when that format is selected.
 
 ## Two tightening passes for the default paper cut
 
@@ -71,7 +72,8 @@ In the existing `editorial_intent`, record concrete second-pass changes by sourc
 word range and why the hardest-to-cut remaining example or condition is essential.
 Record meaningful pause KEEP/TRIM choices by source time in the boundary receipt.
 These are the active editor's decisions, not a new worksheet, score or approval gate.
-Duration and cut count are descriptive outcomes, never targets or evidence of quality.
+Cut count is descriptive, never evidence of quality. Honor an explicit duration brief
+and the scoped L1 short-form default below; runtime alone never establishes quality.
 Do not pad a concise clip or amputate a complete one to approach 45 seconds.
 
 **Check the hard counterexample.** Before accepting a major compression, identify
@@ -127,13 +129,77 @@ self-contained sub-answer. Keep the facts needed to understand why this advice f
 this owner and preserve diagnostic reversals. Do not turn a conditional recommendation
 into generic advice or remove the owner merely to make a monologue. Retain useful
 owner/host exchanges while cutting repeated discovery that adds no information.
-A 60–90 second diagnosis can earn its length through necessary context and reasoning;
-that is neither a required range nor a maximum. Apply the same deletion test without
-collapsing the exchange into an unexplained answer.
+For vertical short-form L1 Q&A, follow the calibration below. It does not set the
+length of full horizontal guest episodes, other Q&A formats, or explicit custom briefs.
 Legacy L1 plans remain supported by their existing compiler.
 New assembly plans with this profile use the `diagnosis` extension in the shared
 contract; its existing v6 validator checks branch dispositions, retained evidence,
 promise scope, ranked alternatives and sentence-edge reviews.
+
+### L1 short-form calibration — 2026-10-26
+
+This is an explicit editorial brief, not a claim of measured audience performance.
+Apply it before moment selection and again to the literal assembled playback, in
+every selected native backend. It supersedes older short-duration preferences for this format;
+continue retrieving live guidance and preserve its evidence and qualifications.
+
+**Aim for 90–120 seconds.** Ninety seconds is a normal working baseline, not an
+unusually long exception. Prefer a developed owner/host exchange with context,
+diagnosis, useful reasoning, an applied example and an earned payoff over a compressed
+30–60-second tip. Select enough worthwhile source material before tightening. Do not
+lengthen a weak moment with filler, slow playback, repetitions or unrelated branches.
+If the source cannot support a strong developed arc, compare another moment. Explain
+an exceptional shorter or longer choice in `editorial_intent` with the actual source
+tradeoff; never silently fall back to the old short-clip default or cut off a payoff
+to hit 120 seconds. An explicit user brief can override this range.
+
+**A cold viewer must understand the spoken hook.** Establish a concrete problem,
+stakes or intriguing contradiction in ordinary language. In the first 15–20 seconds,
+the viewer should understand what the owner does, for whom, and what is going wrong,
+to the extent those facts are needed for this answer. Do not assume viewers know a
+job title, acronym, industry term, product or business model. An opening such as
+“I am a fractional CFO” is not self-explanatory context: retain the source's plain-
+language explanation of the service and customer, or choose a clearer source-native
+opening. Expanding an acronym alone may still leave its meaning unclear. If the
+needed explanation is absent, choose another moment; do not invent spoken definitions,
+rewrite source dialogue, or use an opening text card to rescue an unclear spoken hook.
+
+**Look for personality early.** Actively inspect the opening and surrounding exchange
+for playful host/owner banter, a joke, a surprising reply or a funny interaction.
+Prefer a strong candidate that can retain this naturally in the hook or first
+15–20 seconds while also establishing the problem. Keep the setup, real response,
+reaction and comic timing that make it work. Do not strip a useful human beat merely
+because the abstract advice remains true without it. Do not manufacture a laugh,
+move a reaction to a different question, borrow a joke from another interaction, or
+force banter that obscures the business promise. If no suitable beat exists, record
+what was inspected and compare a candidate with one when available; never invent it
+or reject an otherwise exceptional source-supported moment solely for lacking a joke.
+
+**Compare moments before polishing.** Read complete candidate interactions through
+the payoff and coda. Compare at least two viable arcs when the authorized source
+contains them; if there is only one, say so rather than fabricate alternatives.
+For each, identify exact source-word hook, necessary context, human beat, development
+and payoff. Choose for cold-viewer clarity, stakes, personality and useful resolution,
+not the easiest crop, shortest runtime, easiest transcription or cheapest render.
+Compare alternate literal openings within the chosen arc. A memorable quote with an
+unclear referent or unexplained jargon loses to a clear opening with a real payoff.
+
+**Save the decision in the existing handoff.** In `editorial_intent`, cite this
+calibration ID and record the competing source ranges and selection tradeoff, the
+literal first 15–20 seconds in playback order with word ranges, how necessary terms
+become understandable, the retained banter's source and output position (or the
+source-based absence reason), and the developed arc's expected duration. Cite retained
+ranges for the payoff and the context/reasoning that earns it. Use the existing
+KEEP/CUT plan and diagnosis branch ledger; do not create a second selection owner.
+After compilation, reread the actual joined words and recheck the opening's duration
+and context. Repair the selection before acoustic finishing if it still requires
+prior business knowledge or reduces the exchange to an unexplained tip. Successful
+compilation, meeting the runtime range, and filled-in notes do not prove a good hook
+or an entertaining exchange; rendered review and the editor's judgment remain separate.
+
+This calibration governs new designs and explicitly requested recuts. Existing
+approved cuts and pinned historical receipts remain unchanged. It is shipped repo
+guidance; it does not claim publication to the shared editorial database.
 
 ## Conversation / story
 

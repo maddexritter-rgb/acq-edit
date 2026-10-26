@@ -211,6 +211,10 @@ mark the claim `FACT_CHECK_BEFORE_PUBLICATION` for the editor, without presentin
 as verified advice. Withhold only when the source itself cannot support a truthful
 clip or the user's content scope excludes it.
 
+**L1 vertical short-form selection.** Before ranking moments or choosing a hook,
+apply [L1 short-form calibration](references/profiles.md#l1-short-form-calibration--2026-10-26)
+and carry its source-linked decisions in the existing `editorial_intent`.
+
 **Develop before tightening.** Follow [development before tightening](references/profiles.md#development-before-tightening) in the normal design pass. Hook, development and payoff are functions, not one sentence each; the noisy-bar sentence summarizes the takeaway, not the amount of dialogue to retain.
 
 **Default paper cut for every new assembly.** Work on one complete interaction at a

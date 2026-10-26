@@ -61,6 +61,14 @@ New clips are registered with `clip PROJECT_ID "Source-supported short title"`. 
 
 For camera panels, use `NATIVE_PANELS.md`: Assembly Design pins camera choices/sync/layout to the current cuts, and horizontal-to-vertical supplies each panel's own crop or tracking. FilmCraft constructs native independent nests; Resolve constructs independently timed Media Pool/Fusion inputs. Both retain one dialogue mix. FilmCraft and Resolve `panel-framing` revisions accept pinned previous/new plans and explicit cut/panel targets for existing crop, tracking and rectangle changes; new rectangle decisions require Assembly Design provenance. Camera identity/sync and other layers remain protected. Premiere panel construction/revisions and camera replacement/count/mode changes remain unavailable; report those gaps without switching engines, flattening panels or rebuilding approved work. Caption-only revisions preserve and reverify the native layout.
 
+## L1 short-form editorial brief
+
+For new vertical L1 Q&A clips and explicitly requested spoken recuts, apply the packaged
+[Assembly Design calibration](../distribution/skills/assembly-design/references/profiles.md#l1-short-form-calibration--2026-10-26)
+before moment selection, alongside live precedent retrieval. Pin the repository revision
+and materialized skill receipt with the design. This changes the editorial brief, not
+historical approvals; compiler success does not establish editorial quality.
+
 ## References and motion
 
 Use `watch` to study the complete reference with audio. Use `scripts/reference_frames.py` for dense inspection around fast transitions; choose `--all-frames --native-size` when exact event timing or fine detail matters. The index records actual decoded timestamps and hashes; see `REFERENCE_INSPECTION.md`. Extracted frames alone are not viewed evidence. Record the timestamped recipe using `REFERENCE_RECIPE.schema.json`, distinguish observation from inference, and cover cuts, pacing, captions, framing, motion, graphics, color, music and sound effects. Freeze the completed recipe and cited project-owned evidence with `native PROJECT_ID reference PACKET.json` before construction; use the returned plan. See `REFERENCE_INSPECTION.md` for the packet and immutable snapshot contract. This provenance step does not implement effects or grant approval. Compare actual rendered results against those observations. Do not claim reference fidelity from a video-model summary alone.

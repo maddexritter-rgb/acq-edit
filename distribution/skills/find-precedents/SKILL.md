@@ -35,6 +35,8 @@ Workshop required-reading pack before new moment selection; after `assembly-desi
 the complete interaction and diagnosed the actual problem, retrieve at most five cards
 with source and exception. Exclude the current project and held-out cases. It owns
 retrieval only, not the edit.
+For vertical L1 Q&A, also route to Assembly Design's [current L1 calibration](../assembly-design/references/profiles.md#l1-short-form-calibration--2026-10-26).
+Record conflicts with older retrieved preferences in editorial intent; this explicit repo brief governs new designs without rewriting retrieved evidence.
 
 Without retrieval, the case library is an archive that only the human reads. With retrieval,
 past corrections become active context at decision time — the closest analog the architecture

@@ -1,6 +1,6 @@
 {
   "schema": "acq-edit/skill-dependencies-v1",
-  "manifestSha256": "c9a1f8a292d0e48af28d76d45e1883f7c1aa87a41edb8bb7cff105c9cc8639c2",
+  "manifestSha256": "fcb7864f0848b77db338741becbbde2b4940532996b6990689094a1161a6f0c7",
   "policySha256": "fb9f0da2c3535c7a29cf5ae8af08ae4cd391e1c53e8ec690aca8ddb2175c630b",
   "owners": [
     "edit",
@@ -84,7 +84,7 @@
       "lines": [
         29
       ],
-      "sourceSha256": "e6c3fbd51e59c1c3469ee9cecca07f940909368ff4314667ccc90e66d49d8375",
+      "sourceSha256": "bd7fa1eff421377a94e5190df17b9a5227113e8e3ad1f18770f0501220fd0c8a",
       "status": "packaged"
     },
     {
@@ -93,16 +93,16 @@
       "lines": [
         157
       ],
-      "sourceSha256": "e6c3fbd51e59c1c3469ee9cecca07f940909368ff4314667ccc90e66d49d8375",
+      "sourceSha256": "bd7fa1eff421377a94e5190df17b9a5227113e8e3ad1f18770f0501220fd0c8a",
       "status": "packaged"
     },
     {
       "source": "assembly-design/SKILL.md",
       "target": "long-form-ingest",
       "lines": [
-        609
+        613
       ],
-      "sourceSha256": "e6c3fbd51e59c1c3469ee9cecca07f940909368ff4314667ccc90e66d49d8375",
+      "sourceSha256": "bd7fa1eff421377a94e5190df17b9a5227113e8e3ad1f18770f0501220fd0c8a",
       "status": "packaged"
     },
     {
@@ -343,45 +343,46 @@
       "source": "edit/references/l1_qa_cuts.md",
       "target": "assembly-design",
       "lines": [
-        249
+        15,
+        250
       ],
-      "sourceSha256": "facb4634a8c9e478178933b5e788302c690b6bbe09cba2e1f5acc7c5276e91aa",
+      "sourceSha256": "ccc15951d4d3698606468a6b80e8a3abbcf4c28d7c1da35286e68446a864a496",
       "status": "packaged"
     },
     {
       "source": "edit/references/l1_qa_cuts.md",
       "target": "audit-script",
       "lines": [
-        255
+        256
       ],
-      "sourceSha256": "facb4634a8c9e478178933b5e788302c690b6bbe09cba2e1f5acc7c5276e91aa",
+      "sourceSha256": "ccc15951d4d3698606468a6b80e8a3abbcf4c28d7c1da35286e68446a864a496",
       "status": "packaged"
     },
     {
       "source": "edit/references/l1_qa_cuts.md",
       "target": "caption-clips",
       "lines": [
-        260
+        261
       ],
-      "sourceSha256": "facb4634a8c9e478178933b5e788302c690b6bbe09cba2e1f5acc7c5276e91aa",
+      "sourceSha256": "ccc15951d4d3698606468a6b80e8a3abbcf4c28d7c1da35286e68446a864a496",
       "status": "packaged"
     },
     {
       "source": "edit/references/l1_qa_cuts.md",
       "target": "horizontal-to-vertical",
       "lines": [
-        259
+        260
       ],
-      "sourceSha256": "facb4634a8c9e478178933b5e788302c690b6bbe09cba2e1f5acc7c5276e91aa",
+      "sourceSha256": "ccc15951d4d3698606468a6b80e8a3abbcf4c28d7c1da35286e68446a864a496",
       "status": "packaged"
     },
     {
       "source": "edit/references/l1_qa_cuts.md",
       "target": "source-intel",
       "lines": [
-        230
+        231
       ],
-      "sourceSha256": "facb4634a8c9e478178933b5e788302c690b6bbe09cba2e1f5acc7c5276e91aa",
+      "sourceSha256": "ccc15951d4d3698606468a6b80e8a3abbcf4c28d7c1da35286e68446a864a496",
       "status": "packaged"
     },
     {
@@ -582,9 +583,9 @@
       "source": "find-precedents/SKILL.md",
       "target": "clip-review-tracker",
       "lines": [
-        160
+        162
       ],
-      "sourceSha256": "b11e5f1ee4a494da367331d1ec6613970dc4bfd970476b06b7ecb75761f1580e",
+      "sourceSha256": "c5c2c0b63757c9e44a3b17c147648ec7aae735448cfbe049accf7c95b3ec6a8b",
       "status": "packaged"
     },
     {
@@ -593,7 +594,7 @@
       "lines": [
         32
       ],
-      "sourceSha256": "b11e5f1ee4a494da367331d1ec6613970dc4bfd970476b06b7ecb75761f1580e",
+      "sourceSha256": "c5c2c0b63757c9e44a3b17c147648ec7aae735448cfbe049accf7c95b3ec6a8b",
       "status": "packaged"
     },
     {
