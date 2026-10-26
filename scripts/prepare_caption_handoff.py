@@ -35,7 +35,7 @@ def prepare(plan,words,decisions):
                 if start<0 or display.lower().find(phrase.lower(),start+1)>=0:raise ValueError('Emphasis text must identify one exact caption occurrence')
                 style['emphasis'].append({**emphasis,'start':start,'end':start+len(phrase),'text':display[start:start+len(phrase)]})
             offset=(cut['audioRecordSample']-cut['audioInSample'])/sr
-            start=max(cut['recordFrame'],round((words[first]['start']+offset)*fps))
+            start=max(cut['recordFrame'],math.ceil((words[first]['start']+offset)*fps-1e-8))
             end=min((cut['recordFrame']+cut['frames'])/fps,words[last]['end']+offset)
             if end<=start/fps:raise ValueError('Caption word clock does not fit cut')
             ident=f'card-{cursor+1:03d}'
