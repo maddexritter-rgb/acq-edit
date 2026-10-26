@@ -69,6 +69,8 @@ class Adapter:
     c=Filmcraft(self.config['filmcraft'],out/'panel-reopen',str(panel_native))
     c.run('file.saveAs',{'path':str(native)})
    verify_filmcraft_framing(native,p,ft)
+   from dialogue_effects import verify as verify_dialogue
+   verify_dialogue(native,p)
    if p.get('captionContract'):
     from caption_plan import validate,verify_native
     save(out/'caption-verification.json',verify_native(native,p,validate(project,p),ft))
@@ -81,6 +83,8 @@ class Adapter:
   dialogue=c.tool('sequence_inspect')['audio'][0]['items']
   for clip in dialogue:
    c.run('effects.setParam',{'clip':clip['clip'],'effect':'volume','param':'level','value':p.get('audio',{}).get('gainDb',0)})
+  from dialogue_effects import apply as apply_dialogue
+  apply_dialogue(c,p,dialogue)
   for bed in p.get('audio',{}).get('music',[]):
    before={i['clip'] for track in c.tool('sequence_inspect')['audio'] for i in track['items']}
    c.run('timeline.place',{'item':sources[bed['sourceId']],'track':'A2','video':False,'audio':True,'time':bed['startFrame']*ft,'sourceIn':bed['sourceInSample']*sample_tick,'duration':bed['samples']*sample_tick,'insert':False})
@@ -338,6 +342,8 @@ class Adapter:
   try:
    state=c.tool('sequence_inspect');require(fingerprint({'state':state,'fileHash':sha(native)})==packet['expectedFingerprint'],'Native state changed before export');save(inside(project['root'],packet['inspection']),state)
    verify_filmcraft_framing(native,p,TICKS*p['fps']['denominator']//p['fps']['numerator'])
+   from dialogue_effects import verify as verify_dialogue
+   verify_dialogue(native,p)
    from graphics_revision import filmcraft_items
    filmcraft_items(read(native),p)
    if p.get('hookContract'):

@@ -3098,7 +3098,7 @@
       "path": "caption-clips/scripts/filmcraft_caption_contract.py",
       "source": "canonical-skills/caption-clips/scripts/filmcraft_caption_contract.py",
       "source_sha256": "e98bd94daad66670a935f40b6bc91448f87aa5915fc3e981a9ed5d636cc14e08",
-      "distribution_sha256": "32626e5f744910a6d35dfaefbf9ce62d8b9cadad11cd94741505112655fd1bef",
+      "distribution_sha256": "6ecb90eb689411104660c97c6d564895efc179aabb71968027c896508979e0a7",
       "bytes": 10861,
       "transforms": [
         {

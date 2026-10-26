@@ -93,6 +93,15 @@ class CaptionPlanTests(unittest.TestCase):
         self.native = original; self.params(card=1)['font_style']['value']['Text'] = 'Bold'
         with self.assertRaisesRegex(ValueError, 'italic'): self.verify()
 
+    def test_abbreviated_real_italic_face_and_unrequested_faux_refuses(self):
+        self.handoff['cards'][1]['style']['italicStyle'] = 'Bold It'
+        for track in (1, 2, 3):
+            self.params(track=track, card=1)['font_style']['value']['Text'] = 'Bold It'
+        self.assertEqual(self.verify()['status'], 'NATIVE_CAPTION_CONTRACT_VALID')
+        self.params(track=2, card=1)['faux_italic']['value']['Bool'] = True
+        with self.assertRaisesRegex(ValueError, 'italic'):
+            self.verify()
+
     def test_native_shadow_foreground_and_transform_changes_refuse(self):
         original = copy.deepcopy(self.native)
         self.params()['shadow_opacity']['value']['Float'] = 30

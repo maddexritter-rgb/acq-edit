@@ -10,7 +10,9 @@ def validate_audio(project,spec,total_frames):
  audio=spec.get('audio',{});require(isinstance(audio,dict),'Audio plan must be an object')
  require(isinstance(audio.get('properties',{}),dict),'Native audio properties must be an object')
  require(not ('gainDb' in audio and 'AudioVolume' in audio.get('properties',{})),'Do not specify dialogue gain twice')
- require(set(audio)<=set(['gainDb','music','properties']),'Unsupported audio treatment; provide an explicit supported native plan')
+ require(set(audio)<=set(['gainDb','music','properties','dialogueEffects']),'Unsupported audio treatment; provide an explicit supported native plan')
+ from dialogue_effects import validate as validate_dialogue
+ validate_dialogue(project,spec)
  gain=audio.get('gainDb',0)
  require(isinstance(gain,(float,int)) and math.isfinite(gain) and -60<=gain<=12,'Dialogue gain must be finite dB in [-60,12]')
  beds=audio.get('music',[]);require(isinstance(beds,list),'Music must be an explicit list of placements')

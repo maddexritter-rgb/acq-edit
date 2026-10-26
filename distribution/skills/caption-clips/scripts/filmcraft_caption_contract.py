@@ -187,9 +187,20 @@ def verify_native_layers(layers, cards, ticks_per_frame):
                     raise ValueError('Profile forbids caption arrival animation')
             if p['text']['value']['Text'] != card['text']:
                 raise ValueError('Native punctuation/quotation text differs')
-            italic = bool(p['faux_italic']['value']['Bool'] or 'italic' in p['font_style']['value']['Text'].lower())
-            if italic != card['italic']:
-                raise ValueError('Native quote italic state differs')
+            face = p['font_style']['value']['Text']
+            faux = p['faux_italic']['value']['Bool']
+            style = card.get('style', {})
+            if 'fontStyle' in style:
+                synthetic = bool(card['italic'] and style.get('syntheticQuoteItalic'))
+                expected = style['italicStyle'] if card['italic'] and not synthetic else style['fontStyle']
+                # Exact owner-selected faces may use abbreviated names such as
+                # Bold It. Native font preflight establishes their availability.
+                if face != expected or faux != synthetic:
+                    raise ValueError('Native italic face or synthetic state differs')
+            else:
+                italic = bool(faux or 'italic' in face.lower())
+                if italic != card['italic']:
+                    raise ValueError('Native quote italic state differs')
             if (clip['start'], clip['duration']) != (card['start_frame']*ticks_per_frame,(card['end_frame']-card['start_frame'])*ticks_per_frame):
                 raise ValueError('Native caption hold/clock differs')
     return {'status':'NATIVE_CAPTION_CONTRACT_VALID','cards':len(cards),'layers':3}
