@@ -11,7 +11,7 @@ import type { ToolOperationalOverride } from "../tool-capability-report.js";
 // https://github.com/Adobe-CEP/Samples/blob/master/PProPanel/jsx/PremierePro.23.0.d.ts
 // This is native membership, never the same-source/overlap heuristic.
 export const ASSEMBLY_LINK_SNAPSHOT = `
-function __labAssemblyLinks(projectPath,sequenceId){
+function __labAssemblyLinks(projectPath,sequenceId,primaryAVOnly){
  var p=app.project;if(!p||String(p.path)!==projectPath)throw Error('PROJECT_TARGET_CHANGED');
  if(!p.sequences||p.sequences.numSequences>50)throw Error('SEQUENCE_COLLECTION_UNAVAILABLE');
  var s=null,count=0;for(var i=0;i<p.sequences.numSequences;i++)if(String(p.sequences[i].sequenceID)===sequenceId){s=p.sequences[i];count++;}
@@ -31,7 +31,7 @@ function __labAssemblyLinks(projectPath,sequenceId){
  }
  for(var kind=0;kind<2;kind++){
   var tracks=kind?s.audioTracks:s.videoTracks;if(!tracks||tracks.numTracks>256)throw Error('TRACK_COLLECTION_UNAVAILABLE');
-  for(var t=0;t<tracks.numTracks;t++)for(var j=0;j<tracks[t].clips.numItems;j++){
+  for(var t=0;t<(primaryAVOnly?Math.min(1,tracks.numTracks):tracks.numTracks);t++)for(var j=0;j<tracks[t].clips.numItems;j++){
    if(rows.length>=10000)throw Error('LINK_INSPECTION_ITEM_LIMIT');
    var c=tracks[t].clips[j],d=details(c),key='id:'+d.node_id;
    if(byId[key])throw Error('NATIVE_ITEM_ID_AMBIGUOUS');
@@ -62,6 +62,7 @@ function __labAssemblyLinks(projectPath,sequenceId){
  }
  if(String(app.project.path)!==projectPath)throw Error('PROJECT_CHANGED_DURING_LINK_INSPECTION');
  var result={project_path:projectPath,sequence_id:sequenceId,frame_duration_ticks:ticks(s.timebase),items:rows};
+ if(primaryAVOnly)result.scope="primary_av_tracks";
  if(JSON.stringify(result).length>1500000)throw Error('LINK_INSPECTION_SIZE_LIMIT');
  return result;
 }`;
@@ -94,12 +95,13 @@ export function getLabAssemblyLinkTools(options: BridgeOptions) {
   return { inspect_assembly_links: {
     description: "Read exact native TrackItem.getLinkedItems membership for every item in an explicitly owned sequence without activation. Includes source paths, playback and exact ticks. Rejects unavailable, foreign, ambiguous, nonreciprocal or unstable membership. Does not infer linking from matching sources/timing, establish persistence or certify spoken edits.",
     parameters: { type: "object", additionalProperties: false, required: ["project_path", "sequence_id"], properties: {
-      project_path: { type: "string", minLength: 1, maxLength: 4096 }, sequence_id: { type: "string", minLength: 1, maxLength: 512 }, paged: { type:"boolean" },
+      project_path: { type: "string", minLength: 1, maxLength: 4096 }, sequence_id: { type: "string", minLength: 1, maxLength: 512 }, paged: { type:"boolean" }, primary_av_only: {type:"boolean"},
       baseline_path: {type:"string",minLength:1,maxLength:4096}, baseline_sha256:{type:"string",pattern:"^[a-f0-9]{64}$"},
     } },
     operationalCapability: { backend: "CEP/ExtendScript", backends: ["cep", "extendscript"], status: "experimental", minimumPremiereVersion: "26.3.0", hostVerificationRequired: true,
       notes: ["Native getLinkedItems membership requires local host validation. Empty collections establish unlinked items only when the native call succeeds; missing APIs fail. No activation or writes."] } satisfies ToolOperationalOverride,
-    handler: async (args: { project_path: string; sequence_id: string; paged?: boolean; baseline_path?:string; baseline_sha256?:string }) => {
+    handler: async (args: { project_path: string; sequence_id: string; paged?: boolean; primary_av_only?:boolean; baseline_path?:string; baseline_sha256?:string }) => {
+      if(args.primary_av_only!==undefined && (typeof args.primary_av_only!=="boolean" || args.paged!==true || args.baseline_path!==undefined || args.baseline_sha256!==undefined))return {success:false,error:"Primary AV scope requires streamed inspection without a baseline"};
       if(args.baseline_path!==undefined||args.baseline_sha256!==undefined){if(args.paged!==true)return {success:false,error:'Baseline requires bounded paged inspection'};return inspectBaselineBoundedLinks(options,args);}
       if(args.paged===true)return inspectStreamedLinks(options,args);
       if(args.paged!==undefined&&typeof args.paged!=="boolean")return {success:false,error:"Invalid paged flag"};
@@ -186,7 +188,7 @@ export async function inspectPagedLinks(options:BridgeOptions,args:{project_path
 
 // Collect reciprocal membership once per complete pass, then emit immutable
 // local50-item pages. Native item/edge caps and per-page byte caps are unchanged.
-export async function inspectStreamedLinks(options:BridgeOptions,args:{project_path:string;sequence_id:string}){
+export async function inspectStreamedLinks(options:BridgeOptions,args:{project_path:string;sequence_id:string;primary_av_only?:boolean}){
  if(typeof args.project_path!=='string'||!args.project_path.startsWith('/')||args.project_path.length>4096||typeof args.sequence_id!=='string'||!args.sequence_id||args.sequence_id.length>512||args.project_path.includes('\0')||args.sequence_id.includes('\0')||!options.tempDir)return {success:false,error:'Exact native target and private mailbox required'};
  const q=(v:unknown)=>JSON.stringify(v).replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029');
  try{
@@ -194,11 +196,12 @@ export async function inspectStreamedLinks(options:BridgeOptions,args:{project_p
    const dir=path.join(options.tempDir!,'inspection-pages',randomUUID());await mkdir(dir,{recursive:true,mode:0o700});
    const source=ASSEMBLY_LINK_SNAPSHOT.replace('p.sequences.numSequences>50','p.sequences.numSequences>2048').replace(`if(JSON.stringify(result).length>1500000)throw Error('LINK_INSPECTION_SIZE_LIMIT');\n return result;`,
     `var folder=${q(dir)},pages=[];for(var at=0;at<rows.length||at===0;at+=50){var page={project_path:projectPath,sequence_id:sequenceId,frame_duration_ticks:result.frame_duration_ticks,items:rows.slice(at,at+50),_paging:{offset:at,limit:50,total:rows.length}},text=JSON.stringify(page);if(text.length>1500000)throw Error('LINK_INSPECTION_SIZE_LIMIT');var name='page-'+at+'.json',file=new File(folder+'/'+name);if(file.exists||!file.open('w'))throw Error('LINK_INSPECTION_PAGE_FILE_UNAVAILABLE');file.encoding='UTF-8';if(!file.write(text)){file.close();throw Error('LINK_INSPECTION_PAGE_WRITE_FAILED');}file.close();pages.push({name:name,offset:at,count:page.items.length});if(rows.length===0)break;}return {project_path:projectPath,sequence_id:sequenceId,frame_duration_ticks:result.frame_duration_ticks,total:rows.length,pages:pages};`);
-   const r=await labContext.exit(()=>sendCommand(buildToolScript(`${source}\nreturn __result(__labAssemblyLinks(${q(args.project_path)},${q(args.sequence_id)}));`),{...options,pagedResponse:true}));if(!r.success)throw Error('LINK_STREAM_NATIVE_READ_FAILED:'+r.error);const m:any=r.data;
+   const r=await labContext.exit(()=>sendCommand(buildToolScript(`${source}\nreturn __result(__labAssemblyLinks(${q(args.project_path)},${q(args.sequence_id)},${args.primary_av_only===true}));`),{...options,pagedResponse:true}));if(!r.success)throw Error('LINK_STREAM_NATIVE_READ_FAILED:'+r.error);const m:any=r.data;
    if(!m||m.project_path!==args.project_path||m.sequence_id!==args.sequence_id||!Number.isInteger(m.total)||m.total<0||m.total>10000||!Array.isArray(m.pages)||m.pages.length!==Math.max(1,Math.ceil(m.total/50)))throw Error('INVALID_LINK_STREAM_MANIFEST');
    const data:any={project_path:m.project_path,sequence_id:m.sequence_id,frame_duration_ticks:m.frame_duration_ticks,items:[]};
    for(let i=0;i<m.pages.length;i++){const row=m.pages[i],offset=i*50;if(row.name!==`page-${offset}.json`||row.offset!==offset||row.count!==Math.min(50,m.total-offset))throw Error('INVALID_LINK_STREAM_PAGE_ID');const raw=await readFile(path.join(dir,row.name));if(raw.length>1500000)throw Error('LINK_INSPECTION_SIZE_LIMIT');const page=JSON.parse(raw.toString('utf8'));if(page.project_path!==args.project_path||page.sequence_id!==args.sequence_id||page.frame_duration_ticks!==m.frame_duration_ticks||page._paging?.offset!==offset||page._paging?.limit!==50||page._paging?.total!==m.total||!Array.isArray(page.items)||page.items.length!==row.count)throw Error('INVALID_LINK_STREAM_PAGE');data.items.push(...page.items);}
+   if(args.primary_av_only===true){if(data.items.some((r:any)=>r.track_index!==0))throw Error("NONPRIMARY_AV_ITEM");data.scope="primary_av_tracks";}
    if(!validNativeResponse(data,args))throw Error('INVALID_NATIVE_LINK_RESPONSE');return data;
-  };const a=await pass(),b=await pass();if(digest(a)!==digest(b))throw Error('LINK_STATE_CHANGED_DURING_PAGED_INSPECTION');return {success:true,data:{...b,revision:digest(b),verification:'stable_complete_paged_native_link_membership',persistence:'not_run'}};
+  };const a=await pass(),b=await pass();if(digest(a)!==digest(b))throw Error('LINK_STATE_CHANGED_DURING_PAGED_INSPECTION');return {success:true,data:{...b,revision:digest(b),verification:args.primary_av_only===true?'stable_primary_av_native_link_membership':'stable_complete_paged_native_link_membership',persistence:'not_run'}};
  }catch(e){return {success:false,error:String(e)};}
 }

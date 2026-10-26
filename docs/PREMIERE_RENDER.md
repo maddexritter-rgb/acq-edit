@@ -91,3 +91,9 @@ The final inspection and render receipt also bind the exact saved project path/h
 On success, use the normal `publish PROJECT_ID RECEIPT` command. Publication verifies the exact job/parent and copies immutable media and the native checkpoint into a new version. Human review remains pending. Agent jobs supply their ID through `ACQ_EDIT_JOB_ID`; standalone tests must not invent a completed job or approval.
 
 The thirteen adapter tests cover complete packet preflight, duplicate operation IDs, stale baselines, wrong output/range/grid, wrong project, mark restoration failures, decode failures and saved/unsaved native changes during verification. Source-cut cases additionally cover wrong/offline media, moved ranges, retiming/reversal, disabled/muted items, inferred/broken links, duplicate/missing rows, snapshot disagreement, a post-export relink and exact separate-audio sample arithmetic. Host responses are explicitly simulated. Actual source/link API behavior, export preset behavior, saved-project reopen and native visual/audio quality still require the dedicated live fixture.
+
+## Finished timelines with generated Graphics
+
+Premiere can return an unavailable native link collection for a generated Graphics item. The export adapter now requests explicit `primary_av_only` link inspection of V1/A1, the exact tracks bound to designed source cuts. Missing or nonreciprocal links on those tracks still fail. The response labels its narrower scope; it does not claim that caption or music links were inspected. The independent complete snapshot still preserves every caption, effect, music track and export mark across rendering. Default whole-timeline inspection retains its strict behavior.
+
+Four native-script fixture tests cover Graphics exclusion, unchanged strict defaults and missing/nonreciprocal primary links. Adapter failure-boundary tests remain required; these fixtures do not certify native rendering.

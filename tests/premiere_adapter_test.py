@@ -79,7 +79,7 @@ class PremiereAdapterTests(unittest.TestCase):
     if name=='lab_snapshot':return copy.deepcopy(owner.state)
     if name=='lab_inspect_export_state':return {'success':True,'data':copy.deepcopy(owner.observed_baseline)}
     if name=='inspect_assembly_links':
-     owner.assertEqual(args,{'project_path':str(owner.native),'sequence_id':'sequence-1','paged':True});owner.link_calls+=1;return {'success':True,'data':copy.deepcopy(owner.links)}
+     owner.assertEqual(args,{'project_path':str(owner.native),'sequence_id':'sequence-1','paged':True,'primary_av_only':True});owner.link_calls+=1;return {'success':True,'data':copy.deepcopy(owner.links)}
     if name in ['lab_get_operation','lab_get_job']:
      key=(name,next(iter(args.values())));owner.batch_reads.append(key);return copy.deepcopy(owner.remote_records.get(key))
     raise AssertionError(name)

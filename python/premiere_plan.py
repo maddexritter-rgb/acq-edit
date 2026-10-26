@@ -16,7 +16,7 @@ def exact_ticks(value):
 
 def verify_source_cuts(spec,snapshot,links):
     require(isinstance(links,dict) and links.get('project_path')==snapshot['projectPath'] and links.get('sequence_id')==snapshot['sequenceId'],'Native source inspection targets another project or sequence')
-    require(links.get('verification') in ['stable_native_link_membership','stable_complete_paged_native_link_membership'],'Stable native link readback required; inferred linkage is insufficient')
+    require(links.get('verification') in ['stable_native_link_membership','stable_complete_paged_native_link_membership','stable_primary_av_native_link_membership'],'Stable native link readback required; inferred linkage is insufficient')
     frame=Fraction(254016000000*spec['fps']['denominator'],spec['fps']['numerator']);sample=Fraction(254016000000,spec['sampleRate'])
     require(frame.denominator==sample.denominator==1,'Premiere source clocks require exact frame/sample ticks')
     frame,sample=int(frame),int(sample)
@@ -29,6 +29,8 @@ def verify_source_cuts(spec,snapshot,links):
         require(row['kind'] in ['video','audio'] and type(row['track_index']) is int and row['track_index']>=0 and type(row['item_index']) is int and row['item_index']>=0,'Native source position is invalid')
         require(isinstance(node,str) and bool(node) and node not in ids and key not in positions,'Native source inventory has duplicate identities or positions')
         ids.add(node);positions.add(key);native[key]=row
+    if links['verification']=='stable_primary_av_native_link_membership':
+        require(links.get('scope')=='primary_av_tracks' and all(r['track_index']==0 for r in rows),'Explicit primary AV scope required')
     expected={}
     for kind,kind_id in [('video',0),('audio',1)]:
         tracks=[t for t in snapshot['tracks'] if t['kind']==kind_id and t['index']==0]

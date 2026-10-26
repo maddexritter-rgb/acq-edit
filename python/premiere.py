@@ -114,7 +114,7 @@ class Adapter:
    observed=client.inspect('lab_inspect_export_state',{'project_path':str(native),'sequence_id':state['sequenceId']})
    observed=observed.get('data',observed)
    require(observed==baseline,'Export baseline changed; inspect current native state')
-   links=client.inspect('inspect_assembly_links',{'project_path':str(native),'sequence_id':state['sequenceId'],'paged':True})
+   links=client.inspect('inspect_assembly_links',{'project_path':str(native),'sequence_id':state['sequenceId'],'paged':True,'primary_av_only':True})
    links=links.get('data',links)
    source_verification=verify_source_cuts(p,state,links)
   finally:client.close()
@@ -128,7 +128,7 @@ class Adapter:
   verification=verify_native_render(output,p)
   client=PremiereBridge(self.profile)
   try:
-   final_links=client.inspect('inspect_assembly_links',{'project_path':str(native),'sequence_id':state['sequenceId'],'paged':True})
+   final_links=client.inspect('inspect_assembly_links',{'project_path':str(native),'sequence_id':state['sequenceId'],'paged':True,'primary_av_only':True})
    final_links=final_links.get('data',final_links)
    require(final_links==links,'Native source or link state changed during export; reconcile before publication')
   finally:client.close()
