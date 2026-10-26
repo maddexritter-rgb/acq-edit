@@ -2447,12 +2447,15 @@
       "path": "horizontal-to-vertical/SKILL.md",
       "source": "canonical-skills/horizontal-to-vertical/SKILL.md",
       "source_sha256": "93b9ec3d5d0e4b027da78890100c6a961f2d1ac773ac628d2f69c75355ae5a5c",
-      "distribution_sha256": "4b36b40ae9da4f57890b6616012c01a6ed654a625e384e23b5b97d35541c7f2a",
-      "bytes": 18098,
+      "distribution_sha256": "5e4b97e3ca1ac090402ef651d958a16713638faf7930d6a19b49f16144c6e9be",
+      "bytes": 18285,
       "transforms": [
         {
           "from": "canonical-root",
           "to": "__ACQ_SKILLS__"
+        },
+        {
+          "patch": "default-split-shadow"
         }
       ]
     },
@@ -2468,8 +2471,8 @@
       "path": "horizontal-to-vertical/references/filmcraft-smooth-x.md",
       "source": "canonical-skills/horizontal-to-vertical/references/filmcraft-smooth-x.md",
       "source_sha256": "1787391278dd29e44191f1e48010d5e717849f2cfa4562c489683b847e7256a7",
-      "distribution_sha256": "ad3a962302d0c6086d97219c02d7245c36c53a0053d52b7c86f716d5fc2d048a",
-      "bytes": 7689,
+      "distribution_sha256": "43981b7264780dd7485d3499a4da584074677865e89ec53e2f316063812f6da8",
+      "bytes": 7371,
       "transforms": [
         {
           "from": "canonical-root",
@@ -2477,6 +2480,9 @@
         },
         {
           "patch": "native-split-shadow-route"
+        },
+        {
+          "patch": "default-split-shadow"
         }
       ]
     },
@@ -2492,9 +2498,13 @@
       "path": "horizontal-to-vertical/references/native-split-setup.md",
       "source": "canonical-skills/horizontal-to-vertical/references/native-split-setup.md",
       "source_sha256": "628912489b2f0b5923aa79d4b13ddeea7f05e385a5d643fc1541ec14931c3187",
-      "distribution_sha256": "628912489b2f0b5923aa79d4b13ddeea7f05e385a5d643fc1541ec14931c3187",
-      "bytes": 8690,
-      "transforms": []
+      "distribution_sha256": "5c79d4d7ddf466d26483f934734704a0353018ea37aa1706d88de2e293f31dec",
+      "bytes": 8613,
+      "transforms": [
+        {
+          "patch": "default-split-shadow"
+        }
+      ]
     },
     {
       "path": "horizontal-to-vertical/scripts/detect_face_dense.py",
@@ -6173,6 +6183,14 @@
       "source_sha256": "f0fc3acce8c974665a404705fc3c07b84a9f3f3c6512d0e3794d188edacb2d2a",
       "distribution_sha256": "f0fc3acce8c974665a404705fc3c07b84a9f3f3c6512d0e3794d188edacb2d2a",
       "bytes": 13996,
+      "transforms": []
+    },
+    {
+      "path": "horizontal-to-vertical/references/split-shadow-default.md",
+      "source": "scripts/portable_snippets/split-shadow-default.md",
+      "source_sha256": "71f83f3e61dc9f7fce93aeeca0b8e643ce3dfd33d4ac8f1f3c993afcd9404152",
+      "distribution_sha256": "71f83f3e61dc9f7fce93aeeca0b8e643ce3dfd33d4ac8f1f3c993afcd9404152",
+      "bytes": 2450,
       "transforms": []
     }
   ]

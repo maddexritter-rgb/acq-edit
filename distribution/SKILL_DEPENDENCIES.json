@@ -1,6 +1,6 @@
 {
   "schema": "acq-edit/skill-dependencies-v1",
-  "manifestSha256": "8af343c73ee270e86d44eab3f4db9a427f20d985eaa7cf679ed0d01a05117935",
+  "manifestSha256": "919f425d2a2fc7fce503fd29c672cfe7ff1d37fdcc0b46bbe2cc78303d04cc9c",
   "policySha256": "fb9f0da2c3535c7a29cf5ae8af08ae4cd391e1c53e8ec690aca8ddb2175c630b",
   "owners": [
     "edit",

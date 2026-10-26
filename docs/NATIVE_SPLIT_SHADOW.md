@@ -1,6 +1,12 @@
 # Native split-screen seam shadow
 
-The framing owner supports an explicit FilmCraft revision for existing equal-height,
+The soft seam shadow is the default for every newly built split screen, across all
+content formats, unless the user explicitly opts out. The agent must apply it as
+part of finishing. Follow the framing owner’s
+[default contract](../distribution/skills/horizontal-to-vertical/references/split-shadow-default.md),
+including the explicit limitation for unsupported geometries.
+
+The framing owner supports a FilmCraft revision for existing equal-height,
 stacked native camera panels. Use the repository's
 `distribution/skills/horizontal-to-vertical/scripts/filmcraft_split_shadow.py`.
 Supply the native project, a new work output directory, the pinned FilmCraft binary,

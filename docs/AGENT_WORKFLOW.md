@@ -8,6 +8,8 @@ Reference matching and comparison route to `watch`, with other owners chosen for
 
 Read [the skill dependency inventory](SKILL_DEPENDENCIES.md) for packaged owners and scoped external routes. Opening text headlines are not included. Do not add them or load a global headline skill. Spoken hooks remain part of Assembly Design; body captions and motion graphics retain their owners. An external opt-in or unavailable route does not authorize loading global skills, accessing a production integration or skipping a required stage.
 
+Every new split screen uses the framing owner’s [default seam-shadow contract](../distribution/skills/horizontal-to-vertical/references/split-shadow-default.md), regardless of content format. Apply it before final export unless the user explicitly opts out; unsupported native geometries must be reported, never silently omitted.
+
 ## Native execution routing
 
 This contract supplies the execution routes for the portable skill distribution, including when a stage skill is invoked directly. Read `project.json` before native access. Its backend stays fixed for the project. Canonical skill text below the runtime routing note remains the source of editorial, analysis and design procedures; its legacy host commands apply only when that host is the selected backend and the toolkit route supports them. A reference to an active weekly Premiere project, a default production bridge, or a FilmCraft helper never selects an editor for this project.

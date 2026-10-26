@@ -43,6 +43,11 @@ def main():
    if str(rel)=='horizontal-to-vertical/references/filmcraft-smooth-x.md':
     text+=(Path(__file__).with_name('portable_snippets')/'filmcraft-split-shadow-route.md').read_text()
     transform.append({'patch':'native-split-shadow-route'})
+   shadow_defaults=json.loads((Path(__file__).with_name('portable_snippets')/'split-shadow-default-patches.json').read_text())
+   for old,new in shadow_defaults.get(str(rel),[]):
+    if old not in text and new not in text:raise ValueError('Split shadow default needs reconciliation: '+str(rel))
+    if new not in text:text=text.replace(old,new)
+   if str(rel) in shadow_defaults:transform.append({'patch':'default-split-shadow'})
    refs=private_references(text)
    if refs:external.append({'path':str(rel),'references':len(refs),'status':'requires-profile-or-portable-replacement'})
    routes=json.loads((Path(__file__).with_name('portable_snippets')/'no-text-hook-routes.json').read_text())
@@ -52,7 +57,7 @@ def main():
    if str(rel) in routes:transform.append({'patch':'remove-text-hook-route'})
    target=out/rel;target.parent.mkdir(parents=True,exist_ok=True);target.write_text(text)
    manifest.append({'path':str(rel),'source':'canonical-skills/'+str(rel),'source_sha256':source_hash,'distribution_sha256':hashlib.sha256(text.encode()).hexdigest(),'bytes':len(text.encode()),'transforms':transform})
- additions={'caption-clips/scripts/native_graphics/native_text_fill.py':'native_text_fill.py','horizontal-to-vertical/scripts/filmcraft_split_shadow.py':'filmcraft_split_shadow.py'}
+ additions={'caption-clips/scripts/native_graphics/native_text_fill.py':'native_text_fill.py','horizontal-to-vertical/scripts/filmcraft_split_shadow.py':'filmcraft_split_shadow.py','horizontal-to-vertical/references/split-shadow-default.md':'split-shadow-default.md'}
  for rel,name in additions.items():
   source=Path(__file__).with_name('portable_snippets')/name;raw=source.read_bytes()
   if any(e['path']==rel for e in manifest):raise ValueError('Repository addition collides with canonical owner: '+rel)

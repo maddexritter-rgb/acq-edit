@@ -184,6 +184,8 @@ If the source is a produced multicamera master with angle changes inside a singl
 
 ## Native split screen
 
+→ Apply the [default split-screen shadow contract](references/split-shadow-default.md) for every newly built split, across all content formats; only an explicit user opt-out omits it.
+
 → Follow the panel-local framing contract in [native-split-setup.md](references/native-split-setup.md) for both execution backends. Face visibility alone does not prove complete-head clearance or phone-readable composition.
 
 Split screen remains editable Premiere construction; it is never a baked stacked render. For left/right panels already baked into one master, use the flat native panel exception in [advanced native reframe](references/advanced-native-reframe.md). The independent-source workflow below applies to separate camera sources.

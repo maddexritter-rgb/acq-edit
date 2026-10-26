@@ -1,0 +1,18 @@
+{
+  "horizontal-to-vertical/SKILL.md": [
+    [
+      "## Native split screen\n",
+      "## Native split screen\n\n\u2192 Apply the [default split-screen shadow contract](references/split-shadow-default.md) for every newly built split, across all content formats; only an explicit user opt-out omits it.\n"
+    ]
+  ],
+  "horizontal-to-vertical/references/native-split-setup.md": [
+    [
+      "## Optional split-screen shadow preset\n\nSplit-screen shadow is optional polish, not an acceptance gate or default task.\nDo not spend time matching or revising it unless explicitly requested for the current\nclip. This does not relax the required readable caption shadows.",
+      "## Default split-screen shadow preset\n\n\u2192 Follow the [default split-screen shadow contract](split-shadow-default.md).\nThis treatment is required for new splits unless the user explicitly opts out."
+    ],
+    [
+      "When requested, use the bundled",
+      "By default, use the bundled"
+    ]
+  ]
+}

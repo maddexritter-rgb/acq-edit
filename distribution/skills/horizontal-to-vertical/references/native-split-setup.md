@@ -63,13 +63,12 @@ violated. Numeric clock/sync/face-visible checks cannot establish this. Return
 framing failures to this skill before export, preserving the assembly-owned layout,
 full-screen shots, dialogue, captions and other approved state. No audit loop.
 
-## Optional split-screen shadow preset
+## Default split-screen shadow preset
 
-Split-screen shadow is optional polish, not an acceptance gate or default task.
-Do not spend time matching or revising it unless explicitly requested for the current
-clip. This does not relax the required readable caption shadows.
+→ Follow the [default split-screen shadow contract](split-shadow-default.md).
+This treatment is required for new splits unless the user explicitly opts out.
 
-When requested, use the bundled [split-screen-shadow.prfpset](../assets/split-screen-shadow.prfpset), containing exactly one named preset: **Q&A Split Screen Drop Shadow**. It was isolated from the user-approved bundle with its dependency objects intact. No color-grade or other named presets are included. XML references were validated; native Premiere import and rendered appearance still require the test below.
+By default, use the bundled [split-screen-shadow.prfpset](../assets/split-screen-shadow.prfpset), containing exactly one named preset: **Q&A Split Screen Drop Shadow**. It was isolated from the user-approved bundle with its dependency objects intact. No color-grade or other named presets are included. XML references were validated; native Premiere import and rendered appearance still require the test below.
 
 Important: this one preset contains **two constituent controls**, Drop Shadow (`AE.ADBE Drop Shadow`) and intrinsic Motion (`AE.ADBE Motion`). Motion is part of the approved shadow setup, not a separate color/look preset. Apply the complete named preset only to the dedicated shadow duplicate, never to an already-keyframed visible source clip or the full finishing nest.
 
