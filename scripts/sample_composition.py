@@ -43,8 +43,9 @@ def collect(plan, views, output, workers=1):
         indices = list(range(cut['frames'])) if view.get('tracking') else evidence_frames
         detector, dw, dh = detector_for(view['sourceWidth'], view['sourceHeight'])
         select = '+'.join(f'eq(n\\,{n})' for n in indices)
+        filters = f'scale={dw}:{dh}' if view.get('tracking') else f'select={select},scale={dw}:{dh}'
         cmd = ['ffmpeg', '-v', 'error', '-threads', '2', '-ss', f'{start/fps:.9f}',
-               '-i', source['path'], '-an', '-vf', f'select={select},scale={dw}:{dh}',
+               '-i', source['path'], '-an', '-vf', filters,
                '-frames:v', str(len(indices)), '-fps_mode', 'passthrough',
                '-f', 'rawvideo', '-pix_fmt', 'bgr24', '-']
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -53,7 +54,7 @@ def collect(plan, views, output, workers=1):
             for n in indices:
                 data = proc.stdout.read(dw * dh * 3)
                 if len(data) != dw * dh * 3:
-                    raise RuntimeError(f'Incomplete source decode: {view["cutId"]} frame {n}')
+                    raise RuntimeError(f'Incomplete source decode: {view["cutId"]} frame {n}: ' + proc.stderr.read().decode())
                 frame = np.frombuffer(data, np.uint8).reshape((dh, dw, 3))
                 _, faces = detector.detect(frame)
                 face = select_face(faces, previous, view['roi'], dw, dh)
