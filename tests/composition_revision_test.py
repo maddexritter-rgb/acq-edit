@@ -1,9 +1,10 @@
-import copy,json,sys,unittest
+import copy,json,sys,unittest,tempfile
+from unittest.mock import patch
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 sys.path[:0]=[str(ROOT/'python'),str(ROOT/'distribution/skills/horizontal-to-vertical/scripts')]
 from composition_review import validate,digest
-from composition_revision import compare,protected
+from composition_revision import compare,protected,require_build_review
 
 class CompositionTests(unittest.TestCase):
  def fixture(self):
@@ -34,6 +35,18 @@ class CompositionTests(unittest.TestCase):
   self.assertEqual(compare(s,new,[{'cutId':'a'}]),{('a',None)})
   new['captions'][0]['text']='changed'
   with self.assertRaisesRegex(RuntimeError,'preserves cuts'):compare(s,new,[{'cutId':'a'}])
+ def test_new_production_build_requires_review_but_fixture_is_explicit(self):
+  with tempfile.TemporaryDirectory() as directory:
+   root=Path(directory);selection=root/'selection.json';receipt=root/'receipt.json'
+   selection.write_text('{}');receipt.write_text('{}')
+   project={'root':directory};spec={'editorial':{'selectionPath':str(selection)},'framing':{'receiptPath':str(receipt)}}
+   with self.assertRaisesRegex(RuntimeError,'composition review'):require_build_review(project,spec)
+   selection.write_text('{"testFixture":true}')
+   self.assertIsNone(require_build_review(project,spec))
+   selection.write_text('{}');receipt.write_text(json.dumps({'schema':'acq-edit/framing-composition-v1','owner':'horizontal-to-vertical','review':'review.json','reviewSha256':'pin'}))
+   with patch('composition_revision.checked_review',return_value={'passed':True}) as check:
+    self.assertEqual(require_build_review(project,spec),{'passed':True})
+    check.assert_called_once_with(project,spec,'review.json','pin')
  def test_protected_graph_rejects_caption_and_audio_changes(self):
   data={'view':{'active_sequence':1},'project':{'name':'edit','root':{'name':'edit'},'items':{'1':{'kind':{'Sequence':{'video_tracks':[{'items':[{'id':3,'effects':[{'effect':'motion','params':{'anchor':{'value':1,'keyframes':[]},'scale':{'value':100},'position':{'value':2}}}]}]}],'audio_tracks':[{'gain':0}],'caption':'original'}}}}}}
   ops=[{'sequence':1,'clip':3}];before=protected(data,ops,'edit');changed=copy.deepcopy(data)

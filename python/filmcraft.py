@@ -20,6 +20,8 @@ class Adapter:
   finally:c.close()
  def build(self,project,packet):
   p=plan(project,packet)
+  from composition_revision import require_build_review
+  require_build_review(project,p)
   out=inside(project['root'],packet['output']);out.mkdir(exist_ok=False,parents=True)
   require(TICKS*p['fps']['denominator']%p['fps']['numerator']==0,'Unsupported frame tick grid');ft=TICKS*p['fps']['denominator']//p['fps']['numerator'];sr=p['sampleRate'];require(TICKS%sr==0,'Unsupported audio sample grid')
   require(not p.get('audio',{}).get('properties'),'Resolve-specific audio properties cannot be applied by FilmCraft')

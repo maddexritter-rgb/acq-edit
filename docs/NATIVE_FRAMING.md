@@ -139,6 +139,13 @@ When dense tracking positions cross native JSON roundtrips, the framing owner ma
 
 ## FilmCraft composition repair
 
+Fresh FilmCraft builds with real-footage framing require an
+`acq-edit/framing-composition-v1` receipt from `horizontal-to-vertical`, containing
+`review` and `reviewSha256` for its source-bound composition review. The adapter
+checks it before constructing any native timeline. Synthetic fixtures retain their
+explicit test exemption; existing pinned projects remain eligible for scoped
+revisions without retroactively rewriting their approved plans.
+
 Use `native PROJECT_ID revise PACKET` with `kind: "composition-framing"` when the
 framing owner needs to change crop size/Y or switch full-screen fixed/tracked mode while retaining
 camera selection, panel rectangles, source clocks and every non-framing layer.

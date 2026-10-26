@@ -90,17 +90,32 @@ def protected(data, ops, name):
     return fingerprint({'project':value,'activeSequence':data['view']['active_sequence']})
 
 
-def revise(adapter, project, packet):
-    require(project['backend']=='filmcraft','Composition mode revisions currently require FilmCraft')
-    previous_path=inside(project['root'],packet['previousPlan']);require(sha(previous_path)==packet['previousPlanSha256'],'Previous plan changed')
-    previous=plan(project,{'plan':str(previous_path)});current=plan(project,packet)
-    selected=compare(previous,current,packet['targets'])
-    review_path=inside(project['root'],packet['compositionReview']);require(sha(review_path)==packet['compositionReviewSha256'],'Composition review changed')
+def checked_review(project, current, path, expected_hash):
+    review_path=inside(project['root'],path);require(sha(review_path)==expected_hash,'Composition review changed')
     review=read(review_path);profile_path=inside(project['root'],review['profile']['path']);require(sha(profile_path)==review['profile']['sha256'],'Composition profile changed')
     quality=validate_composition(current,review,read(profile_path))
     for entry in review['entries']:
         for sample in entry['samples']:
             evidence=sample['evidence'];file=inside(project['root'],evidence['path']);require(sha(file)==evidence['sha256'],'Composition evidence image changed')
+    return quality
+
+
+def require_build_review(project, spec):
+    """Fresh real-footage builds cannot substitute source-safe math for composition."""
+    selection=read(spec['editorial']['selectionPath'])
+    if selection.get('testFixture') or not spec.get('framing'):
+        return None
+    receipt=read(inside(project['root'],spec['framing']['receiptPath']))
+    require(receipt.get('schema')=='acq-edit/framing-composition-v1' and receipt.get('owner')=='horizontal-to-vertical', 'New production framing needs the owning skill composition review before native construction')
+    return checked_review(project,spec,receipt['review'],receipt['reviewSha256'])
+
+
+def revise(adapter, project, packet):
+    require(project['backend']=='filmcraft','Composition mode revisions currently require FilmCraft')
+    previous_path=inside(project['root'],packet['previousPlan']);require(sha(previous_path)==packet['previousPlanSha256'],'Previous plan changed')
+    previous=plan(project,{'plan':str(previous_path)});current=plan(project,packet)
+    selected=compare(previous,current,packet['targets'])
+    quality=checked_review(project,current,packet['compositionReview'],packet['compositionReviewSha256'])
     native=inside(project['root'],packet['nativeProject']);before=adapter.inspect(project,{'nativeProject':str(native),'session':packet['inspectSession']})
     require(before['fingerprint']==packet['expectedFingerprint'],'Native project changed; reconcile intervening edits')
     parent_hash=sha(native);data=read(native);shadow=None
