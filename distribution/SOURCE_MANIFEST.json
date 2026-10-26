@@ -2468,12 +2468,15 @@
       "path": "horizontal-to-vertical/references/filmcraft-smooth-x.md",
       "source": "canonical-skills/horizontal-to-vertical/references/filmcraft-smooth-x.md",
       "source_sha256": "1787391278dd29e44191f1e48010d5e717849f2cfa4562c489683b847e7256a7",
-      "distribution_sha256": "b43465d842762b754d7b4a38505d047d483a9af6b7876f43502a0f807704390f",
-      "bytes": 7119,
+      "distribution_sha256": "ad3a962302d0c6086d97219c02d7245c36c53a0053d52b7c86f716d5fc2d048a",
+      "bytes": 7689,
       "transforms": [
         {
           "from": "canonical-root",
           "to": "__ACQ_SKILLS__"
+        },
+        {
+          "patch": "native-split-shadow-route"
         }
       ]
     },
@@ -6162,6 +6165,14 @@
       "source_sha256": "135b171bdc8be2ba33a443f6e868f6a8ec15e614d4ab4537054eafb842beb334",
       "distribution_sha256": "135b171bdc8be2ba33a443f6e868f6a8ec15e614d4ab4537054eafb842beb334",
       "bytes": 3645,
+      "transforms": []
+    },
+    {
+      "path": "horizontal-to-vertical/scripts/filmcraft_split_shadow.py",
+      "source": "scripts/portable_snippets/filmcraft_split_shadow.py",
+      "source_sha256": "f0fc3acce8c974665a404705fc3c07b84a9f3f3c6512d0e3794d188edacb2d2a",
+      "distribution_sha256": "f0fc3acce8c974665a404705fc3c07b84a9f3f3c6512d0e3794d188edacb2d2a",
+      "bytes": 13996,
       "transforms": []
     }
   ]

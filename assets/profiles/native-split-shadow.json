@@ -1,0 +1,11 @@
+{
+  "schema": "acq-edit/native-split-shadow-v1",
+  "id": "linked-upper-panel-shadow-v1",
+  "referenceWidth": 1080,
+  "scale": 115,
+  "opacity": 98,
+  "direction": 180,
+  "distance": 49.700008392334,
+  "softness": 150,
+  "provenance": "Saved static values documented in horizontal-to-vertical/references/native-split-setup.md. FilmCraft native interpretation; rendered parity with Premiere has not been established."
+}
