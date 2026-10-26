@@ -55,9 +55,24 @@ $('apply').onclick=()=>apply([versionId]).catch(error);$('apply-selected').oncli
 $('copy-recovery').onclick=async()=>{try{await navigator.clipboard.writeText($('recovery-request').value);$('activity-copy-state').textContent='Copied. Paste this into your editing chat.'}catch{$('recovery-details').open=true;$('recovery-request').focus();$('recovery-request').select();$('activity-copy-state').textContent='Select and copy the request below, then paste it into your editing chat.'}};
 $('versions').onchange=()=>switchClip(clipId,$('versions').value).catch(error);$('search').oninput=queue;$('filter').onchange=queue;
 $('compare').onclick=()=>{const v=currentVersion(),prev=currentClip().versions.find(x=>x.id===v.parentId);if(!prev)return error(Error('This clip has no previous version to compare.'));comparison=!comparison;reference.close();$('comparison').pause();$('comparison').hidden=!comparison;if(comparison)$('comparison').src='/media/'+prev.id};
-$('projects').onchange=async()=>{try{await pending;reference.reset(null);projectId=$('projects').value;clipId='';versionId='';selected.clear();await refresh()}catch(e){error(e)}};
+function rememberProject(){
+ try{localStorage.setItem('acq-edit:review-project',projectId)}catch{}
+ const url=new URL(location.href);url.searchParams.set('project',projectId);history.replaceState(null,'',url);
+}
+$('projects').onchange=async()=>{try{await pending;if(dirty)throw Error('Save failed. Resolve the feedback conflict before switching projects.');reference.reset(null);projectId=$('projects').value;clipId='';versionId='';selected.clear();await refresh();rememberProject()}catch(e){error(e)}};
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
-const projects=await api('/api/projects');for(const p of projects){const o=el('option',p.title);o.value=p.id;$('projects').append(o)}if(projects.length){projectId=projects[0].id;await refresh()}
+const projects=await api('/api/projects');for(const p of projects){const o=el('option',p.title);o.value=p.id;$('projects').append(o)}
+if(projects.length){
+ let remembered='';try{remembered=localStorage.getItem('acq-edit:review-project')||''}catch{}
+ const requested=new URL(location.href).searchParams.get('project');
+ projectId=projects.find(p=>p.id===requested)?.id||projects.find(p=>p.id===remembered)?.id||'';
+ if(!projectId){
+  // First-time visitors should land on a playable project when one exists.
+  for(const p of projects){const snapshot=await api('/api/projects/'+p.id);if(snapshot.clips.some(c=>c.versions.some(v=>v.id===c.currentVersionId))){projectId=p.id;break}}
+  projectId||=projects[0].id;
+ }
+ $('projects').value=projectId;await refresh();rememberProject();
+}
 setInterval(()=>{if(!dirty)void refresh().catch(error)},5000);
 
 window.addEventListener('keydown',e=>{if(e.target.closest('input,textarea,select,button,a')||!draft)return;if(['y','r','n'].includes(e.key.toLowerCase())){const choice={y:'yes',r:'revise',n:'no'}[e.key.toLowerCase()];const b=document.querySelector(`[data-decision=${choice}]`);if(!b.disabled)b.click()}if(e.code==='Space'){e.preventDefault();$('player').paused?$('player').play():$('player').pause()}if(['ArrowLeft','ArrowRight'].includes(e.key)){const all=data.clips,i=all.findIndex(c=>c.id===clipId),next=all[i+(e.key==='ArrowRight'?1:-1)];if(next)void switchClip(next.id).catch(error)}});
