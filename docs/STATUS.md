@@ -4,6 +4,8 @@
 
 Implemented:
 
+- Real Premiere caption construction now has a portable generated-Graphics asset preparation path. A 53-card import was reconciled after its implicit native component chain differed from the declared XML chain; independent card/structure checks and saved-file verification passed while preserving the earlier sequences. Ten focused recovery/asset tests pass. Native rendered appearance and completed music/headline/export remain open; see `PREMIERE_CAPTION_ASSETS.md`.
+
 - Guided setup now retains existing values and advanced settings, offers selected-engine install paths, expands home paths and backs up exact prior configuration bytes on change. Per-agent command migration preserves existing projects when the default agent changes. Unchanged settings retain their file timestamp; cancelled prompts, malformed/concurrently changed config and active/unresolved work are refused without overwrite. Actual terminal runs preserved the prior project database/manifest and credentials while changing future defaults. All 147 service tests pass; see `INSTALLATION.md`.
 
 - Doctor now returns actionable local readiness and a nonzero exit for missing requirements, including absent setup, without creating SQLite or configuration files. Required runtime/credentials/brain/storage/selected-engine checks are separated from optional YouTube/Drive tools and unverified live authentication/editorial acceptance. An invalid runtime prevents native/brain imports; no raw private configuration errors are exposed. Fresh Resolve-only directory checks passed ready/bad-token/missing-key cases with unchanged files and no other editor integration. All 139 service and 319 Python tests pass. See `INSTALLATION.md`.

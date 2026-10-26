@@ -1,0 +1,13 @@
+# Portable Premiere Graphics assets
+
+`prepare_premiere_caption_template.py --skills <materialized-skills>` extracts only the explicitly selected generated Graphics dependency graph from a hash-bound donor/profile. It rejects external footage, timeline/audio dependencies, ambiguous IDs and missing references. Source Text and other BinaryHash aliases are materialized by the packaged graph-integrity owner. Original footage and project files are never modified.
+
+The `graft` command appends that graph and an empty caption lane to a separate saved-project copy, remaps IDs, and verifies all original objects except the selected video-track inventory. Retargeting, semantic cards and verification remain owned by `caption-clips`; this is asset preparation, not another caption engine. The resulting donor is explicitly uncertified until native rendering and human review. Asset availability does not establish font distribution rights.
+
+Pass a resolved manifest with `render_segments`, semantic IDs and animation elapsed frames to native transfer. A builder-only `cards` manifest is insufficient for the transfer contract. Preserve original attempts when correcting this handoff.
+
+On Premiere 26.3, the tested generated Graphics donor expands to Opacity, Motion, Graphic Group, Geometry2 and Text in the native component API. XML default flags alone do not declare the entire native chain. All 53 cards of the real test were imported, independently mapped and saved; the saved-file caption verifier passed. Rendered appearance, edit-box interaction and the complete finished clip remain separate gates.
+
+`recover_premiere_caption_import.py` handles only a terminal import whose reported failure is the specific component-chain mismatch. It preserves original receipts, calls the packaged full-structure and card verifiers, checks every protected sequence and repeats native readback. Its optional `--release-runtime` mode retires the original empty writer lock only after the same verified project is re-inspected, no job is active and no newer native operation exists. Original journal bytes and the retired lock are retained. It does not replay import or label media approved. If interruption happens after journal recovery but before lock retirement, the same exact proof can finish that retirement.
+
+Ten focused tests cover graph closure and rejection, unrelated asset exclusion, changed native state, active jobs, newer operations and unsupported component chains. The real import recovered without another import and preserved the earlier assembly and vertical sequence. This is not a general unknown-job unlock.
