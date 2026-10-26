@@ -39,7 +39,8 @@ def collect(plan, views, output, workers=1):
         cut = cuts[view['cutId']]
         source = sources[view['sourceId']]
         start = view['inFrame']
-        indices = sample_frames(cut['frames'], fps)
+        evidence_frames = sample_frames(cut['frames'], fps)
+        indices = list(range(cut['frames'])) if view.get('tracking') else evidence_frames
         detector, dw, dh = detector_for(view['sourceWidth'], view['sourceHeight'])
         select = '+'.join(f'eq(n\\,{n})' for n in indices)
         cmd = ['ffmpeg', '-v', 'error', '-threads', '2', '-ss', f'{start/fps:.9f}',
@@ -47,7 +48,7 @@ def collect(plan, views, output, workers=1):
                '-frames:v', str(len(indices)), '-fps_mode', 'passthrough',
                '-f', 'rawvideo', '-pix_fmt', 'bgr24', '-']
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        samples, previous = [], None
+        samples, dense, previous = [], [], None
         try:
             for n in indices:
                 data = proc.stdout.read(dw * dh * 3)
@@ -58,14 +59,17 @@ def collect(plan, views, output, workers=1):
                 face = select_face(faces, previous, view['roi'], dw, dh)
                 if face is not None:
                     previous = face[0]
-                path = output / f'{view["cutId"]}-{view["role"]}-{n:04d}.jpg'
-                if not cv2.imwrite(str(path), frame):
-                    raise RuntimeError('Failed to write source evidence')
                 sx, sy = view['sourceWidth'] / dw, view['sourceHeight'] / dh
                 measured = None if face is None else [float(face[0])*sx, float(face[1])*sy,
                             float(face[2])*sx, float(face[3])*sy, float(face[4])]
-                samples.append({'frame': n, 'face': measured, 'evidence': {'path': str(path),
-                    'sha256': hashlib.sha256(path.read_bytes()).hexdigest()}})
+                if view.get('tracking'):
+                    dense.append(measured)
+                if n in evidence_frames:
+                    path = output / f'{view["cutId"]}-{view["role"]}-{n:04d}.jpg'
+                    if not cv2.imwrite(str(path), frame):
+                        raise RuntimeError('Failed to write source evidence')
+                    samples.append({'frame': n, 'face': measured, 'evidence': {'path': str(path),
+                        'sha256': hashlib.sha256(path.read_bytes()).hexdigest()}})
             error = proc.stderr.read().decode()
             if proc.wait() != 0:
                 raise RuntimeError(error)
@@ -77,7 +81,7 @@ def collect(plan, views, output, workers=1):
             proc.stderr.close()
         print(f'{view["cutId"]}/{view["role"]}: {len(samples)} source samples', flush=True)
         return {**view, 'sourceRange': {'sourceId': source['id'], 'sha256': source['sha256'],
-                'inFrame': start, 'frames': cut['frames']}, 'samples': samples}
+                'inFrame': start, 'frames': cut['frames']}, 'samples': samples, 'denseFaces': dense}
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
         rows = list(pool.map(one, views))
