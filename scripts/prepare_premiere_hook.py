@@ -64,6 +64,8 @@ def run(args):
         retargeted=folder/'retarget.prproj';retarget_profile=folder/'retarget-profile.json'
         retarget(prep,profile_path,retargeted,retarget_profile,normalize_generated_aliases=True)
         profile=json.loads(retarget_profile.read_text());root=native.load(retargeted)
+        if args.donor not in profile['donors']:raise ValueError('Explicit donor name absent from asset')
+        profile['donors']={'headline':profile['donors'][args.donor]}
         pool=native.pool(root);ids=native.objects(root)
         for donor in profile['donors'].values():
             node=native.text_node(root,ids[donor['item_id']])
@@ -79,7 +81,7 @@ def run(args):
         profile['position_adapter']={'schema':'native-text-position-offset/v1','segment_y_pct':{identity:y_pct}}
         styled_profile=folder/'black-profile.json';write(styled_profile,profile)
         card={'id':identity,'semantic_card_id':identity,'start_frame':0,'end_frame':round(interval['end_seconds']*30),
-              'animation_elapsed_frames':30,'speaker':'host','text':text['text'],'y_pct':y_pct,
+              'animation_elapsed_frames':30,'speaker':'headline','text':text['text'],'y_pct':y_pct,
               'font_size_px':style['font_size_px'],'words':[{'text':w,'weight':'strong','italic':False,'font_postscript':'ProximaNova-Bold','color':'000000'} for w in text['text'].split()]}
         review={'mode':'editorial','reviewed':True,'segment_ids':[identity],
                 'weight':{'status':'applied','reason':'Match the frozen bold opening headline.',
@@ -104,5 +106,5 @@ def run(args):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for name in ('skills','project','asset','recipe','output'):p.add_argument('--'+name,type=Path,required=True)
-    p.add_argument('--sequence-uid',required=True);p.add_argument('--sequence-name',required=True)
+    p.add_argument('--sequence-uid',required=True);p.add_argument('--sequence-name',required=True);p.add_argument('--donor',required=True)
     print(json.dumps(run(p.parse_args()),indent=2))
