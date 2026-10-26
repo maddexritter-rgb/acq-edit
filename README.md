@@ -1,5 +1,7 @@
 # ACQ Edit
 
+Edits use source-word storytelling, body captions, framing, music and requested graphics. Opening text headlines are not included.
+
 A private, Mac-based editing toolkit for Codex and Claude Code. Give your agent footage and a brief. Review the resulting clips in a local browser, add timecoded feedback, and apply revisions without managing a timeline yourself.
 
 **Development build — not released for the team pilot.** FilmCraft and Resolve have passed isolated native construction/render fixtures. Premiere's packaged integration builds and its installed host responds, but the new toolkit has not completed a Premiere render fixture. Real speech, multicamera, clean-machine setup, and full agent-driven revision acceptance remain open. See [current evidence and remaining work](docs/STATUS.md).

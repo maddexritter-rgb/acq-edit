@@ -34,7 +34,7 @@ def verify_plan_media(project,spec):
   raise RuntimeError('Input media verification failed. Preserve the existing files and versions; restore the exact expected bytes or import a new source and redesign. '+json.dumps(failures,ensure_ascii=False))
  return results
 def plan(project,packet):
- p=read(inside(project['root'],packet['plan']));require(p['schema']=='acq-edit/plan-v1','Unsupported plan');require(p['projectId']==project['id'] and p['backend']==project['backend'],'Plan identity/backend mismatch')
+ p=read(inside(project['root'],packet['plan']));require(not p.get('hookContract'),'Opening text hooks have been removed; preserve legacy projects and use their pinned toolkit version');require(p['schema']=='acq-edit/plan-v1','Unsupported plan');require(p['projectId']==project['id'] and p['backend']==project['backend'],'Plan identity/backend mismatch')
  verify_plan_media(project,p)
  for evidence in [p['brain'],p['editorial']]:
   file=evidence.get('receiptPath') or evidence.get('selectionPath');inside(project['root'],file);require(sha(file)==evidence['sha256'],'Pinned evidence changed')
@@ -68,9 +68,6 @@ def plan(project,packet):
   ranges(p)
  if p.get('captionContract'):
   from caption_plan import validate
-  validate(project,p)
- if p.get('hookContract'):
-  from hook_plan import validate
   validate(project,p)
  from audio_plan import validate_audio
  validate_audio(project,p,end)
@@ -114,10 +111,6 @@ def result_receipt(project,packet,p,native,media,inspection,*,verification=None,
   captions=validate(project,p)
   receipt['captionEvidence']={'owner':'caption-clips','handoffSha256':p['captionContract']['sha256'],'helperHashes':captions['helperHashes'],'shadowProfile':captions['shadowProfile'],'cards':len(captions['cards'])}
   if p.get('captionVisibility'):receipt['captionEvidence']['visibility']=p['captionVisibility']
- if p.get('hookContract'):
-  from hook_plan import validate as validate_hook
-  hook=validate_hook(project,p)
-  receipt['hookEvidence']={'owner':'text-hook','recipeSha256':p['hookContract']['sha256'],'helperSha256':p['hookContract']['helperSha256'],'intervals':len(hook['intervals']),'editableText':True,'userApproved':False}
  if 'referenceStyle' in p:
   from reference_style import validate as validate_reference
   receipt['referenceEvidence']={'contract':p['referenceStyle'],'snapshot':validate_reference(project,p)}

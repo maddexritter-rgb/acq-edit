@@ -27,7 +27,7 @@ Read `references/mozi-standards.md` for the full verbatim checklist with excepti
 - Marking a clip as "done" in the internal tracker
 
 **Integration:**
-- `/edit` step 9 Gate 1 (the audit fan-out), `caption-clips`, `text-hook`, `listicle-short` → call this
+- `/edit` step 9 Gate 1 (the audit fan-out), `caption-clips`, `listicle-short` → call this
   as the final mechanical gate before a clip is declared ready.
 - Can also run standalone on any `.mp4` (plus optional `.ass`/`.srt` subtitle file)
 

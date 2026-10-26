@@ -54,7 +54,6 @@ class Adapter:
   return reopen(self.connect(),project,packet,self.snapshot)
  def build(self,project,packet):
   self.project_root=Path(project['root']);spec=plan(project,packet)
-  require(not spec.get('hookContract'),'Add a prepared hook to its inspected finished native base; do not rebuild that base')
   caption_prepared=None
   if spec.get('captionContract'):
    from caption_plan import validate
@@ -168,8 +167,6 @@ class Adapter:
   output.ConnectInput('Input',source)
  def revise(self,project,packet):
   if packet.get('kind')=='caption-visibility':return self.revise_caption_visibility(project,packet)
-  if packet.get('kind')=='text-hook-remove':return self.remove_hook(project,packet)
-  if packet.get('kind')=='text-hook':return self.revise_hook(project,packet)
   if packet.get('kind')=='music-replacement':return self.revise_music(project,packet)
   if packet.get('kind')=='graphic-replacement':return self.revise_graphics(project,packet)
   if packet.get('kind')=='panel-framing':return self.revise_panels(project,packet)
@@ -411,77 +408,8 @@ class Adapter:
   require(self.snapshot(p)==after,'Caption visibility changed during native save')
   require(pm.ExportProject(p.GetName(),str(native),False),'Cannot checkpoint caption visibility revision');save(inspection,after)
   return {'nativeProject':str(native),'timelineId':duplicate.GetUniqueId(),'fingerprint':fingerprint(after),'status':'revised-native-render-pending'}
- def remove_hook(self,project,packet):
-  from hook_removal import prepare
-  from resolve_hooks import verify_timeline
-  from resolve_graphics import inspect
-  previous,spec,prepared=prepare(project,packet);r,p=self.selected(project)
-  require(not p.IsRenderingInProgress(),'Resolve is rendering; wait before hook removal')
-  before=self.snapshot(p);require(fingerprint(before)==packet['expectedFingerprint'],'Native state changed; reconcile before hook removal')
-  original=p.GetCurrentTimeline();verify_source_clocks(original,previous);verify_timeline(original,previous,prepared)
-  track=original.GetTrackCount('video');require(track>1 and not original.GetIsTrackLocked('video',track),'Owned hook track is locked or is the only picture track')
-  original_detail=inspect(self,p);baseline=inspect(self,p,duplicate=True,omit_last_video_track=True)
-  native=inside(project['root'],packet['nativeProject']);inspection=inside(project['root'],packet['inspection'])
-  require(not native.exists() and not inspection.exists(),'Hook removal outputs exist; reconcile before retrying')
-  require(packet['title'] not in {p.GetTimelineByIndex(i).GetName() for i in range(1,p.GetTimelineCount()+1)},'Hook removal timeline name exists')
-  duplicate=original.DuplicateTimeline(packet['title']);require(duplicate and p.SetCurrentTimeline(duplicate),'Cannot duplicate hook parent')
-  verify_timeline(duplicate,previous,prepared)
-  require(duplicate.DeleteTrack('video',track),'Native hook track removal failed')
-  pin_new_copy(original,duplicate,spec)
-  verify_source_clocks(duplicate,spec)
-  require(inspect(self,p,duplicate=True)==baseline,'Hook removal changed protected native state or metadata')
-  after=self.snapshot(p);require(p.SetCurrentTimeline(original) and inspect(self,p)==original_detail,'Hook removal changed parent timeline')
-  require(p.SetCurrentTimeline(duplicate) and self.snapshot(p)==after,'New timeline changed during parent verification')
-  pm=r.GetProjectManager();require(pm.SaveProject(),'Cannot save hook-free revision');require(pm.ExportProject(p.GetName(),str(native),False),'Cannot checkpoint hook-free revision');save(inspection,after)
-  return {'nativeProject':str(native),'timelineId':duplicate.GetUniqueId(),'fingerprint':fingerprint(after),'status':'revised-native-render-pending'}
- def revise_hook(self,project,packet):
-  from hook_plan import validate
-  from resolve_hooks import font_preflight,construct,verify_timeline
-  from resolve_hook_archive import append_hook
-  from resolve_graphics import inspect
-  spec=plan(project,packet);prepared=validate(project,spec);require(prepared,'Prepare the hook contract first')
-  r,p=self.selected(project);require(r.GetVersion()[:4]==[21,1,1,10],'Native hook archive route requires qualified Resolve Studio 21.1.1 build 10')
-  require(not p.IsRenderingInProgress(),'Resolve is rendering; wait before hook construction')
-  receipt=read(spec['hookContract']['baseReceipt']);require(sha(inside(project['root'],receipt['nativeProject']))==receipt['nativeFingerprint'],'Base native checkpoint changed')
-  before=self.snapshot(p);require(fingerprint(before)==packet['expectedFingerprint']==fingerprint(read(inside(project['root'],receipt['nativeInspectionPath']))),'Current timeline differs from the finished cut studied for the hook')
-  font_preflight(r,prepared);original=p.GetCurrentTimeline();original_detail=inspect(self,p);baseline=inspect(self,p,duplicate=True)
-  native=inside(project['root'],packet['nativeProject']);inspection=inside(project['root'],packet['inspection']);work=inside(Path(project['root'])/'10_WORK',packet['archiveDirectory'])
-  require(not native.exists() and not inspection.exists() and not work.exists(),'Hook outputs exist; reconcile before retrying')
-  names={p.GetTimelineByIndex(i).GetName() for i in range(1,p.GetTimelineCount()+1)};donor_name=packet['title']+' hook source'
-  require(packet['title'] not in names and donor_name not in names,'Hook timeline name exists');work.mkdir(parents=True);page=r.GetCurrentPage()
-  try:
-   require(original.Export(str(work/'parent.drt'),r.EXPORT_DRT),'Cannot export native parent timeline')
-   pool=p.GetMediaPool();donor=pool.CreateEmptyTimeline(donor_name);require(donor and p.SetCurrentTimeline(donor),'Cannot create native hook donor')
-   require(donor.SetStartTimecode('00:00:00:00') and r.OpenPage('edit'),'Cannot set hook donor clock/page')
-   require(donor.SetSettings({'useCustomSettings':'1','timelineResolutionWidth':str(spec['width']),'timelineResolutionHeight':str(spec['height'])}),'Cannot set hook canvas')
-   require(abs(float(donor.GetSettings()['timelineFrameRate'])-spec['fps']['numerator']/spec['fps']['denominator'])<1e-6,'Hook donor frame rate differs')
-   require(donor.SetCurrentTimecode('00:00:00:00'),'Cannot select hook start');item=donor.InsertFusionCompositionIntoTimeline();require(item and item.SetName(prepared['name']),'Cannot create editable native hook generator')
-   construct(item.GetFusionCompByIndex(1),spec,prepared)
-   require(donor.Export(str(work/'donor.drt'),r.EXPORT_DRT),'Cannot export native hook donor')
-   proof=append_hook(work/'parent.drt',work/'donor.drt',work/'hook.drt',prepared);save(work/'archive-proof.json',proof)
-   require(p.SetCurrentTimeline(original) and inspect(self,p)==original_detail,'Parent changed while preparing hook')
-   revised=pool.ImportTimelineFromFile(str(work/'hook.drt'));require(revised and p.SetCurrentTimeline(revised) and revised.SetName(packet['title']),'Cannot import native hook timeline')
-   require(revised.GetUniqueId()!=original.GetUniqueId(),'Hook import replaced original timeline')
-   # Native DRT import may restore source names instead of custom clip names.
-   # Restore only those observed names on the new copy, then compare all state.
-   for kind,tracks in before['tracks'].items():
-    for track,clips in enumerate(tracks):
-     actual=revised.GetItemListInTrack(kind,track+1) or [];require(len(actual)==len(clips),'Hook import changed source coverage')
-     for old,new in zip(clips,actual):
-      if new.GetName()!=old['name']:require(new.SetName(old['name']),'Cannot preserve custom clip name')
-   verify_timeline(revised,spec,prepared)
-   require(inspect(self,p,duplicate=True,omit_last_video_track=True)==baseline,'Hook import changed protected native state or metadata')
-   after=self.snapshot(p);require(p.SetCurrentTimeline(original) and inspect(self,p)==original_detail,'Hook changed parent timeline')
-   require(p.SetCurrentTimeline(revised) and self.snapshot(p)==after,'New hook timeline changed during parent verification')
-   pm=r.GetProjectManager();require(pm.SaveProject(),'Cannot save native hook');require(pm.ExportProject(p.GetName(),str(native),False),'Cannot checkpoint native hook');save(inspection,after)
-   return {'nativeProject':str(native),'timelineId':revised.GetUniqueId(),'fingerprint':fingerprint(after),'status':'revised-native-render-pending'}
-  finally:require(r.OpenPage(page),'Cannot restore Resolve page after hook construction')
  def render(self,project,packet):
   spec=plan(project,packet);r,p=self.selected(project);verify_source_clocks(p.GetCurrentTimeline(),spec);state=self.snapshot(p);require(fingerprint(state)==packet['expectedFingerprint'],'Timeline changed before export');save(inside(project['root'],packet['inspection']),state)
-  if spec.get('hookContract'):
-   from hook_plan import validate
-   from resolve_hooks import verify_timeline,font_preflight
-   prepared=validate(project,spec);font_preflight(r,prepared);verify_timeline(p.GetCurrentTimeline(),spec,prepared)
   if spec.get('audio',{}).get('music'):
    from resolve_music import items as music_items
    music_items(p.GetCurrentTimeline(),spec)

@@ -108,33 +108,6 @@ def portable_distribution(text,relative):
   if text.count(old)!=1:raise ValueError('Assembled-gate summary source changed')
   text=text.replace(old,replacement)
   changes.append({'patch':'python311-assembled-gate-summary'})
- if relative=='text-hook/scripts/render_hook.py':
-  # Expose the owner's actual drawing coordinates; adapters must not reimplement
-  # its font fitting, line spacing, padding or placement decisions.
-  old="            first = line_specs[0] if line_specs else {'foreground':'#000000','background':'#FFFFFF'}"
-  addition='''            native_text = []
-            for line, tx, ty, font, foreground in rows:
-                native_text.append({'text': line, 'origin_px': [tx, ty],
-                                    'baseline_px': [tx, ty+font.getmetrics()[0]],
-                                    'ink_bounds': list(font.getbbox(line)),
-                                    'font_family': font.getname()[0], 'font_style': font.getname()[1]})
-            native_boxes = ([{'bounds': [0, 0, bw, bh], 'color': style['background'], 'radius_px': radius}]
-                            if box_mode == 'unified' else
-                            [{'bounds': box, 'color': (line_specs[index] if line_specs else {'background': '#FFFFFF'})['background'],
-                              'radius_px': radius} for index, box in enumerate(line_box_bounds)])
-'''
-  if text.count(old)!=1:raise ValueError('Hook drawing source changed')
-  text=text.replace(old,addition+old)
-  old="                           'rendered_line_styles': resolved_lines,"
-  if text.count(old)!=1:raise ValueError('Hook layout result changed')
-  text=text.replace(old,old+"\n                           'native_text': native_text, 'native_boxes': native_boxes,")
-  old="                                   'effective_safe_rect':geometry['effective_safe_rect'],'plate':filename})"
-  if text.count(old)!=1:raise ValueError('Hook interval result changed')
-  text=text.replace(old,"                                   'effective_safe_rect':geometry['effective_safe_rect'],\n                                   'native_text':geometry['native_text'], 'native_boxes':geometry['native_boxes'],\n                                   'rendered_line_styles':geometry['rendered_line_styles'], 'plate':filename})")
-  old="               'native_verified': False, 'user_approved': False}"
-  if text.count(old)!=1:raise ValueError('Hook receipt source changed')
-  text=text.replace(old,"               'native_explicit_intervals': m.get('placement_intervals') is not None,\n"+old)
-  changes.append({'patch':'native-hook-drawing-coordinates'})
  if relative in OVERRIDES:
   replacement=Path(__file__).with_name('portable_overrides')/relative
   raw=replacement.read_bytes();text=raw.decode()

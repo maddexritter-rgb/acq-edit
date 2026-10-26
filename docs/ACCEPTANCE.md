@@ -1,5 +1,7 @@
 # Pilot acceptance matrix
 
+Opening text headlines were removed from the current toolkit on 2026-10-26. Any hook qualification below records an earlier version, not current support. Existing pinned projects remain unchanged. See [removal and compatibility](NATIVE_HOOKS.md).
+
 A pilot release is blocked until every required row passes on actual media and each engine independently. Unit tests, mocks, API success, native project readback, file verification, listening and human approval are distinct evidence.
 
 | Scenario | Current evidence | Remaining acceptance |

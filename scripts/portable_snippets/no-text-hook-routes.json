@@ -1,0 +1,36 @@
+{
+  "edit/SKILL.md": [
+    [
+      "   \u2192 Use skill: [text-hook](../text-hook/SKILL.md) for the opening headline, matching card style, and measured placement from the settled cut after framing/captions, before export. Preserve assembly-only stopping points.",
+      "   Opening text headlines are not part of this toolkit. Preserve assembly-only stopping points."
+    ]
+  ],
+  "caption-clips/SKILL.md": [
+    [
+      "Opening hook plates are not body captions. Route those to `text-hook`.",
+      "Opening headline generation is not included in this toolkit. Body captions remain supported."
+    ],
+    [
+      "Multiline profiles retain their explicit reviewed line breaks and spacing; inspect\nvisible ink bounds so adjacent lines never overlap. Opening headlines belong to\ntext-hook and must be explicitly identified as that role, not exempted body text.",
+      "Multiline profiles retain their explicit reviewed line breaks and spacing; inspect\nvisible ink bounds so adjacent lines never overlap. Do not add opening headlines or\nexempt body text from the density gate."
+    ]
+  ],
+  "b-roll-injector/SKILL.md": [
+    [
+      "Use after caption-clips but before text-hook.",
+      "Use after caption-clips."
+    ]
+  ],
+  "mozi-sf-audit/SKILL.md": [
+    [
+      "`caption-clips`, `text-hook`, `listicle-short`",
+      "`caption-clips`, `listicle-short`"
+    ]
+  ],
+  "saas-animation-video/SKILL.md": [
+    [
+      "use `text-hook`",
+      "opening headline generation is not included in this toolkit"
+    ]
+  ]
+}

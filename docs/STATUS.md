@@ -1,5 +1,7 @@
 # Implementation checkpoint — 2026-10-24
 
+Opening text headlines were removed from the current toolkit on 2026-10-26. Any hook qualification below records an earlier version, not current support. Existing pinned projects remain unchanged. See [removal and compatibility](NATIVE_HOOKS.md).
+
 **Not pilot-ready.** This is the first development implementation, with explicit release gates.
 
 Implemented:

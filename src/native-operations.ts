@@ -24,6 +24,8 @@ async function children(operation:NativeOperation,allowUnknown=false){
 }
 export async function executeNative(store:Store,config:Config,projectId:string,action:NativeAction,packetFile:string,tools:{execute?:typeof run;verifyRuntime?:typeof verifyRuntime;signal?:AbortSignal}={}){
  const project=store.project(projectId),packetPath=await containedFile(project.root,packetFile),id=randomUUID();
+ const requested=await readJson<{kind?:string}>(packetPath);
+ invariant(action!=='hooks'&&!['text-hook','text-hook-remove'].includes(requested.kind||''),'Opening text hooks have been removed; preserve legacy projects and use their pinned toolkit version');
  const operation:NativeOperation={id,projectId,backend:project.backend,action,jobId:process.env.ACQ_EDIT_JOB_ID||null,packetPath,packetSha256:await sha256(packetPath),directory:path.join(project.root,'10_WORK','native-operations',id),state:'running',ownerPid:process.pid,childPid:null,childPending:false,dispatchPhase:'not-started',createdAt:now(),updatedAt:now(),error:null};
  store.addNativeOperation(operation);
  try{

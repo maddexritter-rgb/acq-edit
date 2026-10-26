@@ -202,7 +202,7 @@ class CaptionPlanTests(unittest.TestCase):
         changed=copy.deepcopy(self.spec);changed['width']=720
         with self.assertRaisesRegex(RuntimeError,'cannot change'):check(previous,changed)
         changed=copy.deepcopy(self.spec);changed['hookContract']={'fixture':True}
-        with self.assertRaisesRegex(RuntimeError,'Remove the owned hook'):check(previous,changed)
+        with self.assertRaisesRegex(RuntimeError,'pinned toolkit version'):check(previous,changed)
         prior.write_text('changed')
         with self.assertRaisesRegex(RuntimeError,'Previous caption plan changed'):check(previous,self.spec)
 

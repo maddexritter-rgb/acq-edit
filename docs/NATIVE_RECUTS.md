@@ -2,7 +2,7 @@
 
 FilmCraft and Resolve now accept `kind: "spoken-recut"` through the native `revise` action. Assembly Design still owns word selection and speech-boundary decisions. This route executes a freshly compiled plan and fresh dependent finishing decisions in a new native project/timeline; it does not edit old source spans in place or guess a ripple operation.
 
-Prepare the source-word selection and native cuts using `NATIVE_ASSEMBLY.md`. Recompute framing through `horizontal-to-vertical`, captions through `caption-clips`, text hooks through `text-hook`, audio/music through `music`, and graphic placement through its graphics owner. The native route currently supports the same fixed crops, text captions, explicit music and imported graphics as a native build. Complex multicamera layouts and advanced effects remain outside its qualified execution coverage.
+Prepare the source-word selection and native cuts using `NATIVE_ASSEMBLY.md`. Recompute framing through `horizontal-to-vertical`, captions through `caption-clips`, audio/music through `music`, and graphic placement through its graphics owner. The native route currently supports the same fixed crops, text captions, explicit music and imported graphics as a native build. Complex multicamera layouts and advanced effects remain outside its qualified execution coverage.
 
 A recut packet contains:
 
@@ -31,9 +31,8 @@ The finishing receipt has schema `acq-edit/recut-finishing-v1`, `parentVersionId
 | framing | horizontal-to-vertical | Complete new `framing` object |
 | audio | music | Complete new `audio` object |
 | graphics | promo | Complete new `graphics` array |
-| textHook | text-hook | Object containing new `captions` and `graphics`, plus `captionVisibility` when present |
 
-Use `recut_execution.component(plan, name)` and `common.fingerprint` for these canonical JSON fingerprints. Reconsider hidden caption ranges against the new cut clock; retaining, changing or removing them is an explicit caption-owner decision. A present visibility handoff requires `recomputed`, never `not-used`; stale array-only fingerprints are refused. Absence retains the existing receipt format. A graphics decision may reference the specific configured graphics owner's supporting recipe in its reason; `promo` is the current shared native motion route. A `not-used` component must be empty, except `textHook`: ordinary captions may exist without an opening headline. The receipt pins decisions; it is not machine evidence of editorial quality, listening, reference fidelity or human approval.
+Use `recut_execution.component(plan, name)` and `common.fingerprint` for these canonical JSON fingerprints. Reconsider hidden caption ranges against the new cut clock; retaining, changing or removing them is an explicit caption-owner decision. A present visibility handoff requires `recomputed`, never `not-used`; stale array-only fingerprints are refused. Absence retains the existing receipt format. A graphics decision may reference the specific configured graphics owner's supporting recipe in its reason; `promo` is the current shared native motion route. A `not-used` component must be empty. The receipt pins decisions; it is not machine evidence of editorial quality, listening, reference fidelity or human approval.
 
 ## Parent preservation and publication
 

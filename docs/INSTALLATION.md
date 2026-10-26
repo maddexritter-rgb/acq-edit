@@ -118,3 +118,7 @@ Fresh installations now register `lab_inspect_toolkit_workspace`, `lab_toolkit_p
 The final lifecycle package was installed into another fresh directory on the development Mac. Verification passed for 683 skill files, five helper/bootstrap files, 184 compiled JavaScript/JSON files and 40 prepared panel files. Actual MCP discovery registered 509 tools, including both lifecycle endpoints. No panel was installed into Adobe and no native host operation was called by this check. Shared suites passed 261 Python and 79 service tests; the separately compiled lifecycle suite passed 17 simulated cases.
 
 A subsequent fresh recovery-package installation verified the same 683 skill, five helper/bootstrap, 184 compiled and 40 panel files, and discovered 510 tools including `lab_reconcile_toolkit_project`. No Adobe installation or native host call occurred. The recovery checkpoint passes 267 Python, 88 service and 31 explicit lifecycle tests. The Python suite also corrected a test-only executable launcher so the suite itself works from a Python environment whose path contains spaces.
+
+## Current package without opening headlines
+
+Fresh installations exclude `text-hook`. Historical owner counts and hook fixtures above describe earlier snapshots. Existing materialized runtimes are preserved; use a fresh checkout for this package. Legacy projects with a headline contract require their pinned version for native editing.

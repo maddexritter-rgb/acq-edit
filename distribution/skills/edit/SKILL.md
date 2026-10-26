@@ -113,7 +113,7 @@ This technical readback is not an editorial audit. Never label the timeline appr
 5. After cuts approval, or within the authorized end-to-end run: use `book-doodle` for the optional recommendation checkpoint,
    `horizontal-to-vertical` to implement the assembly-owned picture plan through native framing, `caption-clips` for captions, and
    `music` when requested/applicable. Paid workshop finishing routes to `ad-edit`.
-   → Use skill: [text-hook](../text-hook/SKILL.md) for the opening headline, matching card style, and measured placement from the settled cut after framing/captions, before export. Preserve assembly-only stopping points.
+   Opening text headlines are not part of this toolkit. Preserve assembly-only stopping points.
 6. Export through RUNBOOK after Assembly Design's pre-render check. Verify file
    completion, expected streams/dimensions/rate/frame count once; repair a concrete
    failure only. Audit skills remain individually usable or opt-in for requested

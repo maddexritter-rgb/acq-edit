@@ -1,6 +1,6 @@
 ---
 name: b-roll-injector
-description: Add punch-in zoom effects and visual emphasis to a vertical short clip. Scans the transcript for moments that benefit from visual punch (numbers, proper nouns, emphasis words, punchlines) and adds subtle 1.0→1.15 zooms at those moments. Keeps talking-head clips from feeling visually flat. Use after caption-clips but before text-hook. Can be skipped if user says --no-broll.
+description: Add punch-in zoom effects and visual emphasis to a vertical short clip. Scans the transcript for moments that benefit from visual punch (numbers, proper nouns, emphasis words, punchlines) and adds subtle 1.0→1.15 zooms at those moments. Keeps talking-head clips from feeling visually flat. Use after caption-clips. Can be skipped if user says --no-broll.
 ---
 
 # B-Roll Injector — Subtle Zoom Punches

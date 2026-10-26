@@ -1,15 +1,8 @@
 # Editing skill dependency inventory
 
-The distribution contains 38 canonical capability owners and 683 source files.
-`text-hook` explicitly requires `slop-detector` for generated copy; that owner and
-its agent metadata are now packaged with unchanged canonical hashes. The earlier
-37-owner package omitted this required dependency. This fixes copy-workflow
-availability, not the separate native opening-card construction gap.
+The current owner/file/route counts are recorded in `distribution/SOURCE_MANIFEST.json` and `distribution/SKILL_DEPENDENCIES.json`. The opening-headline owner has been removed from the package, exporter and active editing routes. `slop-detector` remains available for requested copy cleanup.
 
-`distribution/SKILL_DEPENDENCIES.json` records 85 explicit cross-skill routes. Each
-route includes its source file, line numbers, distributed source hash, target owner
-and availability. The inventory also pins the complete source manifest and reviewed
-exception policy. A packaged target must have a manifest-owned `SKILL.md` entrypoint.
+The inventory pins each route's source, line numbers, distributed hash, target owner and availability, plus the complete manifest and reviewed exception policy. A packaged target must have a manifest-owned `SKILL.md` entrypoint.
 
 The scanner reads explicit `Use skill:` instructions, sibling `SKILL.md` links and
 normalized skill-root paths. It is a static route inventory; dynamically constructed
@@ -29,7 +22,7 @@ do not make the target globally optional.
 | `cut` | Explicitly retired research source | Historical only; Assembly Design owns active cutting |
 | `highlight` | Two optional live-stream references | Unavailable; repair/qualify that workflow before use |
 | `copy` | Source-library's conditional video-ideas route | Separate opt-in planning workflow |
-| `slack-voice` | Copy cleanup's conditional Slack drafting | Separate opt-in writing workflow; not needed for hook cleanup |
+| `slack-voice` | Copy cleanup's conditional Slack drafting | Separate opt-in writing workflow; not needed for the ordinary editing loop |
 
 Unknown missing targets stop verification. Stale exceptions also stop verification,
 so a removed reference cannot leave an unnoticed blanket allowance. The installer

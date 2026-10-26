@@ -22,9 +22,9 @@ test('native success records exact packet, command identity and immutable result
  assert.deepEqual(result,{native:true});const op=f.store.nativeOperations('p')[0];assert.equal(op.state,'succeeded');assert.equal(op.ownerPid,null);assert.equal(op.packetSha256,await sha256(f.packet));assert.equal(op.resultSha256,await sha256(op.resultPath));const journal=JSON.parse(await readFile(op.resultPath));assert.equal(journal.operationId,op.id);assert.equal(journal.stdout,'{"native":true}');f.store.assertNativeSettled('p');
 });
 test('intermediate renders return to editing without releasing the owning job',async t=>{
- const f=await fixture(t),job=f.store.enqueueBuild('p','Replace hook after changing captions');f.store.claim();process.env.ACQ_EDIT_JOB_ID=job.id;
+ const f=await fixture(t),job=f.store.enqueueBuild('p','Revise framing after changing captions');f.store.claim();process.env.ACQ_EDIT_JOB_ID=job.id;
  const next=f.store.enqueueBuild('p','Later work');
- for(const [action,state] of [['render','rendering'],['inspect','editing'],['revise','editing'],['hooks','editing'],['render','rendering']]){
+ for(const [action,state] of [['render','rendering'],['inspect','editing'],['revise','editing'],['captions','editing'],['render','rendering']]){
   await executeNative(f.store,f.config,'p',action,f.packet,{execute:async(c,a,o)=>{
    o.onSpawn(2147483647);assert.equal(f.store.job(job.id).state,state);assert.equal(f.store.claim(),undefined);return '{}';
   }});
@@ -216,4 +216,13 @@ test('reference preparation uses shared Python for every selected engine',async 
   }});
   assert.equal(f.store.nativeOperations('p')[0].state,'succeeded');
  });
+});
+
+test('removed headline routes refuse without spawning or reserving a project',async t=>{
+ const f=await fixture(t);let launched=false;
+ for(const [action,packet] of [['hooks',{}],['revise',{kind:'text-hook'}],['revise',{kind:'text-hook-remove'}]]){
+  await writeFile(f.packet,JSON.stringify(packet));
+  await assert.rejects(executeNative(f.store,f.config,'p',action,f.packet,{execute:async()=>{launched=true;return '{}'}}),/removed/);
+ }
+ assert.equal(launched,false);assert.equal(f.store.nativeOperations('p').length,0);f.store.assertNativeSettled('p');
 });

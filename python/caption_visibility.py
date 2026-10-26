@@ -58,7 +58,7 @@ def prepare(project, packet):
     previous, current = plan(project, {'plan': str(previous_path)}), plan(project, packet)
     require(previous['backend'] == current['backend'] == project['backend'] and project['backend'] in ['filmcraft','resolve'], 'Caption visibility requires the fixed native backend')
     require(previous.get('captionContract') and current.get('captionContract'), 'Owned native captions required')
-    require(not previous.get('hookContract') and not current.get('hookContract'), 'Remove the owned hook before changing its caption context')
+    require(not previous.get('hookContract') and not current.get('hookContract'), 'Legacy headline projects require their pinned toolkit version; preserve existing work')
     require({k:v for k,v in previous.items() if k != 'captionVisibility'} == {k:v for k,v in current.items() if k != 'captionVisibility'},
             'Caption visibility cannot change cuts, text, style, framing, audio or other plan fields')
     require(previous.get('captionVisibility') != current.get('captionVisibility'), 'Caption visibility request makes no change')

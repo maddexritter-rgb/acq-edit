@@ -9,7 +9,6 @@
     "footage-fetch",
     "horizontal-to-vertical",
     "caption-clips",
-    "text-hook",
     "slop-detector",
     "music",
     "render",
@@ -402,9 +401,13 @@
       "path": "edit/SKILL.md",
       "source": "canonical-skills/edit/SKILL.md",
       "source_sha256": "614fe5d4831ff588112600dc140f7fa0380255a51d1ecb76db50c20f626f2e11",
-      "distribution_sha256": "614fe5d4831ff588112600dc140f7fa0380255a51d1ecb76db50c20f626f2e11",
-      "bytes": 15763,
-      "transforms": []
+      "distribution_sha256": "71af5704fb17b421f9cdf3b725e9afdb06839c2f1a70d84d8ffe3348b7bc683d",
+      "bytes": 15636,
+      "transforms": [
+        {
+          "patch": "remove-text-hook-route"
+        }
+      ]
     },
     {
       "path": "edit/TEAM_ALEX_QA_HOTLINE_SOP.md",
@@ -2675,12 +2678,15 @@
       "path": "caption-clips/SKILL.md",
       "source": "canonical-skills/caption-clips/SKILL.md",
       "source_sha256": "347ccefc1594d292b00ab8dab1690466b9ee3b209d34fae1604848cec3c3694e",
-      "distribution_sha256": "28753990c6287fa7fb1503e46f46e05cb38f66b27949d5ae4e08bc8570fb75de",
-      "bytes": 18958,
+      "distribution_sha256": "53f40f343517b29e0cf5f418a35a47b667477937105f2a2153bb2aed1f33dcff",
+      "bytes": 18942,
       "transforms": [
         {
           "from": "repository-caption-density-patch",
           "to": "single-line-density-and-measured-fit-gates"
+        },
+        {
+          "patch": "remove-text-hook-route"
         }
       ]
     },
@@ -3725,108 +3731,6 @@
       "transforms": []
     },
     {
-      "path": "text-hook/SKILL.md",
-      "source": "canonical-skills/text-hook/SKILL.md",
-      "source_sha256": "d77320292431bf932883dfd86009cea7ee63ff833fd954713290e9d558cd3c1e",
-      "distribution_sha256": "1d982e178513d6714327e701cec8df7cf9c92a4a3bf031f4db9f7e5e07fee802",
-      "bytes": 13591,
-      "transforms": [
-        {
-          "from": "canonical-root",
-          "to": "__ACQ_SKILLS__"
-        }
-      ]
-    },
-    {
-      "path": "text-hook/agents/openai.yaml",
-      "source": "canonical-skills/text-hook/agents/openai.yaml",
-      "source_sha256": "ca7c33131a2a6a05e91522c6b2255f5848b6197b96b6cc69b663fe8cb852a091",
-      "distribution_sha256": "ca7c33131a2a6a05e91522c6b2255f5848b6197b96b6cc69b663fe8cb852a091",
-      "bytes": 238,
-      "transforms": []
-    },
-    {
-      "path": "text-hook/references/copy-reference.md",
-      "source": "canonical-skills/text-hook/references/copy-reference.md",
-      "source_sha256": "7195964b9cf70fb044689f090915668c14fa60e3e4fe6eed258a794d6b4bc6aa",
-      "distribution_sha256": "7195964b9cf70fb044689f090915668c14fa60e3e4fe6eed258a794d6b4bc6aa",
-      "bytes": 1276,
-      "transforms": []
-    },
-    {
-      "path": "text-hook/references/handoff.md",
-      "source": "canonical-skills/text-hook/references/handoff.md",
-      "source_sha256": "ea775575cc50afb637b4a1eb14f8b83c307add7aed6933d1a94801c578c12ef9",
-      "distribution_sha256": "ea775575cc50afb637b4a1eb14f8b83c307add7aed6933d1a94801c578c12ef9",
-      "bytes": 6980,
-      "transforms": []
-    },
-    {
-      "path": "text-hook/references/instagram-reels-safe-zone.md",
-      "source": "canonical-skills/text-hook/references/instagram-reels-safe-zone.md",
-      "source_sha256": "40f97f38f2609032db47a21ad4ae7c7e9230545bddcf5d57612fc94348d2ad1d",
-      "distribution_sha256": "40f97f38f2609032db47a21ad4ae7c7e9230545bddcf5d57612fc94348d2ad1d",
-      "bytes": 2317,
-      "transforms": []
-    },
-    {
-      "path": "text-hook/references/style-library.md",
-      "source": "canonical-skills/text-hook/references/style-library.md",
-      "source_sha256": "19d0b126918025697c9d6acc112dac5d8ff1d50e163c9881fb2dd0e95dee18b3",
-      "distribution_sha256": "f4f932c4f09ac7788fa29ca58ec99bac900fae6ecb8eaa4b09b46b5fb8aedd7d",
-      "bytes": 5919,
-      "transforms": [
-        {
-          "from": "canonical-root",
-          "to": "__ACQ_SKILLS__"
-        }
-      ]
-    },
-    {
-      "path": "text-hook/scripts/render_hook.py",
-      "source": "canonical-skills/text-hook/scripts/render_hook.py",
-      "source_sha256": "60d8c5d1e0a3fdfd22d957f492b9cbc3356b186fdd921ee5ae9a6632b352c13b",
-      "distribution_sha256": "ad2cdffc446c0582145e6c5248ee8b4da28e9825e8dc5fe70cd9da9d62dc248a",
-      "bytes": 25797,
-      "transforms": [
-        {
-          "patch": "native-hook-drawing-coordinates"
-        }
-      ]
-    },
-    {
-      "path": "text-hook/scripts/style_library.py",
-      "source": "canonical-skills/text-hook/scripts/style_library.py",
-      "source_sha256": "6e2f5ccfb38d01c5bc4cb6ea25c5455e6ba8a986794e9ae8ee66838de1a7b78c",
-      "distribution_sha256": "6e2f5ccfb38d01c5bc4cb6ea25c5455e6ba8a986794e9ae8ee66838de1a7b78c",
-      "bytes": 6897,
-      "transforms": []
-    },
-    {
-      "path": "text-hook/scripts/test_render_hook.py",
-      "source": "canonical-skills/text-hook/scripts/test_render_hook.py",
-      "source_sha256": "22045b86f883323fd0fd94d5826bc8d47a0053f73da12f387d40a1fe564de043",
-      "distribution_sha256": "22045b86f883323fd0fd94d5826bc8d47a0053f73da12f387d40a1fe564de043",
-      "bytes": 5930,
-      "transforms": []
-    },
-    {
-      "path": "text-hook/scripts/test_style_library.py",
-      "source": "canonical-skills/text-hook/scripts/test_style_library.py",
-      "source_sha256": "4d0b1cadf79d1c46b2abe20247e89934c11712020d1bf23a601bcb098ffe75f6",
-      "distribution_sha256": "4d0b1cadf79d1c46b2abe20247e89934c11712020d1bf23a601bcb098ffe75f6",
-      "bytes": 2285,
-      "transforms": []
-    },
-    {
-      "path": "text-hook/scripts/test_style_render.py",
-      "source": "canonical-skills/text-hook/scripts/test_style_render.py",
-      "source_sha256": "0d7779ce5d606a375a371a65e9b5ce844002f8d1021cfa56cbfd129551df1d49",
-      "distribution_sha256": "0d7779ce5d606a375a371a65e9b5ce844002f8d1021cfa56cbfd129551df1d49",
-      "bytes": 7328,
-      "transforms": []
-    },
-    {
       "path": "slop-detector/SKILL.md",
       "source": "canonical-skills/slop-detector/SKILL.md",
       "source_sha256": "41c0f044fe1bd35cde691f873114e90a0bd4ac56394baf47cc76d0e5b5e0bf39",
@@ -4463,12 +4367,15 @@
       "path": "mozi-sf-audit/SKILL.md",
       "source": "canonical-skills/mozi-sf-audit/SKILL.md",
       "source_sha256": "335ac0e4a7f2fca70f69221c76c8b79b8e0e0b698fbf3475bc33b31932f1070f",
-      "distribution_sha256": "3439962a8afea26299e4c01dd952a51410bea6f2b1d850c3f8b5157ae646bc10",
-      "bytes": 9203,
+      "distribution_sha256": "2b163e2cc1bd08163f49d5b0ef18503a43e3aa9247fee4238ea512d3e7755c69",
+      "bytes": 9190,
       "transforms": [
         {
           "from": "canonical-root",
           "to": "__ACQ_SKILLS__"
+        },
+        {
+          "patch": "remove-text-hook-route"
         }
       ]
     },
@@ -4587,12 +4494,15 @@
       "path": "b-roll-injector/SKILL.md",
       "source": "canonical-skills/b-roll-injector/SKILL.md",
       "source_sha256": "867126268c8f69ca2d17e464a913b67417d606f30a725c429cdbed56611291ff",
-      "distribution_sha256": "a77556f8ccb6a3f317703ca78fab6d19991c934b2eabadd98165d413702c7a5c",
-      "bytes": 7315,
+      "distribution_sha256": "dcb6bd10a089409ca06870f2d93e60e9ec2a8ba11712c1e4e29e86fe8f57c04b",
+      "bytes": 7294,
       "transforms": [
         {
           "from": "canonical-root",
           "to": "__ACQ_SKILLS__"
+        },
+        {
+          "patch": "remove-text-hook-route"
         }
       ]
     },
@@ -5414,8 +5324,8 @@
       "path": "saas-animation-video/SKILL.md",
       "source": "canonical-skills/saas-animation-video/SKILL.md",
       "source_sha256": "54eb024ef4e38049a1bcab22f59dc28cfa62ae670361bd21b851be914c63192b",
-      "distribution_sha256": "6761066686105f0d690d0520e566c113a6f298b9b3695a653f0d4c9c76bb9936",
-      "bytes": 8637,
+      "distribution_sha256": "930d84adb5c94843a4ff16df230bd88f31278b754683b6bb1a3241d32645cae5",
+      "bytes": 8681,
       "transforms": [
         {
           "from": "canonical-root",
@@ -5424,6 +5334,9 @@
         {
           "patch": "portable-skill-description",
           "owner": "saas-animation-video"
+        },
+        {
+          "patch": "remove-text-hook-route"
         }
       ]
     },

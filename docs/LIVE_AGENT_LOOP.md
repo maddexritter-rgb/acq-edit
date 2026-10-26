@@ -1,5 +1,7 @@
 # Live agent and review-loop qualification
 
+Opening text headlines were removed from the current toolkit on 2026-10-26. Any hook qualification below records an earlier version, not current support. Existing pinned projects remain unchanged. See [removal and compatibility](NATIVE_HOOKS.md).
+
 This opt-in fixture exercises the real configured agent, the selected FilmCraft or Resolve runtime, native publication and the browser review room. It uses generated test media and a frozen plan. It does **not** qualify source-word design, transcription, live brain retrieval, speech joins, reference fidelity or human editorial quality. A run qualifies only its actual agent/backend combination, not another editor or a clean Mac installation.
 
 ## Run a fresh fixture

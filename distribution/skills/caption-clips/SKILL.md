@@ -51,7 +51,7 @@ compatibility.
 | `leila` | Approved V10: official Clash Grotesk Premiere preset at 48 pt; compact centered phrase cards, normally complete; selective slow-delivery line reveals and quote-only synthetic italics. |
 | `sharran` | Approved V1: Leila V10 grouping/timing/reveal logic with uniform Inter SemiBold at 48 pt and synthetic quote italics. |
 
-Opening hook plates are not body captions. Route those to `text-hook`.
+Opening headline generation is not included in this toolkit. Body captions remain supported.
 
 Read the relevant profile only:
 
@@ -73,8 +73,8 @@ Measure the real font face at the final size against the smaller of the native
 paragraph box and profile safe width, with 5% headroom. Counts alone cannot prove
 fit. Regroup before reducing type size; never rely on native automatic wrapping.
 Multiline profiles retain their explicit reviewed line breaks and spacing; inspect
-visible ink bounds so adjacent lines never overlap. Opening headlines belong to
-text-hook and must be explicitly identified as that role, not exempted body text.
+visible ink bounds so adjacent lines never overlap. Do not add opening headlines or
+exempt body text from the density gate.
 
 Before delivery inspect an actual rendered frame of **every distinct body card**,
 including the longest/widest cards and entrance frames. Check one-line layout,

@@ -3,14 +3,13 @@ from pathlib import Path
 from common import inside, plan, read, require, sha, fingerprint, save
 
 OWNERS = {'captions': 'caption-clips', 'framing': 'horizontal-to-vertical',
-          'audio': 'music', 'graphics': 'promo', 'textHook': 'text-hook'}
+          'audio': 'music', 'graphics': 'promo'}
 
 
 def component(spec, name):
-    if name in ['captions', 'textHook'] and spec.get('captionVisibility'):
-        keys = ['captions', 'captionVisibility'] + (['graphics'] if name == 'textHook' else [])
-        return {key: spec[key] for key in keys}
-    return {key: spec[key] for key in ['captions', 'graphics']} if name == 'textHook' else spec[name]
+    if name == 'captions' and spec.get('captionVisibility'):
+        return {key:spec[key] for key in ['captions','captionVisibility']}
+    return spec[name]
 
 
 def prepare(project, packet):
@@ -26,6 +25,7 @@ def prepare(project, packet):
         path = inside(archive, version[key])
         require(sha(path) == version[hash_key], 'Published parent evidence changed: ' + key)
     prior = read(version['planPath'])
+    require(not prior.get('hookContract'), 'Legacy headline projects require their pinned toolkit version; preserve existing work')
     receipt = read(version['receiptPath'])
     require(prior['projectId'] == receipt['projectId'] == project['id'] and prior['backend'] == receipt['backend'] == project['backend'], 'Parent project/backend differs')
     require(prior['clipId'] == receipt['clipId'] == version['clipId'], 'Parent clip identity differs')
@@ -47,7 +47,7 @@ def prepare(project, packet):
         require(row.get('owner') == owner, 'Incorrect finishing owner: ' + name)
         require(row.get('action') in ['recomputed', 'not-used'] and isinstance(row.get('reason'), str) and row['reason'].strip(), 'Explicit finishing decision required: ' + name)
         require(row.get('valueFingerprint') == fingerprint(component(spec, name)), 'Dependent layer differs from its decision: ' + name)
-        if row['action'] == 'not-used' and name != 'textHook':
+        if row['action'] == 'not-used':
             require(not component(spec, name), 'Nonempty layer cannot be marked unused: ' + name)
     construction = packet['construction']
     require(inside(project['root'], construction['plan']) == inside(project['root'], packet['plan']), 'Construction refers to another plan')

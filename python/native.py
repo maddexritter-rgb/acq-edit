@@ -12,6 +12,7 @@ from common import read,inside,require
 
 
 def execute(action,backend,config_path,project_path=None,packet_path=None):
+    require(action != 'hooks', 'Opening text hooks have been removed from this toolkit')
     config=read(config_path)
     if config.get('python'):os.environ['ACQ_EDIT_SHARED_PYTHON']=config['python']
     if action=='doctor':return importlib.import_module(backend).Adapter(config).doctor()
@@ -25,6 +26,7 @@ def execute(action,backend,config_path,project_path=None,packet_path=None):
         directory=inside(Path(project['root'])/'10_WORK',os.environ['ACQ_EDIT_NATIVE_OPERATION_DIR'])
         require(directory.name==operation_id and directory.parent.name=='native-operations' and directory.is_dir(),'Native operation journal differs from project')
     packet=read(inside(project['root'],packet_path))
+    require(not (action=='revise' and packet.get('kind') in ('text-hook','text-hook-remove')), 'Opening text hooks have been removed; preserve legacy projects and use their pinned toolkit version')
     if action=='reconcile':
         require(backend=='premiere','Dedicated native reconciliation is currently Premiere-only')
         packet={**packet,'_evidencePath':str(inside(project['root'],packet_path))}
@@ -39,9 +41,6 @@ def execute(action,backend,config_path,project_path=None,packet_path=None):
             return prepare_plan(project,packet)
         if action=='reference':
             from reference_style import prepare_plan
-            return prepare_plan(project,packet)
-        if action=='hooks':
-            from hook_plan import prepare_plan
             return prepare_plan(project,packet)
         adapter=importlib.import_module(backend).Adapter(config)
         require(callable(getattr(adapter,action,None)),f'{backend} does not support native {action}; no other engine was selected')

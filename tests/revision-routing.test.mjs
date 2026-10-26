@@ -10,9 +10,9 @@ test('finishing removal and shortening never imply a spoken recut',()=>{
   ['Shorten the subtitles','caption-clips'],
   ['Trim the music','music'],
   ['Remove the music track','music'],
-  ['Remove the headline','text-hook'],
-  ['Replace the text hook','text-hook'],
-  ['Remove this title card','text-hook'],
+  ['Remove the headline','revision-planner'],
+  ['Replace the text hook','revision-planner'],
+  ['Remove this title card','revision-planner'],
   ['Shorten the animation','promo'],
   ['Delete this graphic','promo'],
   ['Make captions larger; do not recut','caption-clips'],
@@ -23,7 +23,7 @@ test('finishing removal and shortening never imply a spoken recut',()=>{
 });
 test('explicit speech changes retain every dependent finishing owner',()=>{
  for(const request of ['Remove this sentence','Remove this word, on V1','Remove the final filler','Trim the pause','Shorten the clip','Reorder these sections','Replace the spoken hook','Fix the speech joins','Improve the cuts','Re-cut this clip','Remove this passage and make captions larger']){
-  const owners=routeRevision(request);for(const owner of ['assembly-design','horizontal-to-vertical','caption-clips','text-hook','music','promo'])assert(owners.includes(owner),request+': '+owner);
+  const owners=routeRevision(request);for(const owner of ['assembly-design','horizontal-to-vertical','caption-clips','music','promo'])assert(owners.includes(owner),request+': '+owner);
  }
 });
 test('reference comparison routes watch without inventing a spoken recut',()=>{
@@ -42,4 +42,9 @@ test('each backend and agent receives the same scope and provenance instructions
   const prompt=jobPrompt({id:'p',root:'/project',backend,agent},{id:'j',kind:'revision'},'/project/submission.json');
   assert(prompt.includes('Backend is fixed to '+backend));assert(prompt.includes('start with revision-planner'));assert(prompt.includes('discovery hints, not permission'));assert(prompt.includes('do not by themselves authorize spoken recuts'));assert(prompt.includes('frozen reference provenance'));assert(prompt.includes('notes added later belong to the next submission'));
  }
+});
+
+test('removed headline owner is never routed or suggested as a build stage',()=>{
+ for(const request of ['Add a text hook','Remove this headline','Replace the spoken hook','Re-cut this clip'])assert(!routeRevision(request).includes('text-hook'));
+ assert(jobPrompt({id:'p',root:'/project',backend:'filmcraft'},{id:'j',kind:'build',request:'Make a clip'},'/packet').includes('Opening text headlines are not included'));
 });

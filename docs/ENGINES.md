@@ -16,8 +16,6 @@ Transparent Remotion assets use the shared media preflight and separate ordered 
 
 Production FilmCraft body captions use the pinned caption-clips handoff and three native graphic layers, with owning-helper timing, shadows and motion. See `NATIVE_CAPTIONS.md` for preparation, explicit limitations and native revision evidence.
 
-Editable hook additions use the measured `text-hook` recipe after a finished base render. One separate native track carries the text and rounded boxes through stable placement intervals; existing layers stay protected. `text-hook-remove` removes only a verified owned track on a saved/reopened copy. A tested removal, caption revision and fresh preparation/addition sequence supports native replacement without duplicating headlines or reusing stale geometry. See [NATIVE_HOOKS.md](NATIVE_HOOKS.md) for packets, evidence and remaining limitations.
-
 ## Premiere Pro
 
 `integrations/premiere-agent` snapshots the current Agent Lab implementation, CEP/UXP panels and source, with original MIT notice. `install_engine.py premiere` builds a separate ignored toolkit installation, generates a new local runtime/token, prepares the separately identified **ACQ Edit Agent** panel, and verifies actual MCP initialization/tool discovery. It does not overwrite an installed panel or global connector configuration.
@@ -56,11 +54,7 @@ Production body captions use the same pinned caption-clips handoff as FilmCraft 
 
 Native caption visibility uses the caption owner’s explicit half-open frame ranges on inspected timeline copies, gating only native Fusion Merge Blend expressions. Foreground, both shadows, arrival motion and source clocks remain verified; locked tracks and unqualified hosts are refused. Opening caption replacement uses that exact native clean render. See [NATIVE_CAPTIONS.md](NATIVE_CAPTIONS.md).
 
-Editable first-hook additions use the same owner-prepared recipe after a finished native render. Resolve constructs native Fusion text/cards on a separate top track through a version-gated DRT insertion; all existing timeline state is compared and the parent retained. Native visibility keys preserve the full fingerprint through save/reopen and export. See [NATIVE_HOOKS.md](NATIVE_HOOKS.md) for packets, typography limits and qualification evidence.
-
 Native `inspect` returns a reusable `reopen` packet. Resolve `native open` loads the pinned saved project or selects its inspected timeline, with database/project identity checks and full-state verification. A stale target restores the prior selection when the host remains known. The explicitly pinned empty startup workspace is supported; unrelated open projects are refused. See [RESOLVE_STATE.md](RESOLVE_STATE.md) for the qualified native CLI probe and limits.
-
-`text-hook-remove` verifies the owned generator, duplicates the timeline and removes that exact top track through native `DeleteTrack`, preserving the other inspected state. A six-second removal, caption revision, fresh measurement and replacement sequence now renders successfully with identical decoded audio across all stages. Verified source-clock persistence on new native copies fixes the earlier Fusion export failure; historical shifted timelines and failure journals remain retained. The later Codex/browser replacement loop also passed with two immutable 150-frame versions, exact decoded audio, verified native source clocks/hooks/captions and unchanged final state across reopen. Claude, real footage and human review remain unqualified. No engine fallback is permitted.
 
 The selected native project name is `ACQ_<project-id>`. The adapter refuses another open project. Create/open the dedicated project deliberately before execution. It never closes user work to make room for itself.
 

@@ -17,7 +17,7 @@ Based on the technique breakdown in [`editing-styles/saas-animation-style.md`](.
 - ✅ You want a 15-20s trailer-style intro for a feature launch, course, or product page
 - ✅ The brand already has brand colors + a logo + 3 "why us" bullets + a dashboard screenshot (or a list of dashboard sections)
 - ❌ The brand is a talking-head creator and the promo should feel personal — use `shortform` or `client-viral-scripter` instead
-- ❌ You want a static title card before a talking-head clip — use `text-hook`
+- ❌ You want a static title card before a talking-head clip — opening headline generation is not included in this toolkit
 
 ---
 

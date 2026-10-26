@@ -1,6 +1,6 @@
 {
   "schema": "acq-edit/skill-dependencies-v1",
-  "manifestSha256": "51ee6c08415b8d63b54d48bf81b1236beb2b991476b977b5fe62505e98222313",
+  "manifestSha256": "17bd7e3b6e3b9fb9557a642c6eda6b62b5486da946a1c09572484dcac428c81b",
   "policySha256": "fb9f0da2c3535c7a29cf5ae8af08ae4cd391e1c53e8ec690aca8ddb2175c630b",
   "owners": [
     "edit",
@@ -11,7 +11,6 @@
     "footage-fetch",
     "horizontal-to-vertical",
     "caption-clips",
-    "text-hook",
     "slop-detector",
     "music",
     "render",
@@ -309,16 +308,7 @@
         36,
         104
       ],
-      "sourceSha256": "614fe5d4831ff588112600dc140f7fa0380255a51d1ecb76db50c20f626f2e11",
-      "status": "packaged"
-    },
-    {
-      "source": "edit/SKILL.md",
-      "target": "text-hook",
-      "lines": [
-        116
-      ],
-      "sourceSha256": "614fe5d4831ff588112600dc140f7fa0380255a51d1ecb76db50c20f626f2e11",
+      "sourceSha256": "71af5704fb17b421f9cdf3b725e9afdb06839c2f1a70d84d8ffe3348b7bc683d",
       "status": "packaged"
     },
     {
@@ -689,7 +679,7 @@
       "lines": [
         90
       ],
-      "sourceSha256": "3439962a8afea26299e4c01dd952a51410bea6f2b1d850c3f8b5157ae646bc10",
+      "sourceSha256": "2b163e2cc1bd08163f49d5b0ef18503a43e3aa9247fee4238ea512d3e7755c69",
       "status": "packaged"
     },
     {
@@ -743,7 +733,7 @@
       "lines": [
         191
       ],
-      "sourceSha256": "6761066686105f0d690d0520e566c113a6f298b9b3695a653f0d4c9c76bb9936",
+      "sourceSha256": "930d84adb5c94843a4ff16df230bd88f31278b754683b6bb1a3241d32645cae5",
       "status": "packaged"
     },
     {
@@ -752,7 +742,7 @@
       "lines": [
         200
       ],
-      "sourceSha256": "6761066686105f0d690d0520e566c113a6f298b9b3695a653f0d4c9c76bb9936",
+      "sourceSha256": "930d84adb5c94843a4ff16df230bd88f31278b754683b6bb1a3241d32645cae5",
       "status": "packaged"
     },
     {
@@ -761,7 +751,7 @@
       "lines": [
         81
       ],
-      "sourceSha256": "6761066686105f0d690d0520e566c113a6f298b9b3695a653f0d4c9c76bb9936",
+      "sourceSha256": "930d84adb5c94843a4ff16df230bd88f31278b754683b6bb1a3241d32645cae5",
       "status": "packaged"
     },
     {
@@ -820,15 +810,6 @@
         3
       ],
       "sourceSha256": "06e64350a2b460fdde5f2440602a890c5819e81a94e93f7aae087d26fc842991",
-      "status": "packaged"
-    },
-    {
-      "source": "text-hook/SKILL.md",
-      "target": "slop-detector",
-      "lines": [
-        39
-      ],
-      "sourceSha256": "1d982e178513d6714327e701cec8df7cf9c92a4a3bf031f4db9f7e5e07fee802",
       "status": "packaged"
     }
   ]

@@ -65,12 +65,11 @@ export function routeRevision(text:string):string[] {
     // still reach revision-planner, which may add any genuinely needed owner.
     return !/\b(captions?|subtitles?|headline|text hook|title card)\b/i.test(clause);
   });
-  if(recut)['assembly-design','horizontal-to-vertical','caption-clips','text-hook','music','promo'].forEach(x=>owners.add(x));
+  if(recut)['assembly-design','horizontal-to-vertical','caption-clips','music','promo'].forEach(x=>owners.add(x));
   if(/caption|subtitle|font/i.test(text)) owners.add('caption-clips');
   if(/fram|crop|zoom|camera|\b(tracking|recenter|recentre|centered|centred)\b|\b(track|follow)\s+(the\s+)?(speaker|subject|face)\b/i.test(text)) owners.add('horizontal-to-vertical');
   if(/\b(split[ -]?screen|panels?|layouts?)\b/i.test(text)) {owners.add('assembly-design');owners.add('horizontal-to-vertical')}
   if(/music|audio|volume|sound/i.test(text)) owners.add('music');
-  if(/headline|\b(?:text hook|opening card|title card|hook replacement)\b/i.test(text)) owners.add('text-hook');
   if(/motion|animation|graphic/i.test(text)) owners.add('promo');
   if(/\breferences?\b|\binspiration\b|\bmimic\b|\b(?:match|replicate|recreate)\b[^.!?;\n]{0,80}\b(?:style|look|edit|video|reel)\b|\b(?:like|similar to)\b[^.!?;\n]{0,50}\b(?:video|reel)\b/i.test(text)) owners.add('watch');
   return [...owners];
