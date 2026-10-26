@@ -94,3 +94,26 @@ Both picture spans remained 25 frames long. Native readback preserved the unequa
 Resolve Studio 21.1.1 build 10 now uses a native DRT checkpoint to preserve sample geometry after its ordinary append/import operations rounded source trims. It reimports through Resolve, verifies every source/range/link, finishes and renders natively. The same synthetic paired plan passed save/reopen, 50-frame export and a caption-only revision with identical decoded audio across that revision. See `RESOLVE_PRECISION.md` for the version gate, measured limits and export-state recovery, and `RESOLVE_STATE.md` for stable graph inspection across reopening. Real difficult-speech acceptance remains open.
 
 Premiere retains the canonical scoped paired-audio execution route and still needs a dedicated toolkit fixture. Multicamera source routing, rational sample grids not supported by the canonical paired compiler, general channel layouts, real speech joins and agent-driven end-to-end publication remain acceptance work.
+
+## Separate microphone clock preparation
+
+Assembly Design may supply an explicit `acq-edit/dialogue-conform-v1` specification
+to `python/dialogue_conform.py --spec FILE --output-dir NEW_DIRECTORY`. It prepares
+48 kHz mono PCM from independently recorded mono PCM microphones, with pinned
+source hashes, integer `sourceStartSample` per microphone, explicit linear `gain`
+(sum at most one), `durationSamples`, and pinned `clockEvidence`. The caller supplies
+`transcriptOffsetSamples` and a pinned original `transcript`. Offsets are measured
+upstream; the helper never estimates synchronization or chooses speaker routing.
+
+The helper preserves original word text and speaker labels, adds original word
+indices/times, and excludes words that fall outside the complete conformed clock.
+It records those exclusions. This is a source-clock transform, not an editorial cut.
+A fresh destination and receipt preserve failures without overwriting earlier work.
+Import the prepared WAV through ordinary source intake and use that registered copy
+as selection media. Preserve the mapped word file and receipt in project work, and
+bind the receipt as routing evidence. Picture and prepared dialogue now share zero.
+
+This preparation does not establish acoustic synchronization, listening, speaker
+identity or mix quality. Do not apply unchanged fixed microphone weights when the
+source requires different routing; supply a supported explicit preparation or report
+that limitation. It does not create a replacement picture track or final render.
