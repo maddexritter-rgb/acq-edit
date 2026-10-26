@@ -29,8 +29,16 @@ frames of each split interval and layout transitions; decode the complete output
 compare decoded audio with the parent before copying into a new delivery version.
 The procedure does not certify listening or Premiere pixel parity.
 
+For a current shared plan, the ordinary FilmCraft `native PROJECT render PACKET`
+route accepts `shadowReceipt` and `shadowReceiptSha256` alongside its normal
+native project, expected fingerprint, plan, output and receipt paths. It validates
+the exact parent and shadow checkpoint, verifies the owner's append-only graph,
+and checks the original framing through a read-only projection. It still verifies
+dialogue, captions, graphics and native state before/after export. Its standard
+render receipt records the shadow provenance and can use the ordinary publisher.
+The shadow helper's standalone export receipt itself is not a publication receipt.
+
 This is a framing-only checkpoint route, including preservation of legacy native
-finishing layers. Do not treat its receipt as a generic review-room publication
-receipt or bypass an adapter's unknown-effect checks. Other native panel revisions
+finishing layers. Other native panel revisions
 must reconcile the added linked tracks first. Premiere's installed project is never
 opened by this helper; its own native preset route remains separate.

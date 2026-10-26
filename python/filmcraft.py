@@ -312,7 +312,11 @@ class Adapter:
   c=Filmcraft(self.config['filmcraft'],inside(project['root'],packet['session']),str(native))
   try:
    state=c.tool('sequence_inspect');require(fingerprint({'state':state,'fileHash':sha(native)})==packet['expectedFingerprint'],'Native state changed before export');save(inside(project['root'],packet['inspection']),state)
-   verify_filmcraft_framing(native,p,TICKS*p['fps']['denominator']//p['fps']['numerator'])
+   shadow_evidence=None
+   if packet.get('shadowReceipt'):
+    from split_shadow_render import verify as verify_shadow
+    shadow_evidence=verify_shadow(project,packet,native,p,TICKS*p['fps']['denominator']//p['fps']['numerator'])
+   else:verify_filmcraft_framing(native,p,TICKS*p['fps']['denominator']//p['fps']['numerator'])
    from dialogue_effects import verify as verify_dialogue
    verify_dialogue(native,p)
    from graphics_revision import filmcraft_items
@@ -332,4 +336,6 @@ class Adapter:
     require(time.monotonic()<deadline,'Native export timed out; reconcile original job');time.sleep(1)
    require(fingerprint({'state':c.tool('sequence_inspect'),'fileHash':sha(native)})==packet['expectedFingerprint'],'Native project changed during export')
   finally:c.close()
-  return result_receipt(project,packet,p,native,media,packet['inspection'])
+  if packet.get('shadowReceipt'):
+   require(verify_shadow(project,packet,native,p,TICKS*p['fps']['denominator']//p['fps']['numerator'])==shadow_evidence,'Shadow evidence changed during export')
+  return result_receipt(project,packet,p,native,media,packet['inspection'],finishing_evidence=shadow_evidence)
