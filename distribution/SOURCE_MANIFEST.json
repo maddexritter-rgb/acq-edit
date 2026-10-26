@@ -1995,9 +1995,13 @@
       "path": "assembly-design/scripts/seam_windows.py",
       "source": "canonical-skills/assembly-design/scripts/seam_windows.py",
       "source_sha256": "7aa33b6320331fa9dcc83e80b5e74ba319cebdb5f896134394c2f2b67da107d7",
-      "distribution_sha256": "7aa33b6320331fa9dcc83e80b5e74ba319cebdb5f896134394c2f2b67da107d7",
-      "bytes": 10799,
-      "transforms": []
+      "distribution_sha256": "5045989194f7c0d72bb4c37f7ec3558801f1324c56c9d3971a5069b5682ca35e",
+      "bytes": 10789,
+      "transforms": [
+        {
+          "patch": "seam-proposals-never-claim-inspection"
+        }
+      ]
     },
     {
       "path": "assembly-design/scripts/setup_toolchain.sh",

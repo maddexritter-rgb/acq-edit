@@ -10,6 +10,12 @@ def private_references(text):
 def portable_distribution(text,relative):
  """Apply reviewed portable replacements after canonical paths are normalized."""
  changes=[]
+ if relative=='assembly-design/scripts/seam_windows.py':
+  old="'status': 'LOCALLY_INSPECTED'"
+  if text.count(old)!=2:raise ValueError('Seam proposal status locations changed')
+  text=text.replace(old,"'status': 'PROPOSED'")
+  text=text.replace('(MFA end {olo:.3f})','(locator end {olo:.3f})').replace('(MFA start {ihi:.3f})','(locator start {ihi:.3f})')
+  changes.append({'patch':'seam-proposals-never-claim-inspection'})
  if relative=='_shared/gemini_audio.py':
   start=text.index("def credential(slot='paid'):")
   end=text.index('\n\ndef encode_mp3(',start)

@@ -110,9 +110,9 @@ def plan(words, kept, bounds, env, sample_rate, fps, evidence, inspected_in=None
         op, ip = min(ohi, max(op, olo + PREF_MARGIN_S)), max(ilo, min(ip, ihi - PREF_MARGIN_S))
         joins.append({'out_window': [round(olo * R), round(ohi * R)], 'in_window': [round(ilo * R), round(ihi * R)],
                       'preferred_out': round(op * R), 'preferred_in': round(ip * R),
-                      'reason': f"out after '{words[t]['word']}' (MFA end {olo:.3f}) / in before "
-                                f"'{words[h]['word']}' (MFA start {ihi:.3f}); quietest 5 ms points",
-                      'evidence': [evidence], 'status': 'LOCALLY_INSPECTED'})
+                      'reason': f"out after '{words[t]['word']}' (locator end {olo:.3f}) / in before "
+                                f"'{words[h]['word']}' (locator start {ihi:.3f}); quietest 5 ms points",
+                      'evidence': [evidence], 'status': 'PROPOSED'})
         log.append((j + 1, words[t]['word'], ohi - olo, words[h]['word'], ihi - ilo))
     _, head, _ = in_side(kept[0][0])
     _, tail, _ = out_side(kept[-1][1])
@@ -122,7 +122,7 @@ def plan(words, kept, bounds, env, sample_rate, fps, evidence, inspected_in=None
                  'span_count': len(kept),
                  'first_source_frame': math.floor(first_sample / spf), 'last_source_frame': math.ceil(last_sample / spf),
                  'first_source_sample': first_sample, 'last_source_sample': last_sample,
-                 'outer_edge_evidence': {'status': 'LOCALLY_INSPECTED', 'head': f'valley before word {kept[0][0]}',
+                 'outer_edge_evidence': {'status': 'PROPOSED', 'head': f'valley before word {kept[0][0]}',
                                          'tail': f'valley after word {kept[-1][1]}'},
                  'joins': joins}
     return decisions, log
