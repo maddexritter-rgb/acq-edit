@@ -51,6 +51,11 @@ export async function doctor(c:Config,tools:DoctorTools={}){
  if(!checks.credentials.gemini)issue('gemini','Run credentials to supply your own Gemini API key.');
  // Keep raw child failures private: an invalid configuration can echo secret content.
  checks.skills={ready:false};
+ checks.framing={ready:false};
+ if(checks.dependencies.python.available){
+  try{checks.framing=JSON.parse(await execute(c.python,[path.join(ROOT,'python/check_framing_dependencies.py')],{env,timeout:15000}));}catch{/* preserve bounded dependency diagnostics */}
+ }
+ if(checks.framing.ready!==true)issue('framing','Run scripts/install_shared.sh and restore the hash-verified packaged YuNet model before subject tracking.');
  if(checks.dependencies.python.available){
   try{
    const value=JSON.parse(await execute(c.python,[path.join(ROOT,'scripts/materialize.py'),'--verify'],{env,timeout:60000}));

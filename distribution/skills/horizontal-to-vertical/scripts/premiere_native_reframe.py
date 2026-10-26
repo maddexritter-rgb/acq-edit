@@ -26,7 +26,7 @@ import cv2
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-MODEL = HERE / "yunet.onnx"
+MODEL = Path("__ACQ_TOOLKIT__/assets/models/yunet/yunet.onnx")
 LAB_SESSION = None
 TICKS_PER_SECOND = 254_016_000_000
 

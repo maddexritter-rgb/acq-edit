@@ -10,3 +10,4 @@ transformers==5.20.2
 
 # Shared camera/microphone synchronization helper.
 librosa==0.11.0
+opencv-python-headless==4.11.0.86

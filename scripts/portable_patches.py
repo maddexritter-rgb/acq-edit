@@ -10,6 +10,11 @@ def private_references(text):
 def portable_distribution(text,relative):
  """Apply reviewed portable replacements after canonical paths are normalized."""
  changes=[]
+ if relative=='horizontal-to-vertical/scripts/premiere_native_reframe.py':
+  old='MODEL = HERE / "yunet.onnx"'
+  if text.count(old)!=1:raise ValueError('Framing model location changed')
+  text=text.replace(old,'MODEL = Path("__ACQ_TOOLKIT__/assets/models/yunet/yunet.onnx")')
+  changes.append({'patch':'packaged-yunet-model'})
  if relative=='assembly-design/scripts/seam_windows.py':
   old="'status': 'LOCALLY_INSPECTED'"
   if text.count(old)!=2:raise ValueError('Seam proposal status locations changed')

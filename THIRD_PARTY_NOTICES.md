@@ -6,3 +6,5 @@
 - Adobe Premiere Pro and Blackmagic DaVinci Resolve Studio are separately installed and licensed applications; their application binaries and SDK documentation are not redistributed here.
 - Canonical editing procedures are private team material. Brand fonts, footage, music, stock assets, database contents and private credentials are not included.
 - FFmpeg, yt-dlp, rclone, Python and Node are installed separately with their respective licenses. npm and Python dependency notices remain in their installed packages.
+
+- YuNet 2023mar from OpenCV Zoo: pinned source and SHA-256 in `assets/models/yunet/source.json`; MIT license retained beside the model. OpenCV Python is installed separately with its package notices.

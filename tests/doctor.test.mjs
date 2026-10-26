@@ -13,6 +13,7 @@ function harness(backend,overrides={}){
   calls.push({command,args,options});
   if(args.includes('--version')||args.includes('-version'))return 'Fixture 1.0\n';
   if(args[0].endsWith('materialize.py'))return JSON.stringify({ready:true,verifiedFiles:683,routedEntrypoints:38});
+  if(args[0].endsWith('check_framing_dependencies.py'))return JSON.stringify({ready:true});
   if(args[0].endsWith('asset_bundle.py'))return JSON.stringify({ready:true,version:'fixture'});
   if(args[0].endsWith('brain_receipts.py'))return JSON.stringify({ready:true,remoteAccess:'not-checked'});
   if(args[0].endsWith('native.py'))return JSON.stringify(backend==='filmcraft'?{backend,binaryPresent:true}:backend==='resolve'?{backend,studio:true,connected:true}:{backend,ready:true});
@@ -74,4 +75,16 @@ test('doctor before setup gives a repair without creating its configuration fold
   assert.equal(error.code,1);const report=JSON.parse(error.stdout);assert.equal(report.readiness.blocking[0].check,'configuration');assert.match(report.readiness.blocking[0].repair,/setup/);return true;
  });
  assert.deepEqual(await readdir(base),[]);
+});
+
+test('missing framing runtime blocks readiness without leaking child diagnostics',async()=>{
+ const h=harness('filmcraft');
+ h.tools.execute=async(command,args,options)=>{
+  if(args[0].endsWith('check_framing_dependencies.py'))throw Error('private diagnostic fixture-secret');
+  return h.base(command,args,options);
+ };
+ const report=await doctor(config('filmcraft'),h.tools);
+ assert.equal(report.readiness.ready,false);
+ assert(report.readiness.blocking.some(x=>x.check==='framing'));
+ assert(!JSON.stringify(report).includes('fixture-secret'));
 });

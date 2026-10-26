@@ -2534,9 +2534,14 @@
       "path": "horizontal-to-vertical/scripts/premiere_native_reframe.py",
       "source": "canonical-skills/horizontal-to-vertical/scripts/premiere_native_reframe.py",
       "source_sha256": "a240059d97f58b7c47e345b56fba6c75b18f7675adf8f7cecdcf9fa3ca9556d2",
-      "distribution_sha256": "a240059d97f58b7c47e345b56fba6c75b18f7675adf8f7cecdcf9fa3ca9556d2",
+      "distribution_sha256": "dad98bab6f3b797f9078b4e893b7eaf7817567ed0487a3dee7ffc307e80f0392",
       "bytes": 52019,
-      "transforms": []
+      "transforms": [],
+      "portable_patches": [
+        {
+          "patch": "packaged-yunet-model"
+        }
+      ]
     },
     {
       "path": "horizontal-to-vertical/scripts/premiere_reframe_bridge.py",
