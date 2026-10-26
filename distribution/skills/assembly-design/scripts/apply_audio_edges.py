@@ -94,10 +94,12 @@ def apply_audio_plan(client, result, plan, expected, output_dir, previous_handof
     if groups(links)!=groups(new_links):raise BridgeError('Native AV link membership changed')
     operate('save_project',{},'save')
     if client.inspect('lab_snapshot',{})!=after:raise BridgeError('State changed during audio checkpoint save')
-    if restore!=sid:operate('set_active_sequence',{'sequence_id':restore},'restore')
+    # An initially empty project has no sequence to restore. Keep the newly
+    # constructed assembly active rather than submitting an invalid null ID.
+    if restore is not None and restore!=sid:operate('set_active_sequence',{'sequence_id':restore},'restore')
     final=project();record('project-after.json',final)
     old={r['sequence_id']:r for r in before_project['sequences']};new={r['sequence_id']:r for r in final['sequences']}
-    if set(old)!=set(new) or any(old[k]!=new[k] for k in old if k!=sid) or final['active_sequence_id']!=restore or new[sid]['snapshot']!=raw_after:raise BridgeError('Protected project state changed')
+    if set(old)!=set(new) or any(old[k]!=new[k] for k in old if k!=sid) or final['active_sequence_id']!=(restore if restore is not None else sid) or new[sid]['snapshot']!=raw_after:raise BridgeError('Protected project state changed')
     handoff=write_handoff(out/'stage-handoff.json',stage='assembly',before=raw_before,after=raw_after,before_revision=before['revision'],after_revision=after['revision'],receipts=[out/'edges-operation.json',out/'save-operation.json'],previous=previous_handoff)
     answer={**result,'status':'SAMPLE_EDGES_SAVED_REOPEN_AND_LISTEN_REQUIRED','sequence_revision':after['revision'],'stage_handoff':str(out/'stage-handoff.json'),'audio_edges':str(out/'bound-audio-edges.json'),'audio_decisions':str(out/'decision-plan.json'),'listening':'not_run','persistence':'reopen_not_run','audio_pcm_validation':'input_codec_and_rate_checked; this edit still requires rendered comparison'}
     record('result.json',answer)

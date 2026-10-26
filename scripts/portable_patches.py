@@ -10,6 +10,17 @@ def private_references(text):
 def portable_distribution(text,relative):
  """Apply reviewed portable replacements after canonical paths are normalized."""
  changes=[]
+ if relative=='assembly-design/scripts/apply_native_assembly.py':
+  old="    spec=importlib.util.spec_from_file_location('selected_lab_assembly_validator',Path(profile.cwd)/'scripts/validate-assembly-import.py')"
+  if text.count(old)!=1:raise ValueError('Native assembly validator loading source changed')
+  text=text.replace(old,"    sys.path.insert(0,str(Path(profile.cwd)/'scripts'))\n"+old)
+  changes.append({'patch':'selected-validator-bootstrap'})
+ if relative=='assembly-design/scripts/apply_audio_edges.py':
+  old="    if restore!=sid:operate('set_active_sequence',{'sequence_id':restore},'restore')"
+  new="    # An initially empty project has no sequence to restore. Keep the newly\n    # constructed assembly active rather than submitting an invalid null ID.\n    if restore is not None and restore!=sid:operate('set_active_sequence',{'sequence_id':restore},'restore')"
+  if text.count(old)!=1:raise ValueError('Audio selection restoration source changed')
+  text=text.replace(old,new).replace("final['active_sequence_id']!=restore", "final['active_sequence_id']!=(restore if restore is not None else sid)")
+  changes.append({'patch':'empty-selection-audio-finalization'})
  if relative=='music/scripts/pick_music.py':
   text=re.sub(r'DEFAULT_REVIEW = Path\([^\n]+\)\.expanduser\(\)', 'DEFAULT_REVIEW = ROOT / "music_review_decisions.json"', text)
   text=text.replace('  path=Path(track.get("path",key)); low=path.name.lower()', '  path=Path(track.get("path",key))\n  path=path if path.is_absolute() else ROOT/path\n  if not path.resolve().is_relative_to(ROOT.resolve()):raise ValueError("Music must belong to the installed asset bundle")\n  low=path.name.lower()')

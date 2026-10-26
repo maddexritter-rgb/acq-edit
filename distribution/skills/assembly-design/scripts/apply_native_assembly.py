@@ -100,6 +100,7 @@ def main():
         profile=replace(profile,command=(profile.command[0],str(Path(__file__).with_name('precision_bridge.mjs')),profile.cwd))
     # Use the validator supplied by the selected Premiere Agent implementation.
     # Exact input scope and compiler reproduction are enforced on both sides.
+    sys.path.insert(0,str(Path(profile.cwd)/'scripts'))
     spec=importlib.util.spec_from_file_location('selected_lab_assembly_validator',Path(profile.cwd)/'scripts/validate-assembly-import.py')
     validator=importlib.util.module_from_spec(spec);spec.loader.exec_module(validator)
     request={key:getattr(args,key) for key in ('xml_path','xml_sha256','expected_path','expected_sha256','resolved_path','resolved_sha256','gap_frames')}

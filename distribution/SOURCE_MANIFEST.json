@@ -1771,9 +1771,13 @@
       "path": "assembly-design/scripts/apply_audio_edges.py",
       "source": "canonical-skills/assembly-design/scripts/apply_audio_edges.py",
       "source_sha256": "56b6eff8fbe4f4e6b4bfcb31d91e31ab36458b7630797e473f0153abef275033",
-      "distribution_sha256": "56b6eff8fbe4f4e6b4bfcb31d91e31ab36458b7630797e473f0153abef275033",
-      "bytes": 8043,
-      "transforms": []
+      "distribution_sha256": "ef22653cde0c7a3f18d1386bbe167d049c9845c914084f9d626bc68abc401c2e",
+      "bytes": 8254,
+      "transforms": [
+        {
+          "patch": "empty-selection-audio-finalization"
+        }
+      ]
     },
     {
       "path": "assembly-design/scripts/apply_filmcraft_assembly.py",
@@ -1787,9 +1791,13 @@
       "path": "assembly-design/scripts/apply_native_assembly.py",
       "source": "canonical-skills/assembly-design/scripts/apply_native_assembly.py",
       "source_sha256": "a5d47a400aef474e6f46571c32e0941f807d013303db350834dbaf6ee12393e1",
-      "distribution_sha256": "a5d47a400aef474e6f46571c32e0941f807d013303db350834dbaf6ee12393e1",
-      "bytes": 9140,
-      "transforms": []
+      "distribution_sha256": "59268e3a62ad4677055318e7ac140e8806bd5e0b41fba5149f619258fa9b8058",
+      "bytes": 9196,
+      "transforms": [
+        {
+          "patch": "selected-validator-bootstrap"
+        }
+      ]
     },
     {
       "path": "assembly-design/scripts/assembly_plan.py",
