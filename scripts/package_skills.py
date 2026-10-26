@@ -35,6 +35,12 @@ def main():
    if refs:external.append({'path':str(rel),'references':len(refs),'status':'requires-profile-or-portable-replacement'})
    target=out/rel;target.parent.mkdir(parents=True,exist_ok=True);target.write_text(text)
    manifest.append({'path':str(rel),'source':'canonical-skills/'+str(rel),'source_sha256':source_hash,'distribution_sha256':hashlib.sha256(text.encode()).hexdigest(),'bytes':len(text.encode()),'transforms':transform})
+ additions={'caption-clips/scripts/native_graphics/native_text_fill.py':'native_text_fill.py'}
+ for rel,name in additions.items():
+  source=Path(__file__).with_name('portable_snippets')/name;raw=source.read_bytes()
+  if any(e['path']==rel for e in manifest):raise ValueError('Repository addition collides with canonical owner: '+rel)
+  target=out/rel;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(raw)
+  manifest.append({'path':rel,'source':'scripts/portable_snippets/'+name,'source_sha256':hashlib.sha256(raw).hexdigest(),'distribution_sha256':hashlib.sha256(raw).hexdigest(),'bytes':len(raw),'transforms':[]})
  (out.parent/'SOURCE_MANIFEST.json').write_text(json.dumps({'schema':'acq-edit/source-manifest-v1','owners':OWNERS,'files':manifest},indent=2)+'\n')
  (out.parent/'PORTABILITY_REPORT.json').write_text(json.dumps({'excluded':[x for x in omitted if not any('venv' in part or part in {'node_modules','__pycache__'} for part in Path(x['path']).parts)],'excluded_total':len(omitted),'unresolved_external_references':external,'note':'External reference markers are blocked dependencies, never permission to access a private workstation.'},indent=2)+'\n')
  print(json.dumps({'owners':len(OWNERS),'files':len(manifest),'excluded':len(omitted),'files_requiring_portability_work':len(external)}))

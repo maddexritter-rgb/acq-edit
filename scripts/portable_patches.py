@@ -10,6 +10,11 @@ def private_references(text):
 def portable_distribution(text,relative):
  """Apply reviewed portable replacements after canonical paths are normalized."""
  changes=[]
+ if relative in ('_shared/premiere_bridge.py','edit/scripts/premiere_agent.py'):
+  old="'lab_import_prepared_caption_sequence'"
+  if text.count(old)!=1:raise ValueError('Graphic asset scope insertion changed')
+  text=text.replace(old,old+",'lab_place_graphic_asset'",1)
+  changes.append({'patch':'bounded-native-graphic-asset-scope'})
  if relative=='music/scripts/apply_native_music.py':
   snippet=Path(__file__).with_name('portable_snippets')/'music_project_source.py'
   raw=snippet.read_bytes()

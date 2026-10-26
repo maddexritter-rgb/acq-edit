@@ -5,6 +5,11 @@
     {
       "path": "src/lab/toolkit-projects.ts",
       "sha256": "18ddf459b3cba47634d34f790679a68365e456ea8e5bed4701805a9f13521abb"
+    },
+    {
+      "path": "src/lab/graphic-asset.ts",
+      "sha256": "c32ce50ac79f858fe469357db917e5d454d2731125a75f3be137b8048b98a006",
+      "reason": "Guarded static native graphic source placement"
     }
   ]
 }

@@ -273,7 +273,7 @@ class PremiereBridge:
             auth = json.loads(Path(self.profile.project_authorization).read_text())
             allowed = {'lab_update_static_panel_geometry','lab_export_reframe_frames','lab_reframe_embedded_panels','lab_split_reframe_shots', 'lab_duplicate_vertical_sequence', 'lab_apply_reframe_motion', 'lab_repair_anchor_x_keys', 'save_project', 'set_active_sequence', 'export_frame'}
             if self.profile.mode == 'scoped-edit':
-                allowed |= {'lab_import_compiled_assembly','lab_import_prepared_caption_sequence','lab_prepare_music_source','lab_place_music_item','lab_apply_music_envelope','lab_apply_assembly_audio_edges','export_sequence','lab_export_exact_range'}
+                allowed |= {'lab_import_compiled_assembly','lab_import_prepared_caption_sequence','lab_place_graphic_asset','lab_prepare_music_source','lab_place_music_item','lab_apply_music_envelope','lab_apply_assembly_audio_edges','export_sequence','lab_export_exact_range'}
             schema = 'premiere-agent/edit-project-authorization-v1' if self.profile.mode == 'scoped-edit' else 'premiere-agent/reframe-project-authorization-v1'
             if (auth.get('schema') != schema or
                     auth.get('projectPath') != str(project.resolve()) or

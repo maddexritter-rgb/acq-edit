@@ -144,6 +144,7 @@ const FILESYSTEM_TOOL_NAMES = new Set([
 const TOOL_CAPABILITY_REQUIREMENTS: Readonly<Record<string, readonly Capability[]>> = {
   lab_relink_media_batch: ["edit", "filesystem"],
   lab_import_prepared_caption_sequence: ["edit", "filesystem"],
+  lab_place_graphic_asset: ["edit", "filesystem"],
   lab_inspect_export_state: ["inspect"],
   lab_export_exact_range: ["export", "filesystem"],
   lab_import_compiled_assembly: ["edit", "filesystem"],

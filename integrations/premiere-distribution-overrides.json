@@ -30,12 +30,25 @@
     {
       "path": "src/lab/server.ts",
       "originalSourceSha256": "3d43c5f9449b895c3da142d436141cb0575544e3e6bcabb9fe21c9e3ff0f21e9",
-      "distributionSha256": "40f6956774800a8ab664e3765f7071e1b4dd14ac1b79881da08319cdaca8ced1"
+      "distributionSha256": "b14501539ad69863f9250673008f489f0a10bcfb699983fe45f2f8c4a7107f1c",
+      "reason": "Add bounded native PNG placement under exact project/stage scope"
     },
     {
       "path": "src/lab/assembly-links.ts",
       "originalSourceSha256": "78b1df45eb261a538a56411651a8d63f997b87331339b131c4e5e41924fcbfd6",
       "distributionSha256": "3febafb0b45090800a61edc24c174badd067c98d347a177269873ad56c9aa980"
+    },
+    {
+      "path": "src/lab/runtime.ts",
+      "originalSourceSha256": "77c3e18abc43c95a6b5602359a14a241c67d71ac5f62e89b66fa6a245d18cf65",
+      "distributionSha256": "49e575edae5d84adb5bd93609d9bfb2dc54bc21d737b78ca5f4c1e6dd80e128c",
+      "reason": "Add bounded native PNG placement under exact project/stage scope"
+    },
+    {
+      "path": "src/security/capabilities.ts",
+      "originalSourceSha256": "d1dbb845014c4dc6783480203823970f8d31005d277b62ccf01ed572069ac5df",
+      "distributionSha256": "32df871828dfb2e7a45daeb72d246fb657067b2aad11db91544a46c6eb4328a8",
+      "reason": "Add bounded native PNG placement under exact project/stage scope"
     }
   ]
 }

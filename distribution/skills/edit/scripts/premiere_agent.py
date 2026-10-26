@@ -13,7 +13,7 @@ from premiere_bridge import Profile,PremiereBridge,BridgeError,execute_operation
 STAGES={
  'assembly':['lab_import_compiled_assembly','lab_apply_assembly_audio_edges'],
  'reframe':['lab_update_static_panel_geometry','lab_export_reframe_frames','lab_reframe_embedded_panels','lab_split_reframe_shots','lab_duplicate_vertical_sequence','lab_apply_reframe_motion','lab_repair_anchor_x_keys'],
- 'captions':['lab_import_prepared_caption_sequence'],
+ 'captions':['lab_import_prepared_caption_sequence','lab_place_graphic_asset'],
  'music':['lab_prepare_music_source','lab_place_music_item','lab_apply_music_envelope'],
  'export':['export_sequence','export_frame','lab_export_exact_range'],
 }

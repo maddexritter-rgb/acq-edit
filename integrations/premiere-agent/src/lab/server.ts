@@ -3,6 +3,7 @@ import {ToolkitProjects} from "./toolkit-projects.js";
 import { getLabAssemblyImportTools } from "./assembly-import.js";
 import { getLabAssemblyLinkTools } from "./assembly-links.js";
 import { getLabCaptionTransferTools } from "./caption-transfer.js";
+import { getLabGraphicAssetTools } from "./graphic-asset.js";
 import { getLabProjectStateTools } from "./project-state.js";
 import { LabJobs } from "./jobs.js";
 import { getLabMusicTools } from "./music.js";
@@ -58,6 +59,7 @@ export function createLab(
     ...getLabAssemblyLinkTools(bridgeOptions),
     ...getLabAssemblyImportTools(bridgeOptions),
     ...getLabCaptionTransferTools(bridgeOptions),
+    ...getLabGraphicAssetTools(bridgeOptions),
     ...getLabMediaRepairTools(bridgeOptions),
   };
   const snapshot = async (mode?: "media_repair" | "paged") => {

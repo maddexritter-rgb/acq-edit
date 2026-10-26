@@ -250,9 +250,13 @@
       "path": "_shared/premiere_bridge.py",
       "source": "canonical-skills/_shared/premiere_bridge.py",
       "source_sha256": "02d16a0125a32880b5db46856cb31ab958962bb7b24301877123d80160cb3784",
-      "distribution_sha256": "02d16a0125a32880b5db46856cb31ab958962bb7b24301877123d80160cb3784",
-      "bytes": 20866,
-      "transforms": []
+      "distribution_sha256": "af6ffb82c6c74064959e33413937be796464e3ef5597e34bd1ce2761b35ea1dd",
+      "bytes": 20892,
+      "transforms": [
+        {
+          "patch": "bounded-native-graphic-asset-scope"
+        }
+      ]
     },
     {
       "path": "_shared/premiere_graph_integrity.py",
@@ -1274,9 +1278,13 @@
       "path": "edit/scripts/premiere_agent.py",
       "source": "canonical-skills/edit/scripts/premiere_agent.py",
       "source_sha256": "86306e64d705af8e7e2dd48ff4e898e7066a1128224a3283d256758028ed495e",
-      "distribution_sha256": "86306e64d705af8e7e2dd48ff4e898e7066a1128224a3283d256758028ed495e",
-      "bytes": 8271,
-      "transforms": []
+      "distribution_sha256": "3b3430ea8fe82b69135f1f2013bedbca0e8947a5b02195ac6e50d583539f53de",
+      "bytes": 8297,
+      "transforms": [
+        {
+          "patch": "bounded-native-graphic-asset-scope"
+        }
+      ]
     },
     {
       "path": "edit/scripts/premiere_capabilities.py",
@@ -6181,6 +6189,14 @@
       "source_sha256": "49638f39c434ff311b866db32e741e6e3da86ab57c79a54476c9c27f403b1ca1",
       "distribution_sha256": "49638f39c434ff311b866db32e741e6e3da86ab57c79a54476c9c27f403b1ca1",
       "bytes": 10507,
+      "transforms": []
+    },
+    {
+      "path": "caption-clips/scripts/native_graphics/native_text_fill.py",
+      "source": "scripts/portable_snippets/native_text_fill.py",
+      "source_sha256": "b75d6f9bed8313cd15431dafb3a306f5e22fa8bde65f4c2cead74378c923d3e3",
+      "distribution_sha256": "b75d6f9bed8313cd15431dafb3a306f5e22fa8bde65f4c2cead74378c923d3e3",
+      "bytes": 2168,
       "transforms": []
     }
   ]
