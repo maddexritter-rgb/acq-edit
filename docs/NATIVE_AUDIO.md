@@ -2,6 +2,18 @@
 
 The packaged `music` skill owns track eligibility, choice, source offset, auditioning and creative shape. Adapters execute its explicit plan. Music is imported as a project-owned source under `00_SOURCE`; no private music library is bundled.
 
+For Premiere, the packaged `apply_native_music.py` selection receipt can carry
+`project_source` with schema `edit.music-project-source/v1`, the project-owned
+`path`, `catalog_sha256`, `sha256`, and `decoded_pcm_sha256`. Eligibility still
+runs against the original catalog candidate. Both full recordings must decode
+to the same SHA256 of 48 kHz stereo signed 24-bit PCM; a changed offset, gain,
+fade or replacement recording fails before native dispatch. This allows a
+verified WAV normalization without losing catalog approval provenance. Exact
+fractional source times can use rational strings such as `796/15`; retain the
+original decision and audition evidence when preparing the native receipt.
+Placement still requires the existing calibrated envelope, native readback,
+save/reopen and rendered-mix checks. A source-binding check is not mix approval.
+
 `EditPlan.audio` accepts `gainDb` for dialogue and an ordered `music` list. Each placement contains:
 
 | Field | Meaning |

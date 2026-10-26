@@ -3819,9 +3819,15 @@
       "path": "music/scripts/apply_native_music.py",
       "source": "canonical-skills/music/scripts/apply_native_music.py",
       "source_sha256": "578789aa48a9b56172b4716a1141efc11fcc5b28b6c7e44c27aacda0cc4a1879",
-      "distribution_sha256": "578789aa48a9b56172b4716a1141efc11fcc5b28b6c7e44c27aacda0cc4a1879",
-      "bytes": 33758,
-      "transforms": []
+      "distribution_sha256": "53c53b28d242ae5fd1335061a03a9e0bc2a7e12cbfae1d05abab5c909bcdbefa",
+      "bytes": 35934,
+      "transforms": [
+        {
+          "patch": "verified-project-owned-music-source",
+          "snippet": "scripts/portable_snippets/music_project_source.py",
+          "snippetSha256": "fde60b42163cef1fe928c5cc43b3027fa1f8831a27fffed872eb9b9754e10eb1"
+        }
+      ]
     },
     {
       "path": "music/scripts/check_music_routing.py",

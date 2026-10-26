@@ -10,6 +10,13 @@ def private_references(text):
 def portable_distribution(text,relative):
  """Apply reviewed portable replacements after canonical paths are normalized."""
  changes=[]
+ if relative=='music/scripts/apply_native_music.py':
+  snippet=Path(__file__).with_name('portable_snippets')/'music_project_source.py'
+  raw=snippet.read_bytes()
+  old='    return candidate, evidence\n\n\ndef make_plan('
+  if text.count(old)!=1:raise ValueError('Music source binding location changed')
+  text=text.replace(old,'    return project_source_candidate(selection, candidate, evidence)\n\n\n'+raw.decode()+'\n\ndef make_plan(',1)
+  changes.append({'patch':'verified-project-owned-music-source','snippet':'scripts/portable_snippets/music_project_source.py','snippetSha256':hashlib.sha256(raw).hexdigest()})
  if relative=='edit/scripts/pp_export_clips.py':
   old="    if end<=start or start%frame_ticks or end%frame_ticks:raise ValueError('Frame-aligned nonempty export range required')\n    sample=TICKS//sample_rate\n    if start%sample or end%sample:raise ValueError('Export boundaries must be on supported audio sample grid')\n    for name in ['in_ticks','out_ticks']:\n        if exact(baseline[name])%sample:raise ValueError('Original marks cannot be restored on this sample grid')\n    if not Path(preset).is_absolute() or not Path(output).is_absolute():raise ValueError('Absolute preset/output required')\n    # Compare bounded live state in host before mutation; no stale source plan replay.\n    q=json.dumps\n"
   new="    if end<=start or start%frame_ticks or end%frame_ticks:raise ValueError('Frame-aligned nonempty export range required')\n    sample=TICKS//sample_rate\n    if start%sample or end%sample:raise ValueError('Export boundaries must be on supported audio sample grid')\n    # Premiere's exact unset sentinel is not a negative export boundary.\n    unset='-101606400000000000'\n    whole=baseline['in_ticks']==unset and baseline['out_ticks']==unset\n    if whole and start!=0:raise ValueError('Unset marks support only a complete sequence export')\n    if not whole:\n        for name in ['in_ticks','out_ticks']:\n            if exact(baseline[name])%sample:raise ValueError('Original marks cannot be restored on this sample grid')\n    if not Path(preset).is_absolute() or not Path(output).is_absolute():raise ValueError('Absolute preset/output required')\n    # Compare bounded live state in host before mutation; no stale source plan replay.\n    q=json.dumps\n"
