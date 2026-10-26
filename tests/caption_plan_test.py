@@ -78,6 +78,23 @@ class CaptionPlanTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'text changed'):
             character_styles(card)
 
+    def test_character_emphasis_must_survive_on_every_native_lane(self):
+        profile = json.loads(self.profile.read_text())
+        profile['allow_weight_variation'] = True
+        self.profile.write_text(json.dumps(profile))
+        self.handoff['profile']['sha256'] = sha(self.profile)
+        self.handoff['cards'][0]['style']['emphasis'] = [
+            {'start': 2, 'end': 5, 'text': 'can', 'fontStyle': 'Black', 'italicStyle': 'Black It',
+             'fontPostscript': 'Example-Black', 'italicPostscript': 'Example-BlackIt'}]
+        layers = self.native['project']['items']['1']['kind']['Sequence']['video_tracks'][1:4]
+        for lane in layers:
+            graphic = next(e for e in lane['items'][0]['effects'] if e['effect'] == 'graphic_text')
+            graphic['layer'] = {'runs': [{'start': 2, 'end': 5, 'fontStyle': 'Black', 'fauxBold': False, 'fauxItalic': False}]}
+        self.assertEqual(self.verify()['status'], 'NATIVE_CAPTION_CONTRACT_VALID')
+        graphic['layer']['runs'] = []
+        with self.assertRaisesRegex(RuntimeError, 'character emphasis differs'):
+            self.verify()
+
     def test_unrequested_native_character_override_refuses(self):
         item = self.native['project']['items']['1']['kind']['Sequence']['video_tracks'][1]['items'][0]
         graphic = next(e for e in item['effects'] if e['effect'] == 'graphic_text')
