@@ -51,7 +51,7 @@ def measure(handoff, plan, binary, output):
                 client.run('file.exportFrame', {'path': str(image), 'format': 'png', 'target': 'program', 'time': i*3*ticks})
                 box = foreground_ink_bounds(image.read_bytes())
                 local = [box[0]-center[0], box[1]-center[1], box[2]-center[0], box[3]-center[1]]
-                position = centered_text_position(local, center=tuple(center))
+                position = centered_text_position(local, target=tuple(center))
                 cache[key] = {'bounds': box, 'position': position, 'evidence': str(image),
                               'sha256': hashlib.sha256(image.read_bytes()).hexdigest()}
             result = cache[key]
