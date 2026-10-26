@@ -23,26 +23,27 @@ def write(path, value):
         json.dump(value, stream, indent=2)
 
 
-def setup(fixture, preset):
-    source = fixture/'00_SOURCE/calibration-stereo.wav'
+def setup(fixture, preset, channels):
+    suffix='mono' if channels==1 else 'stereo'
+    source = fixture/f'00_SOURCE/calibration-{suffix}.wav'
     if source.exists():
         raise ValueError('Fixture source already exists; do not recreate')
     source.parent.mkdir(parents=True, exist_ok=True)
     raw = bytearray()
     for i in range(4*48000):
-        for hz in (440, 880):
+        for hz in (440, 880)[:channels]:
             raw.extend(int((2**23-1)*0.25*math.sin(2*math.pi*hz*i/48000)).to_bytes(3, 'little', signed=True))
     with wave.open(str(source), 'wb') as audio:
-        audio.setparams((2, 3, 48000, 0, 'NONE', 'not compressed'))
+        audio.setparams((channels, 3, 48000, 0, 'NONE', 'not compressed'))
         audio.writeframes(raw)
     tree = ET.parse(preset)
     expected = {'ADBEAudioRatePerSecond':'48000', 'ADBEAudioNumChannels':'1', 'ADBEAudioSampleType':'2'}
     for key,value in expected.items():
         nodes=[n for n in tree.getroot().findall('ExporterParam') if n.findtext('ParamIdentifier')==key]
-        if len(nodes)!=1 or nodes[0].findtext('ParamValue')!=value:
+        if len(nodes)!=1 or (key=='ADBEAudioNumChannels' and nodes[0].findtext('ParamValue') not in ('1','2')) or (key!='ADBEAudioNumChannels' and nodes[0].findtext('ParamValue')!=value):
             raise ValueError('Expected vendor 48 kHz mono 24-bit PCM preset')
-        if key=='ADBEAudioNumChannels':nodes[0].find('ParamValue').text='2'
-    target=fixture/'10_WORK/stereo48-24.epr'
+        if key=='ADBEAudioNumChannels':nodes[0].find('ParamValue').text=str(channels)
+    target=fixture/f'10_WORK/{suffix}48-24.epr'
     if target.exists():raise ValueError('Preset output exists')
     tree.write(target,encoding='utf-8',xml_declaration=True)
     return {'source':str(source),'preset':str(target)}
@@ -57,7 +58,7 @@ def run(args):
     fixture=args.fixture.resolve();project=fixture/'10_WORK/ACQ_Music_Level_Calibration.prproj'
     if profile.mode!='lab' or not fixture.is_relative_to(Path(profile.fixture_root).resolve()):
         raise ValueError('Disposable lab profile and fixture root required')
-    if args.action=='setup':return setup(fixture,args.preset_source)
+    if args.action=='setup':return setup(fixture,args.preset_source,args.channels)
     runtime=Path(profile.cwd)/'lab/runtime'
     client=PremiereBridge(profile)
     try:
@@ -68,7 +69,7 @@ def run(args):
             lease=json.loads((runtime/'lease.json').read_text())
             if lease.get('owner')!=args.owner or not lease.get('productionBridgeStopped'):
                 raise ValueError('Existing exclusive ownership is required')
-            write(fixture/'10_WORK/previous-lease.json',lease)
+            write(fixture/('10_WORK/previous-lease-'+uuid.uuid4().hex+'.json'),lease)
             lease.update(projectPath=str(project),expiresAt=(datetime.now(timezone.utc)+timedelta(hours=2)).isoformat())
             temp=runtime/'lease.calibration-new.json';write(temp,lease);temp.replace(runtime/'lease.json')
             return {'leased':str(project),'owner':args.owner}
@@ -83,13 +84,19 @@ def run(args):
                 'intended_changes':['isolated native gain calibration: '+label],
                 'protected_state':['all other open projects; no production sequence mutation']}
             return execute_operation(client,op,work/(label+'.json'),120)
-        source=fixture/'00_SOURCE/calibration-stereo.wav'
+        suffix='mono' if args.channels==1 else 'stereo'
+        source=fixture/f'00_SOURCE/calibration-{suffix}.wav'
         if args.action=='build':
-            if snapshot['sequenceId'] is not None:raise ValueError('Build requires a new empty calibration project')
+            existing=client.inspect('inspect_project_sequences',{'project_path':str(project)})['data']
+            label='ACQ '+suffix.title()+' Level Calibration'
+            if any(s['name']==label for s in existing['sequences']):raise ValueError('Calibration sequence already exists; reconcile rather than recreate')
             imported=operate('import_media',{'file_paths':[str(source)],'suppress_ui':True},'import','assembly')
             write(work/'import-result.json',imported)
-            created=operate('create_sequence_from_clips',{'name':'ACQ Music Level Calibration','item_ids':[source.name]},'sequence','assembly')
+            created=operate('create_sequence_from_clips',{'name':label,'item_ids':[source.name]},'sequence','assembly')
             operate('set_active_sequence',{'sequence_id':created['id']},'select','assembly')
+            after=client.inspect('inspect_project_sequences',{'project_path':str(project)})['data']
+            previous={s['sequence_id']:s for s in existing['sequences']}
+            if any(s!=next((t for t in after['sequences'] if t['sequence_id']==sid),None) for sid,s in previous.items()):raise ValueError('Protected calibration sequence changed')
             operate('save_project',{},'save')
             state=music.inspect(client);write(work/'inspection.json',state)
             return {'sequence':created,'inspection':str(work/'inspection.json')}
@@ -107,7 +114,7 @@ def run(args):
         request.update(parameter=parameter,keys=[{'ticks':item['source_in_ticks'],'value':native},{'ticks':item['source_out_ticks'],'value':native}])
         operate('lab_apply_music_envelope',request,'envelope')
         rendered=work/'rendered.wav'
-        operate('export_sequence',{'output_path':str(rendered),'preset_path':str(fixture/'10_WORK/stereo48-24.epr'),'work_area_only':False},'export','export')
+        operate('export_sequence',{'output_path':str(rendered),'preset_path':str(fixture/f'10_WORK/{suffix}48-24.epr'),'work_area_only':False},'export','export')
         calibration={'schema':'edit.music-level-calibration/v1','host_version':profile.host_version,'backend':'CEP/ExtendScript','parameter':parameter,
                      'samples':[{'db':args.db,'native_value':native,'source_wav':music.artifact(source),'rendered_wav':music.artifact(rendered),
                                  'native_receipt':music.artifact(work/'envelope.json'),'export_receipt':music.artifact(work/'export.json')}]}
@@ -126,5 +133,6 @@ if __name__=='__main__':
     p.add_argument('--skills',type=Path,required=True);p.add_argument('--profile',type=Path,required=True)
     p.add_argument('--fixture',type=Path,required=True);p.add_argument('--owner',default='')
     p.add_argument('--preset-source',type=Path);p.add_argument('--attempt',default='build-v1')
+    p.add_argument('--channels',type=int,choices=[1,2],default=2)
     p.add_argument('--db',type=float);p.add_argument('--native-value',type=float)
     print(json.dumps(run(p.parse_args()),indent=2))
