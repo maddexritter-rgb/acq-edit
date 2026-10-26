@@ -4,6 +4,8 @@
 
 Implemented:
 
+- A real Premiere caption preview now renders through the toolkit adapter: 1,370 frames at 1080×1920/30 fps, full decode, preserved unset In/Out markers, complete native snapshot and exact primary picture/dialogue source links. Six unset-marker script tests pass; five exported frames were visually inspected. Headline, music, final listening, native reopen and human approval remain open. The preview is not published as finished. See `PREMIERE_RENDER.md`.
+
 - Real Premiere caption construction now has a portable generated-Graphics asset preparation path. A 53-card import was reconciled after its implicit native component chain differed from the declared XML chain; independent card/structure checks and saved-file verification passed while preserving the earlier sequences. Ten focused recovery/asset tests pass. Native rendered appearance and completed music/headline/export remain open; see `PREMIERE_CAPTION_ASSETS.md`.
 
 - Guided setup now retains existing values and advanced settings, offers selected-engine install paths, expands home paths and backs up exact prior configuration bytes on change. Per-agent command migration preserves existing projects when the default agent changes. Unchanged settings retain their file timestamp; cancelled prompts, malformed/concurrently changed config and active/unresolved work are refused without overwrite. Actual terminal runs preserved the prior project database/manifest and credentials while changing future defaults. All 147 service tests pass; see `INSTALLATION.md`.
