@@ -10,6 +10,20 @@ def private_references(text):
 def portable_distribution(text,relative):
  """Apply reviewed portable replacements after canonical paths are normalized."""
  changes=[]
+ if relative=='_shared/gemini_audio.py':
+  start=text.index("def credential(slot='paid'):")
+  end=text.index('\n\ndef encode_mp3(',start)
+  text=text[:start]+'''def credential(slot='paid'):
+    import os
+    names = {'paid': 'GEMINI_API_KEY', 'fallback': 'GEMINI_FALLBACK_API_KEY'}
+    if slot not in names:
+        raise ValueError('Unknown Gemini credential slot')
+    key = os.environ.get(names[slot], '').strip()
+    if not key:
+        raise ValueError('Configure '+names[slot]+' through toolkit credentials')
+    return key
+'''+text[end:]
+  changes.append({'patch':'toolkit-gemini-listener-credentials'})
  if relative in ('_shared/premiere_bridge.py','edit/scripts/premiere_agent.py'):
   old="'lab_import_prepared_caption_sequence'"
   if text.count(old)!=1:raise ValueError('Graphic asset scope insertion changed')

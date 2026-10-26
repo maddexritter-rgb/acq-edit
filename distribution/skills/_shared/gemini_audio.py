@@ -32,12 +32,13 @@ RETRY_WAIT_S = 20
 
 
 def credential(slot='paid'):
-    path = Path.home() / '.config/assembly-design' / ('gemini-paid-key' if slot == 'paid' else 'gemini-fallback-key')
-    if path.stat().st_mode & 0o077:
-        raise ValueError('Gemini credential file must have owner-only permissions')
-    key = path.read_text().strip()
+    import os
+    names = {'paid': 'GEMINI_API_KEY', 'fallback': 'GEMINI_FALLBACK_API_KEY'}
+    if slot not in names:
+        raise ValueError('Unknown Gemini credential slot')
+    key = os.environ.get(names[slot], '').strip()
     if not key:
-        raise ValueError('Gemini credential is empty')
+        raise ValueError('Configure '+names[slot]+' through toolkit credentials')
     return key
 
 

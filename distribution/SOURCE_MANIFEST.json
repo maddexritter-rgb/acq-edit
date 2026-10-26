@@ -124,9 +124,13 @@
       "path": "_shared/gemini_audio.py",
       "source": "canonical-skills/_shared/gemini_audio.py",
       "source_sha256": "22972015841483ea9300a05fc4d7ef2bf0a8e0adc0eac357eafef32bbb8716bf",
-      "distribution_sha256": "22972015841483ea9300a05fc4d7ef2bf0a8e0adc0eac357eafef32bbb8716bf",
-      "bytes": 7219,
-      "transforms": []
+      "distribution_sha256": "b4e2bde12786fbb1af332f6fc69669c2293e9b385d940c5d4825aca2359ff09e",
+      "bytes": 7200,
+      "transforms": [
+        {
+          "patch": "toolkit-gemini-listener-credentials"
+        }
+      ]
     },
     {
       "path": "_shared/handoff_validator.py",
