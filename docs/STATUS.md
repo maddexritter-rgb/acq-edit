@@ -4,6 +4,8 @@
 
 Implemented:
 
+- Real Premiere music placement and calibrated native envelope now render through the repository path. A separate native PCM fixture measured −28 dB and −60 dB on both stereo channels; the real native PCM mix matched its exact selected music section at −28 dB. The 1,370-frame MP4 fully decoded and its picture pixels matched the prior caption preview. Signal comparison found a 1,024-sample (21.33 ms at 48 kHz) AAC delay against Premiere's PCM export, affecting the whole mix rather than the music source selection. Headline, dialogue boost, final listening, reopen and human approval remain open; this mix check is not published as finished.
+
 - A real Premiere caption preview now renders through the toolkit adapter: 1,370 frames at 1080×1920/30 fps, full decode, preserved unset In/Out markers, complete native snapshot and exact primary picture/dialogue source links. Six unset-marker script tests pass; five exported frames were visually inspected. Headline, music, final listening, native reopen and human approval remain open. The preview is not published as finished. See `PREMIERE_RENDER.md`.
 
 - Real Premiere caption construction now has a portable generated-Graphics asset preparation path. A 53-card import was reconciled after its implicit native component chain differed from the declared XML chain; independent card/structure checks and saved-file verification passed while preserving the earlier sequences. Ten focused recovery/asset tests pass. Native rendered appearance and completed music/headline/export remain open; see `PREMIERE_CAPTION_ASSETS.md`.
