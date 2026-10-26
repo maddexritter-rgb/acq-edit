@@ -119,3 +119,29 @@ instances or closing unrelated unsaved editor sessions.
 → Follow the [default split-screen shadow contract](split-shadow-default.md).
 Apply the native seam shadow during finishing without waiting for a separate request.
 Keep profile settings outside this reusable procedure.
+
+## Composition acceptance before finishing
+
+Source-safe geometry is necessary but does not establish useful framing. For portrait
+dialogue, start with the toolkit's `assets/profiles/framing/vertical-dialogue.json`
+and pin a project-local copy. Deliberate wide action/environmental shots need an
+explicitly reviewed profile; do not weaken limits just to pass a poor crop.
+
+Use `scripts/composition_review.py` to check every visible full-screen shot and each
+split panel: complete head including hat/hair, headroom, apparent head size, side
+clearance, and relative participant size. Review first/middle/last plus movement
+samples at least twice per second. Record source clocks, image hashes and the exact
+crop hash. A detector box is not a complete-head silhouette: calibrate it visually
+against source images and inspect posture/turn extremes. Missing detections or
+uncertain head extents require visual correction, not invented measurements.
+
+Keep the same shot size and Y across compatible source runs. Never widen a walking
+speaker merely to fit their whole path in one static crop. Track real travel at a
+consistent scale, keeping stable passages still. Recheck shoulders, meaningful hand
+gestures, audience distractions and phone readability visually; the numeric gate
+cannot judge those qualities. Compare the rendered source-cut transitions in motion.
+
+For FilmCraft crop-size or fixed/tracked mode repairs on existing source-linked
+pictures, use the guarded `composition-framing` route in the toolkit's
+`docs/NATIVE_FRAMING.md`. It supports linked split shadows and preserves all
+non-framing native state. Ordinary curve-only edits keep their narrower route.

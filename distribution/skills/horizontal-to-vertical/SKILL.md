@@ -25,6 +25,8 @@ coverage return to Assembly Design. It never redesigns the spoken cut. It also p
   tracking rules remain unchanged.
 - **Filmcraft:** read [Filmcraft framing mode](references/filmcraft-smooth-x.md).
   Default stable shots to fixed editable crops; track real movement only when needed.
+  Apply the linked composition acceptance gate: a source-safe wide crop is not proof
+  of good subject size, headroom, panel balance or movement coverage.
   Never blend crop positions across a source-time cut. Keep Y and Scale calibrated
   across compatible shots; source-local dense tracking is separate from authored motion.
   Fit continuous camera/layout runs before slicing native items; check source/layout

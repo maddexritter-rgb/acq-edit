@@ -117,6 +117,9 @@ class Adapter:
    placed=c.tool('sequence_inspect')['video'][track]['items'];require(len(placed)==1,'Unexpected native graphic coverage');graphic=placed[0]
    require(graphic['item']==item and graphic['start']==asset['startFrame']*ft and graphic['duration']==asset['frames']*ft and graphic['sourceIn']==0,'Native graphic source/timing readback mismatch')
  def revise(self,project,packet):
+  if packet.get('kind')=='composition-framing':
+   from composition_revision import revise
+   return revise(self,project,packet)
   if packet.get('kind')=='caption-visibility':return self.revise_caption_visibility(project,packet)
   if packet.get('kind')=='music-replacement':return self.revise_music(project,packet)
   if packet.get('kind')=='graphic-replacement':return self.revise_graphics(project,packet)

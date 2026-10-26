@@ -1,0 +1,9 @@
+{
+  "schema": "acq-edit/composition-profile-v1",
+  "id": "vertical-dialogue-v1",
+  "description": "Starting composition checks for portrait dialogue. Use a separately reviewed profile for deliberate wide action or environmental shots; never widen a moving speaker just to avoid tracking.",
+  "maxSampleGapSeconds": 0.51,
+  "full": {"headroom": [0.02, 0.18], "headHeight": [0.23, 0.40], "minSideClearance": 0.04},
+  "panel": {"headroom": [0.02, 0.18], "headHeight": [0.35, 0.55], "minSideClearance": 0.04},
+  "maxPanelHeadRatio": 1.35
+}

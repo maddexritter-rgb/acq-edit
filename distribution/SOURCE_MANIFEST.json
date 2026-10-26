@@ -2447,8 +2447,8 @@
       "path": "horizontal-to-vertical/SKILL.md",
       "source": "canonical-skills/horizontal-to-vertical/SKILL.md",
       "source_sha256": "93b9ec3d5d0e4b027da78890100c6a961f2d1ac773ac628d2f69c75355ae5a5c",
-      "distribution_sha256": "5e4b97e3ca1ac090402ef651d958a16713638faf7930d6a19b49f16144c6e9be",
-      "bytes": 18285,
+      "distribution_sha256": "35ad49323260569f38d7debb8329caaa256294057abf023039dae9eb6ecec96c",
+      "bytes": 18440,
       "transforms": [
         {
           "from": "canonical-root",
@@ -2456,6 +2456,10 @@
         },
         {
           "patch": "default-split-shadow"
+        },
+        {
+          "from": "repository-composition-repair",
+          "to": "source-bound-subject-size-headroom-and-panel-balance"
         }
       ]
     },
@@ -2471,8 +2475,8 @@
       "path": "horizontal-to-vertical/references/filmcraft-smooth-x.md",
       "source": "canonical-skills/horizontal-to-vertical/references/filmcraft-smooth-x.md",
       "source_sha256": "1787391278dd29e44191f1e48010d5e717849f2cfa4562c489683b847e7256a7",
-      "distribution_sha256": "43981b7264780dd7485d3499a4da584074677865e89ec53e2f316063812f6da8",
-      "bytes": 7371,
+      "distribution_sha256": "2033df484dfd2fefeb2ec8a72cef244294c53125d030911f41baa2c5a995e1ca",
+      "bytes": 9039,
       "transforms": [
         {
           "from": "canonical-root",
@@ -2483,6 +2487,10 @@
         },
         {
           "patch": "default-split-shadow"
+        },
+        {
+          "from": "repository-composition-repair",
+          "to": "source-bound-subject-size-headroom-and-panel-balance"
         }
       ]
     },
@@ -6200,6 +6208,19 @@
       "distribution_sha256": "71f83f3e61dc9f7fce93aeeca0b8e643ce3dfd33d4ac8f1f3c993afcd9404152",
       "bytes": 2450,
       "transforms": []
+    },
+    {
+      "path": "horizontal-to-vertical/scripts/composition_review.py",
+      "source": "repository/horizontal-to-vertical/scripts/composition_review.py",
+      "source_sha256": "12b28b4db36e85ed9637b718f175fcfc707d769e580022fe7403c6b4ff562740",
+      "transforms": [
+        {
+          "from": "repository-composition-repair",
+          "to": "source-bound-subject-size-headroom-and-panel-balance"
+        }
+      ],
+      "distribution_sha256": "12b28b4db36e85ed9637b718f175fcfc707d769e580022fe7403c6b4ff562740",
+      "bytes": 4637
     }
   ]
 }

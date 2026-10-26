@@ -136,3 +136,29 @@ Both backends revised only the first of two synthetic tracked cuts, changing its
 FilmCraft's unselected second shot and decoded audio were byte-identical to the parent render. Resolve's second shot had 68.84 dB PSNR relative to the parent, and decoded audio differed at −77.61 dB RMS relative to signal. Native state preservation therefore does not establish byte-identical Resolve exports, explain their variation, or prove inaudibility. The existing Resolve output qualification remains open. This is direct native revision evidence; a live review-room/agent tracking job, real subject tracking, broad framing changes and human approval remain separate acceptance work.
 
 When dense tracking positions cross native JSON roundtrips, the framing owner may quantize source-pixel positions to a declared binary fraction (for example 1/256 pixel), recording the maximum deviation in its decision receipt. Do this before native construction, preserve the unquantized decision, and retain exact saved-state comparison. Do not relax the verifier to conceal changed framing.
+
+## FilmCraft composition repair
+
+Use `native PROJECT_ID revise PACKET` with `kind: "composition-framing"` when the
+framing owner needs to change crop size/Y or switch fixed/tracked mode while retaining
+camera selection, panel rectangles, source clocks and every non-framing layer.
+Resolve and Premiere do not implement this new operation; keep their existing routes.
+
+The packet requires `nativeProject`, `expectedFingerprint`, `previousPlan`,
+`previousPlanSha256`, `plan`, `targets` (unique `{cutId, panelId}` pairs, with null
+panelId for full-screen shots), `compositionReview`, `compositionReviewSha256`,
+`inspectSession`, `session`, `outputProject` and `inspection`. Sessions and outputs
+must be fresh project-local paths. The review uses the owning skill's
+`composition_review.py` schema and a hashed project-local profile. Evidence image
+hashes and source ranges are checked before mutation. The previous and current plans
+may differ only in selected crops and their framing receipt.
+
+If the native project contains the linked split shadow, supply `shadowReceipt` and
+`shadowReceiptSha256`. The adapter validates its exact native/parent hashes and all
+owned additions, then verifies framing against a read-only projection without those
+additions. It edits camera Motion inside the original linked nests, leaving the clean
+panel and shadow linked. It compares the entire native project, permitting only
+selected Anchor values/keys and Scale values to change. Captions, audio, other effects,
+source timing and shadow controls remain protected. It saves a new shadow checkpoint
+receipt for the owning helper's guarded native export. This checkpoint is not a generic
+review-room publication receipt and never implies visual or human approval.
