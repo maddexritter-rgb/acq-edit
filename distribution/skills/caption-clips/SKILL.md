@@ -280,3 +280,9 @@ Detailed shared contracts:
 - [references/segment_aware_captions.md](references/segment_aware_captions.md)
 - [references/research_findings.md](references/research_findings.md)
 - [references/oliver_caption_formatting_spec.md](references/oliver_caption_formatting_spec.md)
+
+### Portable semantic styling gate
+
+When the selected profile permits weight variation, review the actual words for emphasis before native construction. Keep connective words at the body weight; assign real heavier faces to meaningful nouns, verbs, contrasts and payoffs. A uniform body-weight transcript is not a finished semantic style pass. Do not use sentence capitals or all-caps as a substitute for weight. Follow the profile’s casing policy, preserving proper names, acronyms and first-person I.
+
+FilmCraft handoff details and supported emphasis ranges → `__ACQ_TOOLKIT__/docs/NATIVE_CAPTIONS.md`. Recheck normalized text, real-face width, native ink placement and every rendered card after changing weight. Caption-only revisions preserve cuts, audio and framing.

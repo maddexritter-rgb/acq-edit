@@ -6,10 +6,10 @@ import sys
 from common import SKILLS, inside, read, require, save, sha, fingerprint
 
 sys.path.insert(0, str(SKILLS / 'caption-clips/scripts'))
-from filmcraft_caption_contract import prepare_cards, profile_caption_motion, verify_native_layers
+from filmcraft_caption_contract import prepare_cards, profile_caption_motion, verify_native_layers, character_styles, apply_character_styles
 from filmcraft_shadow import shadow_layer_props, LAYER_ORDER, PROFILE_ID
 
-HELPERS = ('filmcraft_caption_contract.py', 'filmcraft_shadow.py', 'caption_profiles.py', 'caption_lint.py', 'resolve_cards.py')
+HELPERS = ('filmcraft_caption_contract.py', 'filmcraft_shadow.py', 'caption_profiles.py', 'caption_lint.py', 'resolve_cards.py', 'oliver_format.py')
 
 
 def derive(project, spec, reference):
@@ -63,7 +63,7 @@ def derive(project, spec, reference):
         require(type(card.get('speech_end')) in (int, float) and math.isfinite(card['speech_end']) and start / fps < card['speech_end'] <= duration / fps, 'Mapped speech release outside timeline')
         require(type(card.get('elapsed_frames', 0)) == int and card.get('elapsed_frames', 0) >= 0, 'Invalid caption continuation clock')
         style = card['style']
-        allowed = {'font', 'fontStyle', 'italicStyle', 'syntheticQuoteItalic', 'size', 'renderedFontPx', 'position', 'color'} if spec['backend'] == 'filmcraft' else {'font', 'fontStyle', 'italicStyle', 'fusionSize', 'center', 'color'}
+        allowed = {'font', 'fontStyle', 'italicStyle', 'syntheticQuoteItalic', 'size', 'renderedFontPx', 'position', 'color', 'emphasis', 'fontPostscript', 'italicPostscript'} if spec['backend'] == 'filmcraft' else {'font', 'fontStyle', 'italicStyle', 'fusionSize', 'center', 'color'}
         require(set(style) <= allowed, 'Unsupported caption style; preserve the owner request instead of dropping properties')
         for key in ['font', 'fontStyle', 'color']:
             require(isinstance(style.get(key), str) and style[key].strip(), 'Explicit caption style required: ' + key)
@@ -91,10 +91,17 @@ def derive(project, spec, reference):
     measure, _ = width_measurer({'max_text_width_px': budget}) if face and spec['backend']=='filmcraft' else (None, None)
     captions = []
     for card in prepared:
+        runs = character_styles(card)
+        require(not runs or profile.get('allow_weight_variation') is True, 'Profile does not permit semantic weight variation')
+        require(not runs or not card['style'].get('syntheticQuoteItalic'), 'Emphasis requires real italic faces')
         if measure:
-            card_face = profile.get('italic_font_postscript') if card['italic'] else face
-            validate_card_layout(card['text'], profile, measure=measure, face=card_face,
-                size_px=card['style']['renderedFontPx'], width_px=budget)
+            card_face = card['style'].get('italicPostscript' if card['italic'] else 'fontPostscript') or (profile.get('italic_font_postscript') if card['italic'] else face)
+            # Conservatively measure the full line in every requested face, then
+            # require native isolated-ink measurement for final placement.
+            faces = {card_face} | {r['italicPostscript' if card['italic'] else 'fontPostscript'] for r in card['style'].get('emphasis', [])}
+            for measured_face in faces:
+                validate_card_layout(card['text'], profile, measure=measure, face=measured_face,
+                    size_px=card['style']['renderedFontPx'], width_px=budget)
         style = copy.deepcopy(card['style'])
         if card['italic']:
             if style.get('syntheticQuoteItalic'):
@@ -156,6 +163,8 @@ def build_native(client, spec, prepared, frame_ticks):
         style = card['style']
         face = style['italicStyle'] if card['italic'] and not style.get('syntheticQuoteItalic') else style['fontStyle']
         require(face in fonts.get(style['font'], set()), 'Exact caption font face missing: ' + style['font'] + ' / ' + face)
+        for run in character_styles(card):
+            require(run['fontStyle'] in fonts.get(style['font'], set()), 'Exact emphasis face missing: ' + run['fontStyle'])
     for role_index, role in enumerate(LAYER_ORDER):
         for card in prepared['cards']:
             style = card['style']
@@ -169,6 +178,8 @@ def build_native(client, spec, prepared, frame_ticks):
                      'fauxItalic': bool(card['italic'] and style.get('syntheticQuoteItalic')),
                      **shadow_layer_props(role, style['renderedFontPx'])}
             client.run('graphics.set', {'clip': graphic['clip'], 'layer': graphic['layer'], 'props': props})
+            if style.get('emphasis'):
+                apply_character_styles(client, graphic['clip'], graphic['layer'], card)
             motion, opacity = profile_caption_motion(prepared['profile'], frame_ticks,
                 card['end_frame'] - card['start_frame'], elapsed_frames=card.get('elapsed_frames', 0),
                 center=(spec['width'] / 2, spec['height'] / 2), canvas_height=spec['height'])
@@ -206,6 +217,8 @@ def verify_native(native_path, spec, prepared, frame_ticks):
         native = [layer['items'][index] for layer in layers]
         effects = [{e['effect']: e['params'] for e in item['effects']} for item in native]
         for item in native:
+            graphic = next(e for e in item['effects'] if e['effect'] == 'graphic_text')
+            require(graphic.get('layer', {}).get('runs', []) == character_styles(card), 'Native caption character emphasis differs; reconcile all three lanes')
             require(item['enabled'] and item['source_in'] == 0 and item['speed'] == 1 and not item['reverse'], 'Caption native playback changed')
             require(all(e['enabled'] for e in item['effects']), 'Caption effect disabled')
             require(len(item['effects']) == 4 and {e['effect'] for e in item['effects']} == {'motion', 'opacity', 'time_remap', 'graphic_text'}, 'Unexpected caption effect; reconcile the requested treatment')

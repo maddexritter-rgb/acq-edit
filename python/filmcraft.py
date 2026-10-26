@@ -145,6 +145,15 @@ class Adapter:
   try:
    if packet['kind']=='caption-style':
     for edit in packet['edits']:c.run('graphics.set',{'clip':edit['clip'],'layer':edit.get('layer',0),'props':edit['props']})
+    if spec and spec.get('captionContract'):
+     from caption_plan import validate,apply_character_styles,character_styles
+     prepared=validate(project,spec);fonts={f['family']:set(f['styles']) for f in c.run('fonts.list')}
+     lanes=c.tool('sequence_inspect')['video'][1:4]
+     require(len(lanes)==3 and all(len(l['items'])==len(prepared['cards']) for l in lanes),'Caption revision lane/card mismatch')
+     for lane in lanes:
+      for item,card in zip(lane['items'],prepared['cards']):
+       for run in character_styles(card):require(run['fontStyle'] in fonts.get(card['style']['font'],set()),'Exact emphasis face missing')
+       apply_character_styles(c,item['clip'],0,card)
    elif packet['kind']=='fixed-framing':
     native_data=read(target)
     for edit in packet['edits']:

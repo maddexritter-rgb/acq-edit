@@ -9,6 +9,57 @@ import re
 from caption_profiles import clean_profile_display_words, cap_hold_at_picture_cut, preserve_first_person, validate_display_casing
 
 
+def normalize_profile_case(text, profile):
+    """Apply the owner's casing rule without changing words, clocks or numbers."""
+    if profile.get('normalization') != 'oliver_v2':
+        return text
+    from oliver_format import tokenize, apply_capitalization
+    proper = {name.casefold(): name for name in profile.get('proper_names', [])}
+    lines = []
+    for line in text.split('\n'):
+        tokens = tokenize(line)
+        for token in tokens:
+            if token.text.casefold() in proper:
+                token.text = proper[token.text.casefold()]
+                token.locked = True
+        apply_capitalization(tokens)
+        lines.append(' '.join(t.lead + t.text + t.trail for t in tokens))
+    return '\n'.join(lines)
+
+
+def character_styles(card):
+    """Reviewed Unicode character ranges refer to the final normalized display."""
+    runs = card['style'].get('emphasis', [])
+    if not isinstance(runs, list):
+        raise ValueError('Caption emphasis must be a reviewed list')
+    result, previous = [], 0
+    for run in runs:
+        if set(run) != {'start', 'end', 'text', 'fontStyle', 'italicStyle', 'fontPostscript', 'italicPostscript'}:
+            raise ValueError('Emphasis requires exact text, range and real font faces')
+        a, b = run['start'], run['end']
+        if type(a) != int or type(b) != int or not previous <= a < b <= len(card['text']):
+            raise ValueError('Emphasis ranges overlap or exceed normalized text')
+        if card['text'][a:b] != run['text']:
+            raise ValueError('Emphasis text changed during normalization; review its range')
+        if not all(isinstance(run[k], str) and run[k].strip() for k in ('fontStyle', 'italicStyle', 'fontPostscript', 'italicPostscript')):
+            raise ValueError('Explicit emphasis font faces required')
+        result.append({'start': a, 'end': b,
+                       'fontStyle': run['italicStyle'] if card['italic'] else run['fontStyle'],
+                       'fauxBold': False, 'fauxItalic': False})
+        previous = b
+    return result
+
+
+def apply_character_styles(client, clip, layer, card):
+    # Clear old ranges after text normalization. Inherit fill from each lane so
+    # shadow duplicates stay transparent; only the real face varies per word.
+    client.run('graphics.setCharStyle', {'clip': clip, 'layer': layer, 'clear': True})
+    for run in character_styles(card):
+        client.run('graphics.setCharStyle', {'clip': clip, 'layer': layer,
+            'start': run['start'], 'end': run['end'],
+            'style': {k: v for k, v in run.items() if k not in ('start', 'end')}})
+
+
 def centered_text_position(local_bounds, target=(540, 960)):
     """Center visible glyphs, not the point-text baseline or shadow halo.
 
@@ -135,7 +186,7 @@ def prepare_cards(cards, profile, fps, duration_frames, picture_cuts=(), omissio
         for line in card['text'].split('\n'):
             words = [{'word': token.strip('“”"')} for token in line.split()]
             lines.append(' '.join(w['word'] for w in clean_profile_display_words(words)))
-        text = '\n'.join(lines)
+        text = normalize_profile_case('\n'.join(lines), profile)
         validate_display_casing(text)
         if card.get('remove_question_exclamation'):
             text = text.replace('?', '').replace('!', '')

@@ -2691,8 +2691,8 @@
       "path": "caption-clips/SKILL.md",
       "source": "canonical-skills/caption-clips/SKILL.md",
       "source_sha256": "347ccefc1594d292b00ab8dab1690466b9ee3b209d34fae1604848cec3c3694e",
-      "distribution_sha256": "53f40f343517b29e0cf5f418a35a47b667477937105f2a2153bb2aed1f33dcff",
-      "bytes": 18942,
+      "distribution_sha256": "b4cb65c6c05f933f332e94a89fd65f4d071347d0cab9a852e0c61cc317f4dafb",
+      "bytes": 19719,
       "transforms": [
         {
           "from": "repository-caption-density-patch",
@@ -2700,6 +2700,10 @@
         },
         {
           "patch": "remove-text-hook-route"
+        },
+        {
+          "from": "repository-caption-typography-repair",
+          "to": "profile-casing-and-reviewed-native-character-emphasis"
         }
       ]
     },
@@ -3117,12 +3121,16 @@
       "path": "caption-clips/scripts/filmcraft_caption_contract.py",
       "source": "canonical-skills/caption-clips/scripts/filmcraft_caption_contract.py",
       "source_sha256": "e98bd94daad66670a935f40b6bc91448f87aa5915fc3e981a9ed5d636cc14e08",
-      "distribution_sha256": "6ecb90eb689411104660c97c6d564895efc179aabb71968027c896508979e0a7",
-      "bytes": 10861,
+      "distribution_sha256": "9aa64562325728187d72db0f04d242c4f3330198c468503837ee7a8c73f98154",
+      "bytes": 14157,
       "transforms": [
         {
           "from": "repository-caption-density-patch",
           "to": "single-line-density-and-measured-fit-gates"
+        },
+        {
+          "from": "repository-caption-typography-repair",
+          "to": "profile-casing-and-reviewed-native-character-emphasis"
         }
       ]
     },

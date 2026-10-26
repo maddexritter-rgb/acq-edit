@@ -62,6 +62,29 @@ class CaptionPlanTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'helpers changed'):
             caption_plan.validate(self.project, self.spec)
 
+    def test_profile_case_and_reviewed_emphasis_ranges(self):
+        from filmcraft_caption_contract import normalize_profile_case, character_styles
+        profile = {'normalization': 'oliver_v2', 'proper_names': ['Steve']}
+        self.assertEqual(normalize_profile_case("No Steve I'm the CFO", profile), "no Steve I'm the CFO")
+        self.assertEqual(normalize_profile_case('They want fast results', profile), 'they want fast results')
+        self.assertEqual(normalize_profile_case('Sentence Case', {}), 'Sentence Case')
+        card = {'text': 'sell outcomes', 'italic': False, 'style': {'emphasis': [
+            {'start': 5, 'end': 13, 'text': 'outcomes', 'fontStyle': 'Bold', 'italicStyle': 'Bold It',
+             'fontPostscript': 'Example-Bold', 'italicPostscript': 'Example-BoldIt'}]}}
+        self.assertEqual(character_styles(card)[0]['fontStyle'], 'Bold')
+        card['italic'] = True
+        self.assertEqual(character_styles(card)[0]['fontStyle'], 'Bold It')
+        card['text'] = 'sell anything'
+        with self.assertRaisesRegex(ValueError, 'text changed'):
+            character_styles(card)
+
+    def test_unrequested_native_character_override_refuses(self):
+        item = self.native['project']['items']['1']['kind']['Sequence']['video_tracks'][1]['items'][0]
+        graphic = next(e for e in item['effects'] if e['effect'] == 'graphic_text')
+        graphic['layer'] = {'runs': [{'start': 0, 'end': 1, 'fontStyle': 'Black'}]}
+        with self.assertRaisesRegex(RuntimeError, 'character emphasis differs'):
+            self.verify()
+
     def test_stale_cut_clock_profile_or_backend_refuses(self):
         original = copy.deepcopy(self.spec)
         self.spec['cuts'][0]['frames'] = 24
