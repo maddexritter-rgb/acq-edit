@@ -5,13 +5,22 @@ No phrase grouping, speaker guessing, capitalization or emphasis selection occur
 here. Each group is an authored decision. Refuse skipped/duplicated words and groups
 crossing picture cuts, so dependent captions cannot silently use stale clocks.
 """
-import argparse,copy,hashlib,json,math
+import argparse,copy,hashlib,json,math,sys
 from pathlib import Path
 
 def digest(value):return hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+def normalize_display(text, profile):
+    # Reuse the owning caption implementation, including punctuation and case.
+    sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'.local/skills/caption-clips/scripts'))
+    from filmcraft_caption_contract import normalize_profile_case
+    from caption_profiles import clean_profile_display_words
+    tokens=[{'word':t.strip('“”"')} for t in text.split()]
+    return normalize_profile_case(' '.join(w['word'] for w in clean_profile_display_words(tokens)),profile)
+
 def prepare(plan,words,decisions):
     cards=[];coverage=[];fps=plan['fps']['numerator']/plan['fps']['denominator'];sr=plan['sampleRate']
     groups=decisions['groups'];cursor=0
+    profile=json.loads(Path(decisions['profile']['path']).read_text()) if decisions['profile'].get('path') else None
     for cut in plan['cuts']:
         expected=[int(i) for i in cut['wordIds']];used=[]
         while cursor<len(groups) and len(used)<len(expected):
@@ -20,9 +29,11 @@ def prepare(plan,words,decisions):
             text=' '.join(words[i]['word'] for i in ids)
             style=copy.deepcopy(decisions['styles'][g['role']]);style['emphasis']=[]
             for emphasis in g.get('emphasis',[]):
-                phrase=emphasis['text'];start=text.lower().find(phrase.lower())
-                if start<0 or text.lower().find(phrase.lower(),start+1)>=0:raise ValueError('Emphasis text must identify one exact caption occurrence')
-                style['emphasis'].append({**emphasis,'start':start,'end':start+len(phrase),'text':text[start:start+len(phrase)]})
+                display=normalize_display(text,profile) if profile is not None else text
+                if g.get('quote'):display='“'+display+'”'
+                phrase=normalize_display(emphasis['text'],profile) if profile is not None else emphasis['text'];start=display.lower().find(phrase.lower())
+                if start<0 or display.lower().find(phrase.lower(),start+1)>=0:raise ValueError('Emphasis text must identify one exact caption occurrence')
+                style['emphasis'].append({**emphasis,'start':start,'end':start+len(phrase),'text':display[start:start+len(phrase)]})
             offset=(cut['audioRecordSample']-cut['audioInSample'])/sr
             start=max(cut['recordFrame'],round((words[first]['start']+offset)*fps))
             end=min((cut['recordFrame']+cut['frames'])/fps,words[last]['end']+offset)

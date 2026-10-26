@@ -20,8 +20,9 @@ def prepare(plan,obs,decisions,out):
  for view in obs['items']:
   key=view['cutId']+':'+view['role'];d=decisions['views'][key];cut=cuts[view['cutId']];mode=d['layout'];panel=mode=='split';rect={'x':0,'y':0 if d.get('position','top')=='top' else spec['height']//2,'width':spec['width'],'height':spec['height']//2 if panel else spec['height']}
   samples=view['samples'];faces=[s['face']for s in samples]
-  if any(f is None for f in faces):raise ValueError('Missing subject evidence: '+key)
-  off=d['headOffsets'];heads=[[f[0]+off[0],f[1]+off[1],f[0]+off[2],f[1]+off[3]]for f in faces]
+  overrides=d.get('headOverrides',{})
+  if any(f is None and str(s['frame']) not in overrides for s,f in zip(samples,faces)):raise ValueError('Missing subject evidence: '+key)
+  off=d['headOffsets'];heads=[overrides.get(str(s['frame'])) or [f[0]+off[0],f[1]+off[1],f[0]+off[2],f[1]+off[3]] for s,f in zip(samples,faces)]
   h=d['cropHeight'];cw=h*rect['width']//rect['height'];
   if cw*rect['height']!=h*rect['width']:raise ValueError('Crop height must preserve exact integer aspect')
   x=round(d.get('cropX',float(np.median([(a+c)/2-cw/2 for a,b,c,z in heads]))));y=round(d.get('cropY',float(np.median([b-h*d['headroom'] for a,b,c,z in heads]))));sw,sh=view['sourceWidth'],view['sourceHeight'];x=max(0,min(sw-cw,x));y=max(0,min(sh-h,y))
