@@ -14,6 +14,32 @@ original decision and audition evidence when preparing the native receipt.
 Placement still requires the existing calibrated envelope, native readback,
 save/reopen and rendered-mix checks. A source-binding check is not mix approval.
 
+### Premiere calibration runner
+
+`scripts/premiere_music_calibration.py` prepares a four-second, stereo 24-bit PCM
+tone fixture and a local stereo copy of the installed `Wave48mono24.epr` preset.
+Create `10_WORK/ACQ_Music_Level_Calibration.prproj` through Premiere UI beneath
+the selected isolated integration's `lab/runtime/fixtures/<fixture>/` directory.
+Use a separate profile with `mode: lab` and the same isolated integration. The
+runner refuses production paths; its lease command requires the current owner
+and no unresolved writer. Keep the real clip's existing scope and lease receipt.
+
+Run `setup`, `lease --owner <current-owner>`, then `build`, supplying `--skills`,
+`--profile`, `--fixture` on each command and `--preset-source` on setup. Run each
+`sample` with a fresh `--attempt`, an intended `--db`, and a raw
+`--native-value` hypothesis. Samples apply constant native keys and render WAV
+through Premiere. The existing music validator checks native/export receipts,
+exact source/output formats and each channel's measured RMS ratio before writing
+`verified.json`. An assumed mapping is never accepted without that render.
+Retain failed attempts; do not replay their IDs. Return to the real project,
+restore its exact-project scope and selection, and verify its snapshot unchanged
+before applying an envelope through the music owner.
+
+On the isolated 26.3.0 host, raw values `0.00707945784384138` and
+`0.00017782794100389227` measured −28.000 and −60.000 dB respectively on both
+channels. These are bounded stereo Volume samples, not a universal formula or
+mono calibration. They do not certify the real mix, fade shape or human review.
+
 `EditPlan.audio` accepts `gainDb` for dialogue and an ordered `music` list. Each placement contains:
 
 | Field | Meaning |
