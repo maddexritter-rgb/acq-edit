@@ -36,6 +36,7 @@ def compare(previous, current, targets):
         if x['mode']=='panel-layout':
             strip=lambda s:{**s,'panels':[{k:v for k,v in p.items() if k!='crop'} for p in s['panels']]}
             require(strip(x)==strip(y), 'Panel order, source sync, rectangles and camera receipts are protected')
+            require(all(a['crop']['mode']==b['crop']['mode'] for a,b in zip(x['panels'],y['panels'])), 'Panel mode changes need their own qualified native operation')
     for key, crop in a.items():
         other=b[key]
         if key not in selected:require(crop==other,'Unselected crop changed');continue

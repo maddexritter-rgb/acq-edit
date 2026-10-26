@@ -140,7 +140,7 @@ When dense tracking positions cross native JSON roundtrips, the framing owner ma
 ## FilmCraft composition repair
 
 Use `native PROJECT_ID revise PACKET` with `kind: "composition-framing"` when the
-framing owner needs to change crop size/Y or switch fixed/tracked mode while retaining
+framing owner needs to change crop size/Y or switch full-screen fixed/tracked mode while retaining
 camera selection, panel rectangles, source clocks and every non-framing layer.
 Resolve and Premiere do not implement this new operation; keep their existing routes.
 
