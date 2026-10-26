@@ -46,3 +46,30 @@ def recolor_runs(payload, rgb):
     if len(result) != len(payload) or any(a != b and i not in changed for i, (a,b) in enumerate(zip(payload,result))):
         raise ValueError('Unexpected payload mutation')
     return bytes(result)
+
+
+def disable_document_shadow(payload):
+    """Opt-in observed document-field-11 transport; native A/B required.
+
+    Only the active document's explicit boolean is changed. Typography and
+    unrelated document fields remain byte-identical. Unknown layouts fail.
+    """
+    before=decode_runs(payload);data=bytearray(payload)
+    def field(table,index):
+        vt=table-struct.unpack_from('<i',data,table)[0]
+        size=struct.unpack_from('<H',data,vt)[0]
+        if size<6+index*2:raise ValueError('Document field absent')
+        offset=struct.unpack_from('<H',data,vt+4+index*2)[0]
+        if not offset:raise ValueError('Document field not explicit')
+        return table+offset
+    root=12+struct.unpack_from('<I',data,12)[0]
+    at=field(root,0);document=at+struct.unpack_from('<I',data,at)[0]
+    flag=field(document,11)
+    if data[flag] not in (0,1):raise ValueError('Unknown document effect flag')
+    # Observed adjacent native shadow opacity, size, distance, blur and angle.
+    values=[struct.unpack_from('<f',data,field(document,i))[0] for i in range(12,17)]
+    if not (0<=values[0]<=100 and all(0<=v<=1000 for v in values[1:4]) and -360<=values[4]<=360):raise ValueError('Unknown shadow record')
+    data[flag]=0
+    if decode_runs(data)!=before:raise ValueError('Shadow transport changed text properties')
+    if any(a!=b and i!=flag for i,(a,b) in enumerate(zip(payload,data))):raise ValueError('Unexpected shadow payload change')
+    return bytes(data)

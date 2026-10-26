@@ -6194,9 +6194,9 @@
     {
       "path": "caption-clips/scripts/native_graphics/native_text_fill.py",
       "source": "scripts/portable_snippets/native_text_fill.py",
-      "source_sha256": "b75d6f9bed8313cd15431dafb3a306f5e22fa8bde65f4c2cead74378c923d3e3",
-      "distribution_sha256": "b75d6f9bed8313cd15431dafb3a306f5e22fa8bde65f4c2cead74378c923d3e3",
-      "bytes": 2168,
+      "source_sha256": "135b171bdc8be2ba33a443f6e868f6a8ec15e614d4ab4537054eafb842beb334",
+      "distribution_sha256": "135b171bdc8be2ba33a443f6e868f6a8ec15e614d4ab4537054eafb842beb334",
+      "bytes": 3645,
       "transforms": []
     }
   ]

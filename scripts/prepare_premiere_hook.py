@@ -70,13 +70,14 @@ def run(args):
         for donor in profile['donors'].values():
             node=native.text_node(root,ids[donor['item_id']])
             raw=fill.recolor_runs(native.payload(node,pool),[0,0,0])
+            if args.shadow_free:raw=fill.disable_document_shadow(raw)
             node.set('Encoding','base64');node.set('BinaryHash',str(uuid.uuid4()));node.text=base64.b64encode(raw).decode()
             donor['color']='000000'
         styled=folder/'black-donor.prproj'
         with styled.open('xb') as f:f.write(gzip.compress(ET.tostring(root,encoding='utf-8',xml_declaration=True),mtime=0))
         profile['project_sha256']=sha(styled)
         # Native point/paragraph convention is retained; render calibration is required.
-        y_pct=(by+text['baseline_px'][1]-style['font_size_px']/2)/1920*100
+        y_pct=(by+text['baseline_px'][1]-style['font_size_px']/2+args.native_baseline_offset_px)/1920*100
         identity=f'headline-line-{i+1}'
         profile['position_adapter']={'schema':'native-text-position-offset/v1','segment_y_pct':{identity:y_pct}}
         styled_profile=folder/'black-profile.json';write(styled_profile,profile)
@@ -98,6 +99,7 @@ def run(args):
             'source':{'path':str(args.project),'sha256':source_hash},'recipe':{'path':str(args.recipe),'sha256':sha(args.recipe)},
             'prepared':{'path':str(current),'sha256':sha(current)},'sequence_uid':uid,'lines':receipts,
             'background':{'path':str(plate_path),'sha256':sha(plate_path),'placement':'full_canvas_below_headline_text','start_frame':0,'end_frame':card['end_frame']},
+            'native_style_transport':{'document_shadow_disabled':args.shadow_free,'baseline_offset_px':args.native_baseline_offset_px},
             'limitations':['Text position and lack of inherited entrance/shadow require native render inspection.','Background artwork remains parameterized source media; headline text remains native editable Graphics.']}
     write(args.output/'preparation.json',result)
     return result
@@ -107,4 +109,5 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for name in ('skills','project','asset','recipe','output'):p.add_argument('--'+name,type=Path,required=True)
     p.add_argument('--sequence-uid',required=True);p.add_argument('--sequence-name',required=True);p.add_argument('--donor',required=True)
+    p.add_argument('--shadow-free',action='store_true');p.add_argument('--native-baseline-offset-px',type=float,default=0)
     print(json.dumps(run(p.parse_args()),indent=2))
