@@ -54,3 +54,37 @@ disable integrity checks to reach a timing target.
 When a listener service is unavailable, record the actual failure once and proceed
 with available evidence. Mark listening as incomplete. API, waveform, alignment,
 native readback and visual inspection are distinct from the user's approval.
+
+## Measured warm-source baseline — 2026-10-26
+
+One new 93.76-second native FilmCraft Q&A (2248 frames, 1080×1920,
+24000/1001 fps, 48 kHz) reached verified review-room playback in **49:38**.
+This includes 8.95 seconds before timer initialization; it is a failed ten-minute
+test. Sources/transcript were already available. No cold intake speed is claimed.
+
+| Foreground phase | Wall time |
+| --- | ---: |
+| Intake and skill reading | 1:04 |
+| Source comparison and current guidance | 4:48 |
+| Assembly design and boundaries | 10:34 |
+| Framing and captions, including helper implementation | 10:10 |
+| Initial native construction and integration repair | 4:21 |
+| Late boundary repair and rebuild | 11:05 |
+| Native export and integrity | 5:08 |
+| Render inspection and publication | 2:21 |
+
+The encoder itself took 240.29 seconds (9.36 fps). Caption ink measurement took
+11.81 seconds for 143 cards; final native construction took 98.73 seconds.
+A source-camera sampling pass took 76.09 seconds. These operation times overlap
+foreground phases and must not be added to the table's wall time.
+
+The largest opportunity is reducing agent preparation and avoiding late boundary
+rework. Repeated verification of approximately 46.6 GB of source media and native
+encoding are additional measurable costs. Batched helpers were implemented during
+this run, so their existence does not yet prove an end-to-end speedup. The next
+run must use the stable procedure and keep the same complete timing standard.
+
+The actual MP4 received full-decode/frame-count checks and 186 visual samples
+covering every caption card and cut boundaries. Automated listening was unavailable
+because its provider returned HTTP 402. Human editorial and listening approval
+remain separate; successful publication is not approval.
