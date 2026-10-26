@@ -171,3 +171,63 @@ The native export passed full decode and frame-count checks. Inspection covered
 advancing browser playback of the exact published version. Loudness measured
 -16.09 LUFS and -1.36 dBTP; AAC exceeded the intended -1.5 dBTP ceiling by 0.14 dB.
 Listening and human editorial approval remain incomplete. The version is unreviewed.
+
+## Identical-plan performance qualification
+
+For a controlled rebuild, preserve the complete finished plan byte-for-byte,
+including source-word selection, boundaries, framing evidence, captions and audio
+treatment. Pin the prior published media/native hashes and pass its version to
+`filmcraft_pipeline.py --parent-version`. Construct a new native project from source;
+do not re-export the old native checkpoint and call that a construction benchmark.
+Publication preserves V1 and refuses a stale parent. This test excludes new-moment
+selection and cold intake, so it cannot qualify a complete ten-minute editing run.
+
+First-build caption animation now transports the owning skill's typed curves into
+the saved native project in one batch. Text, character styles and other effects
+still use native construction. The adapter reopens and verifies the complete native
+caption contract. Revisions retain their existing protected-state path. No visual
+quality, animation samples or export settings are reduced for this optimization.
+
+Render verification and publication each use one full FFmpeg decode to check both
+actual frame count and decoding errors, with a lightweight metadata probe. They
+retain their independent checks and source-byte verification. Native operation
+directories contain `performance.jsonl` for source hashing and full decode timings;
+the export writes `clip.mp4.performance.json` with the native encoder result.
+
+After rebuilding, run `scripts/compare_decoded_media.py` on the original and new
+MP4s. It compares every decoded video frame and floating-point audio block, including
+timestamps, and fails on differences. Keep the comparison and browser playback in
+the rebuild clock. Equality establishes preservation of the prior output, not a new
+listening pass or editorial approval. Record optimization time separately; keep any
+in-run repair inside the original rebuild clock.
+
+### Measured identical rebuild — 2026-10-26
+
+The unchanged 97.347-second design was independently reconstructed from source and
+reached checked V2 browser playback in **6:34**, including comparison and publication.
+All 2,334 decoded video frames and 4,564 floating-point audio blocks match V1. The
+entire MP4 has the same SHA-256, and the reopened native JSON has zero differences.
+The original plan, published media and native checkpoint were preserved.
+
+| Operation | Prior successful operation | Rebuild |
+| --- | ---: | ---: |
+| Native build | 121.03 s | 67.18 s |
+| Split shadow / native inspection | 4.34 s | 2.89 s |
+| Export plus integrity | 413.63 s | 246.02 s |
+| Publication | 47.86 s | 6.29 s |
+| Exact decoded comparison | Not performed | 13.82 s |
+
+Comparison overlapped post-render verification. Publication completed around 5:23;
+the remaining clock includes browser-tab recovery, version selection and advancing
+playback. No timed rebuild failed or restarted. The new version remains unreviewed.
+
+Source hashes took 48.69 s before build, 21.88 s before export and 27.15 s after
+export; the render full decode took 4.91 s. Native encoding took 187.57 s versus
+289.29 s previously despite identical settings/project/output. Cache and machine
+load were not controlled, so that encoder difference is not attributed to these
+code changes. Caption command batching directly removed about 49 s of measured
+command work. Optimization was outside the rebuild clock.
+
+This qualifies an identical prepared rebuild, not cold intake or new-moment editing.
+The 43:29 fresh-moment run included editorial decisions and repairs. Its difference
+from 6:34 is not a code-only speedup. The broader ten-minute target remains unproven.
