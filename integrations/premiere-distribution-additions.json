@@ -8,7 +8,7 @@
     },
     {
       "path": "src/lab/graphic-asset.ts",
-      "sha256": "788b1a8b0d27dee8ebd9130dd3fa93161c6b310bd8b3ea159361e3c40f5a0f21",
+      "sha256": "ff27721c25688964ecb5f722119bcf2af12f390ef2e0c48f487f586d5f5432c0",
       "reason": "Guarded static native graphic source placement"
     }
   ]

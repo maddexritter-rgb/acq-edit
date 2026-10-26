@@ -69,12 +69,13 @@ export function graphicAssetScript(r:GraphicAssetRequest){
     // Still images inherit a source frame rate. Never let its rounded source mark
     // overrun the empty interval; extend only this new native timeline item.
     if(String(item.start.ticks)!==r.start_ticks||Number(item.end.ticks)>Number(r.end_ticks))throw Error('GRAPHIC_INITIAL_RANGE_UNSAFE');
+    var nativeIn=String(item.inPoint.ticks);
     item.end=clock(r.end_ticks);
-    if(String(item.projectItem.nodeId)!==fresh[0].id||String(item.start.ticks)!==r.start_ticks||String(item.end.ticks)!==r.end_ticks||String(item.inPoint.ticks)!=='0'||String(item.outPoint.ticks)!==r.duration_ticks||item.getSpeed()!==1||!off(item.isSpeedReversed())||!off(item.disabled))throw Error('GRAPHIC_PLACEMENT_READBACK');
+    if(String(item.projectItem.nodeId)!==fresh[0].id||String(item.start.ticks)!==r.start_ticks||String(item.end.ticks)!==r.end_ticks||String(item.inPoint.ticks)!==nativeIn||Number(item.outPoint.ticks)-Number(item.inPoint.ticks)!==Number(r.duration_ticks)||item.getSpeed()!==1||!off(item.isSpeedReversed())||!off(item.disabled))throw Error('GRAPHIC_PLACEMENT_READBACK');
     var after=JSON.parse(JSON.stringify(__labSnapshot())),removed=0;
     for(var t=0;t<after.tracks.length;t++)if(after.tracks[t].kind===0&&after.tracks[t].index===r.track_index)for(var c=after.tracks[t].clips.length-1;c>=0;c--)if(after.tracks[t].clips[c].id===String(item.nodeId)){after.tracks[t].clips.splice(c,1);removed++;}
     if(removed!==1||!same(before,after)||!same(imported.rows,tree().rows))throw Error('PROTECTED_STATE_CHANGED_AFTER_GRAPHIC');
-    return __result({project_path:app.project.path,sequence_id:String(s.sequenceID),node_id:String(item.nodeId),source_id:fresh[0].id,source_mark_out_ticks:String(sourceOut),native_item_out_ticks:String(item.outPoint.ticks),media_path:r.media_path,media_sha256:r.media_sha256,track_index:r.track_index,track_id:r.track_id,start_ticks:r.start_ticks,end_ticks:r.end_ticks,verification:'exact_native_item_and_protected_timeline',persistence:'not_run',rendered:'not_run',rollback:'not_attempted'});
+    return __result({project_path:app.project.path,sequence_id:String(s.sequenceID),node_id:String(item.nodeId),source_id:fresh[0].id,source_mark_out_ticks:String(sourceOut),native_item_in_ticks:String(item.inPoint.ticks),native_item_out_ticks:String(item.outPoint.ticks),media_path:r.media_path,media_sha256:r.media_sha256,track_index:r.track_index,track_id:r.track_id,start_ticks:r.start_ticks,end_ticks:r.end_ticks,verification:'exact_native_item_and_protected_timeline',persistence:'not_run',rendered:'not_run',rollback:'not_attempted'});
   `);
 }
 export function getLabGraphicAssetTools(options:BridgeOptions){return {lab_place_graphic_asset:{
