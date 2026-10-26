@@ -16,9 +16,9 @@ def main():
  if project['backend']!='filmcraft' or spec['projectId']!=project['id'] or spec['backend']!='filmcraft':raise ValueError('Exact FilmCraft project required')
  if not out.is_relative_to(root/'10_WORK'):raise ValueError('Execution output must be project-owned work')
  out.mkdir(parents=True,exist_ok=False);config=read(a.home/'config.json');env={**os.environ,'ACQ_EDIT_HOME':str(a.home.resolve())};clock=ROOT/'.local/skills/edit/scripts/run_clock.py'
- def run(stage,args,target):
+ def run(stage,args,target,parse=True):
   with target.open('x') as f:subprocess.run([sys.executable,str(clock),'--log',str(a.clock),'run','--stage',stage,'--',*map(str,args)],stdout=f,env=env,check=True)
-  return read(target)
+  return read(target) if parse else target.read_text()
  def native(action,packet,stage):
   file=out/(stage+'-packet.json');write(file,packet)
   return run(stage,['node',ROOT/'dist/cli.js','native',project['id'],action,file],out/(stage+'-result.json'))
@@ -29,7 +29,7 @@ def main():
  target=built['nativeProject'];shadow=None
  if ids:
   write(out/'shadow-targets.json',ids)
-  run('native_split_shadow',[sys.executable,ROOT/'.local/skills/horizontal-to-vertical/scripts/filmcraft_split_shadow.py','--project',target,'--binary',config['filmcraft'],'--out',out/'shadow','--profile',a.shadow_profile,'--targets',out/'shadow-targets.json'],out/'shadow-result.json')
+  run('native_split_shadow',[sys.executable,ROOT/'.local/skills/horizontal-to-vertical/scripts/filmcraft_split_shadow.py','--project',target,'--binary',config['filmcraft'],'--out',out/'shadow','--profile',a.shadow_profile,'--targets',out/'shadow-targets.json'],out/'shadow-result.txt',parse=False)
   shadow=out/'shadow/receipt.json';target=str(out/'shadow/edit.fcproj')
  inspected=native('inspect',{'nativeProject':target,'session':str(out/'inspection-session')},'native_inspection')
  packet={'plan':str(a.plan.resolve()),'nativeProject':target,'expectedFingerprint':inspected['fingerprint'],'media':str(out/'export/clip.mp4'),'session':str(out/'export/session'),'inspection':str(out/'export/inspection.json'),'receipt':str(out/'export/receipt.json'),'parentId':None}

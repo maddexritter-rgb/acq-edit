@@ -113,3 +113,9 @@ same plan check instead of hashing the same cameras again in a subprocess. There
 is no persistent timestamp-only cache. Every native operation still hashes its
 sources, and render completion still performs a fresh full-byte check. Resolve's
 separate interpreter path remains unchanged.
+
+The optimized preparation route was checked against the prior real clip's 368
+composition measurements without changing that delivered version. Its proposal
+still requires explicit visual inspection. Tests also compare old/new assembly
+bindings, refuse incomplete byte-verification sets, and reject caption omissions.
+These checks qualify the helpers, not the next clip's editorial choices.
