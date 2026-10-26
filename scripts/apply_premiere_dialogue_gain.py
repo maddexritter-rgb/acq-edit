@@ -29,7 +29,9 @@ def run(a):
     client=PremiereBridge(Profile.load(a.profile))
     try:
         before=level.inspect(client)
-        if before['snapshot']!=expected or before['project_path']!=str(a.project.resolve()) or before['sequence_id']!=a.sequence:raise ValueError('Native baseline changed')
+        full=client.inspect('lab_snapshot',{})
+        projected={k:expected[k] for k in before['snapshot']}
+        if full!=expected or before['snapshot']!=projected or before['revision']!=expected['revision'] or before['project_path']!=str(a.project.resolve()) or before['sequence_id']!=a.sequence:raise ValueError('Native baseline changed')
         track=next(t for t in before['audio_tracks'] if t['index']==0)
         if track['locked'] or track['muted'] or track['transition_count']:raise ValueError('Dialogue track is not directly writable')
         items=track['clips'];cuts=plan['cuts']
@@ -43,7 +45,8 @@ def run(a):
             wanted=(cut['audioRecordSample']*sample_ticks,cut['audioSamples']*sample_ticks,cut['audioInSample']*sample_ticks)
             if clocks!=wanted or item['media_path']!=source['path'] or item['speed']!=1 or item['speed_reversed']:raise ValueError('Dialogue source clocks differ from frozen design')
             raw=item['level']
-            if not raw or raw['time_varying'] or raw['keys'] or abs(raw['value']-0.1778279410038923)>1e-6:raise ValueError('Existing dialogue automation/gain requires a revision plan')
+            # Imported native clips can enable animation without creating keys.
+            if not raw or raw['keyframes_supported'] is not True or raw['keys'] or abs(raw['value']-0.1778279410038923)>1e-6:raise ValueError('Existing dialogue automation/gain requires a revision plan')
             descriptor={f:raw[f] for f in level.PARAMETER_FIELDS}
             values,evidence=level.calibrated_values(a.calibration,descriptor,{gain})
             request={f:item[f] for f in level.ITEM_FIELDS}
