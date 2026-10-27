@@ -1,5 +1,5 @@
 {
-  "version": "0.2.0-preview.4",
+  "version": "0.2.0-preview.5",
   "repository": "maddexritter-rgb/acq-edit",
   "assets": {
     "version": "team-assets-2026.10.27.2",
@@ -7,5 +7,18 @@
     "archive": "team-assets-2026.10.27.2.tar.gz",
     "sha256": "23caf25b5228af6978d18c8bbe92b798e91863cd0739b8485a827a89f85ac0a7",
     "manifestSha256": "ac02365003120b600381a6b4b0cc7dc8bf6a9b7880917e92a4aa59547c9d8f3e"
+  },
+  "filmcraftRuntime": {
+    "sourceCommit": "71438c627b5cbcfb550526c3971f4d0037733c5c",
+    "binarySha256": "e9d1255f873cd0feb72e8c184fecccc9f14f5a6ef8dada57da7dfcf1d93832ab",
+    "system": "Darwin",
+    "architecture": "arm64",
+    "minimumMacOS": "15.7",
+    "folder": "filmcraft-macos-arm64-71438c6",
+    "archive": "filmcraft-macos-arm64-71438c6.tar.gz",
+    "sha256": "b4ec5a98b020adf82888655d86e8a766e8ed674564601b6abc653d945816d274",
+    "manifestSha256": "dbc677beffb8395acbd2306ec4acfb8fcc29404a45b559d7f87188ca42d62547",
+    "dependencyCount": 207,
+    "tag": "filmcraft-runtime-71438c6-macos-arm64-1"
   }
 }

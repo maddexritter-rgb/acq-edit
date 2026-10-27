@@ -31,7 +31,8 @@ class AcqEdit < Formula
       Open the shown folder in Codex or Claude Code and ask for guided setup.
       Direct setup: acq-edit onboard filmcraft codex
       Alternatives: premiere / claude. Sign into your selected agent first.
-      FilmCraft also needs Rust and Xcode Command Line Tools.
+      FilmCraft uses a prebuilt runtime on Apple silicon with macOS 15.7+.
+      Rust is needed only for an explicitly selected source build.
       Public source and team assets download without a GitHub account.
       Settings, native runtimes and projects live outside Homebrew's Cellar.
     EOS

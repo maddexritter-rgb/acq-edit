@@ -2,7 +2,7 @@
 
 ## FilmCraft
 
-`install_engine.py filmcraft` checks out commit `71438c627b5cbcfb550526c3971f4d0037733c5c` and builds `filmcraft-cli` with Cargo's lockfile. The upstream workspace requires Rust 1.95 and its documented native build prerequisites. Only the CLI is used; no editing UI is required. The binary hash is included by doctor. The full upstream repository is not copied into Git here.
+`install_engine.py filmcraft` installs the hash-pinned prebuilt headless runtime on Apple-silicon Macs with macOS 15.7 or later. The runtime matches engine source commit `71438c627b5cbcfb550526c3971f4d0037733c5c` and includes build provenance and dependency notices. It requires no Rust compiler or editing UI. Host compatibility, archive/manifest/file hashes and executable startup are checked before use. Unsupported hosts are reported; they never trigger another editor. `--source-build` is an explicit developer fallback requiring Rust 1.95 and native build tools. Existing source checkouts are preserved and require that explicit mode. See [installation](INSTALLATION.md).
 
 `python/filmcraft.py` performs native source import, frame-aligned linked AV cuts, text graphics, imported motion assets, inspection/reopen and export. Unequal speech/picture boundaries use the shared compiler and the canonical saved-project sample-geometry method, with native reopen, linked-pair and source-clock verification. See `NATIVE_ASSEMBLY.md`. Fixed crops and reviewed source-bound X curves use native Motion geometry through the shared framing contract; subject analysis/smoothing remain owned by the canonical framing helper. See `NATIVE_FRAMING.md`. Automatic orchestration of all finishing variants remains open; missing capabilities fail explicitly.
 

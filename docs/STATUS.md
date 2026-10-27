@@ -6,6 +6,8 @@ Opening text headlines were removed from the current toolkit on 2026-10-26. Any 
 
 Implemented:
 
+- 2026-10-27: preview.5 removes the Rust/Xcode build requirement from the supported Apple-silicon FilmCraft onboarding path. A 14 MB hash-pinned runtime includes build provenance and dependency notices; macOS 15.7+ and arm64 are detected, not guessed. An anonymous isolated install exported/decoded a native 25-frame clip with 48 kHz audio and reopened the same timeline (transient selection excluded). Selected-engine preflight now runs before asset downloads. Session-policy blocks must be explained once without retries, policy bypass or editor switching. Clean-Mac acceptance remains pending.
+
 - 2026-10-27: at the owner’s explicit request, source, Homebrew tap and existing releases are public. Preview.4 uses anonymous, hash-verified asset downloads and a standard public Homebrew URL; onboarding no longer requires GitHub login. Personal model-provider credentials remain local. Earlier notes describing private release packaging are historical.
 
 - 2026-10-27: preview.3 adds a shared conversational onboarding contract, root Claude Code discovery and a dependency-free `onboard guide` handoff for installed packages. Agents provide one next step and provider link at a time, resume non-secret progress, direct keys to private prompts and help troubleshoot through the first requested clip. Automated checks do not certify the conversational experience or new-Mac acceptance.

@@ -105,6 +105,29 @@ When connection pages change, check their official documentation rather than gue
 names. Stay with the user through troubleshooting. If an action needs the user, explain why and
 give a concrete action; do not leave them with “contact support” and no diagnostic context.
 
+### When the session cannot run an installation command
+
+Check the selected engine's prerequisites before downloading assets or building components.
+The normal supported FilmCraft path downloads a verified runtime; do not tell users to install
+Rust unless they explicitly chose `--source-build`. Never change their selected engine because
+an installation step was blocked. A Premiere user does not need Rust.
+
+Distinguish the actual command error from a session policy refusal. Quote or summarize the
+specific failed action and its reported reason; do not infer “Workbrew is broken” or “admin access
+is required” merely because a tool call failed. Use the current environment's supported approval
+flow only when available. If the session cannot request permission, explain that once and do not
+repeat the blocked command, switch package managers, use a second Homebrew or suggest bypassing
+company policy.
+
+For an allowed installation that only the user can run interactively, provide one exact command
+using the detected managed `brew` path and the missing package. For example, if the user explicitly
+chose a source build and the detected wrapper is `/opt/workbrew/bin/brew`, ask them to run
+`/opt/workbrew/bin/brew install rust` in Terminal, then reply “done” or share the non-secret error.
+If Terminal also reports a managed-policy denial, explain the exact admin action needed; do not
+keep trying alternate installation routes. While waiting, preserve progress and keep the selected
+engine pending. Continue only genuinely independent checks. After their reply, rerun the read-only
+prerequisite check and resume the same engine. Never treat elapsed time as permission or completion.
+
 ### Finish with something usable
 
 Summarize configured, read-verified, skipped and pending items in a short checklist. Once the
@@ -163,9 +186,12 @@ acq-edit onboard filmcraft codex
 ```
 
 Only FilmCraft and Premiere are included in this onboarding pilot. Resolve remains paused.
-Install and sign into the chosen agent CLI before continuing. FilmCraft builds its pinned
-headless runtime locally; if requested by preflight, run `brew install rust` and
-`xcode-select --install`, then repeat onboarding. This first build can take longer than an edit.
+Install and sign into the chosen agent CLI before continuing. FilmCraft installs its pinned
+headless runtime from a pinned prebuilt package on Apple-silicon Macs running macOS 15.7 or
+later. Rust and Xcode build tools are not required for that runtime. Other architectures or
+older macOS must be reported explicitly; never silently fall back to another editor or build.
+A developer can explicitly choose `acq-edit onboard filmcraft codex --source-build`, which
+requires Rust 1.95+ and Xcode Command Line Tools and can take longer than an edit.
 Premiere must be installed and licensed separately; this release targets the tested 26.3 host.
 
 Onboarding downloads the hash-pinned team bundle: 112 approved music files and indexes,

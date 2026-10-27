@@ -168,7 +168,7 @@ class EnginePreflightTests(unittest.TestCase):
             changed.write_text('keep this')
             with patch.object(install_engine, 'ROOT', root), patch.object(install_engine, 'preflight', return_value={'errors': []}), patch.object(install_engine, 'output', return_value=' M Cargo.toml'), patch.object(install_engine, 'materialize') as build, patch.object(install_engine, 'run') as run:
                 with self.assertRaisesRegex(RuntimeError, 'local changes'):
-                    install_engine.install('filmcraft', root / 'assets')
+                    install_engine.install('filmcraft', root / 'assets',source_build=True)
                 build.assert_not_called()
                 run.assert_not_called()
             self.assertEqual(changed.read_text(), 'keep this')
@@ -193,7 +193,7 @@ class EnginePreflightTests(unittest.TestCase):
 
     def test_old_node_and_rust_are_specific_failures(self):
         with patch.object(install_engine.sys, 'platform', 'linux'), patch.object(install_engine.shutil, 'which', side_effect=lambda name: name), patch.object(install_engine, 'output', side_effect=lambda args: 'v22.0.0' if args[0] == 'node' else 'rustc 1.94.0'):
-            result = install_engine.preflight('filmcraft')
+            result = install_engine.preflight('filmcraft',source_build=True)
         self.assertFalse(result['prerequisitesPresent'])
         self.assertEqual(len(result['errors']), 2)
 
@@ -201,7 +201,7 @@ class EnginePreflightTests(unittest.TestCase):
         def output(args):
             return {'node':'v24.0.0','rustc':'rustc 1.95.0'}.get(args[0], '/tools/clang' if args[-1]=='clang' else '/tools/MacOSX.sdk')
         with patch.object(install_engine.sys, 'platform', 'darwin'), patch.object(install_engine.shutil, 'which', side_effect=lambda name: None if name=='pkg-config' else name), patch.object(install_engine, 'output', output), patch.object(Path,'is_file',return_value=True), patch.object(Path,'is_dir',return_value=True):
-            result=install_engine.preflight('filmcraft')
+            result=install_engine.preflight('filmcraft',source_build=True)
         self.assertTrue(result['prerequisitesPresent']);self.assertNotIn('pkg-config',result['executables'])
         self.assertEqual(result['nativeBuildTools'],{'clang':'/tools/clang','sdk':'/tools/MacOSX.sdk'})
 
@@ -209,7 +209,7 @@ class EnginePreflightTests(unittest.TestCase):
         def output(args):
             return 'v24.0.0' if args[0]=='node' else 'rustc 1.95.0' if args[0]=='rustc' else '/absent'
         with patch.object(install_engine.sys, 'platform', 'darwin'), patch.object(install_engine.shutil, 'which', side_effect=lambda name:name), patch.object(install_engine, 'output', output), patch.object(Path,'is_file',return_value=False):
-            result=install_engine.preflight('filmcraft')
+            result=install_engine.preflight('filmcraft',source_build=True)
         self.assertFalse(result['prerequisitesPresent']);self.assertIn('macOS SDK',result['errors'][0])
 
 

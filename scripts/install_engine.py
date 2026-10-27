@@ -13,6 +13,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from materialize import materialize
+import filmcraft_runtime
 from prepare_premiere_panel import prepare as prepare_premiere_panel
 from prepare_premiere_runtime import copy_resources, check_transport, prepare_helpers
 
@@ -37,15 +38,21 @@ def output(args, cwd=None):
     return subprocess.check_output(args, cwd=cwd, text=True, stderr=subprocess.STDOUT).strip()
 
 
-def preflight(backend):
+def preflight(backend, source_build=False):
     required = ['node', 'ffmpeg', 'ffprobe']
-    if backend == 'filmcraft':
+    if backend == 'filmcraft' and source_build:
         required += ['git', 'cargo', 'rustc']
         required += ['xcrun'] if sys.platform == 'darwin' else ['pkg-config']
     elif backend == 'premiere':
         required += ['npm']
     tools = {name: shutil.which(name) for name in required}
     errors = ['Missing executable: ' + name for name, executable in tools.items() if not executable]
+    if backend == 'filmcraft' and not source_build:
+        try:
+            _,spec=filmcraft_runtime.specification(ROOT)
+            problem=filmcraft_runtime.compatibility(spec)
+            if problem:errors.append(problem)
+        except (ValueError,OSError,KeyError) as e:errors.append(str(e))
     if tools['node']:
         try:
             major = int(output([tools['node'], '--version']).lstrip('v').split('.')[0])
@@ -72,7 +79,7 @@ def preflight(backend):
         except subprocess.SubprocessError:
             errors.append('Install or select Xcode Command Line Tools; xcrun could not locate the compiler and macOS SDK')
     return {'backend': backend, 'prerequisitesPresent': not errors, 'executables': tools, 'nativeBuildTools': native_build,
-            'errors': errors, 'nativeWorkflowQualified': False}
+            'errors': errors, 'nativeWorkflowQualified': False, 'installMode': 'source' if source_build else 'prebuilt' if backend=='filmcraft' else 'native-integration'}
 
 
 def record_filmcraft_build(dest, check):
@@ -108,8 +115,8 @@ def record_filmcraft_build(dest, check):
     return target
 
 
-def install(backend, assets, premiere_port=17878):
-    check = preflight(backend)
+def install(backend, assets, premiere_port=17878, source_build=False):
+    check = preflight(backend, source_build)
     if check['errors']:
         raise RuntimeError('\n'.join(check['errors']))
     local = ROOT / '.local'
@@ -127,7 +134,7 @@ def install(backend, assets, premiere_port=17878):
             raise RuntimeError('Existing toolkit Lab installation preserved. Use a fresh checkout for upgrade.')
         if backend == 'premiere' and ((local / 'premiere-profile.json').exists() or (local / 'premiere-profile.json').is_symlink()):
             raise RuntimeError('Existing toolkit Premiere profile preserved. Use a fresh checkout for upgrade.')
-        if backend == 'filmcraft' and dest.exists():
+        if backend == 'filmcraft' and source_build and dest.exists():
             if dest.is_symlink() or not (dest / '.git').is_dir():
                 raise RuntimeError('Existing FilmCraft path is not an isolated checkout; preserved.')
             if output(['git', 'status', '--porcelain', '--untracked-files=all'], dest):
@@ -136,9 +143,15 @@ def install(backend, assets, premiere_port=17878):
                 raise RuntimeError('Existing FilmCraft checkout is not at the required pin; preserved. Use a fresh checkout.')
             if output(['git', 'remote', 'get-url', 'origin'], dest) != 'https://github.com/storytold/filmcraft.git':
                 raise RuntimeError('Unexpected FilmCraft origin; preserved.')
+        if backend == 'filmcraft' and not source_build and dest.exists():
+            if (dest/'.git').exists():raise RuntimeError('Existing source checkout preserved; explicitly use --source-build to continue it')
+            _,spec=filmcraft_runtime.specification(ROOT)
+            filmcraft_runtime.verify(dest,spec)
         assets.mkdir(parents=True, exist_ok=True)
         materialize(ROOT, assets)
-        if backend == 'filmcraft':
+        if backend == 'filmcraft' and not source_build:
+            print('FilmCraft CLI: ' + str(filmcraft_runtime.install(ROOT)))
+        elif backend == 'filmcraft':
             if not dest.exists():
                 run(['git', 'clone', '--filter=blob:none', '--no-checkout', 'https://github.com/storytold/filmcraft.git', str(dest)])
                 run(['git', 'fetch', 'origin', PIN], dest)
@@ -181,20 +194,21 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('backend', choices=['filmcraft', 'premiere', 'resolve'])
     parser.add_argument('--assets', type=Path, default=Path.home() / 'Movies/ACQ Edit Assets')
+    parser.add_argument('--source-build', action='store_true', help='Explicit developer fallback requiring Rust and build tools; never selected automatically')
     parser.add_argument('--check', action='store_true', help='Read-only selected-engine prerequisite check')
     parser.add_argument('--premiere-port', type=int, default=17878, help='Dedicated ACQ Edit UXP port; never the production Lab port')
     args = parser.parse_args()
     if args.check:
-        result = preflight(args.backend)
+        result = preflight(args.backend,args.source_build)
         print(json.dumps(result, indent=2))
         return 0 if result['prerequisitesPresent'] else 1
-    install(args.backend, args.assets, args.premiere_port)
+    install(args.backend, args.assets, args.premiere_port,args.source_build)
     return 0
 
 
 if __name__ == '__main__':
     try:
         sys.exit(main())
-    except (RuntimeError, OSError, subprocess.SubprocessError) as error:
+    except (RuntimeError, ValueError, OSError, subprocess.SubprocessError) as error:
         print('Installation stopped: ' + str(error), file=sys.stderr)
         sys.exit(1)
