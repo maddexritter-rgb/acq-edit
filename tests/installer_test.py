@@ -177,6 +177,7 @@ class EnginePreflightTests(unittest.TestCase):
             self.assertEqual(changed.read_text(), 'keep this')
             self.assertFalse((root / 'assets').exists())
 
+    @patch.object(install_engine, 'media_tool_ready', lambda *_: True)
     def test_resolve_requires_no_other_editor_build_tools(self):
         requested = []
         def which(name):
@@ -194,12 +195,14 @@ class EnginePreflightTests(unittest.TestCase):
                 install_engine.install('premiere', Path(tmp) / 'assets')
             self.assertEqual(list(Path(tmp).iterdir()), [])
 
+    @patch.object(install_engine, 'media_tool_ready', lambda *_: True)
     def test_old_node_and_rust_are_specific_failures(self):
         with patch.object(install_engine.sys, 'platform', 'linux'), patch.object(install_engine.shutil, 'which', side_effect=lambda name: name), patch.object(install_engine, 'output', side_effect=lambda args: 'v22.0.0' if args[0] == 'node' else 'rustc 1.94.0'):
             result = install_engine.preflight('filmcraft',source_build=True)
         self.assertFalse(result['prerequisitesPresent'])
         self.assertEqual(len(result['errors']), 2)
 
+    @patch.object(install_engine, 'media_tool_ready', lambda *_: True)
     def test_macos_build_requires_apple_sdk_not_linux_pkg_config(self):
         def output(args):
             return {'node':'v24.0.0','rustc':'rustc 1.95.0'}.get(args[0], '/tools/clang' if args[-1]=='clang' else '/tools/MacOSX.sdk')
@@ -208,6 +211,7 @@ class EnginePreflightTests(unittest.TestCase):
         self.assertTrue(result['prerequisitesPresent']);self.assertNotIn('pkg-config',result['executables'])
         self.assertEqual(result['nativeBuildTools'],{'clang':'/tools/clang','sdk':'/tools/MacOSX.sdk'})
 
+    @patch.object(install_engine, 'media_tool_ready', lambda *_: True)
     def test_missing_macos_sdk_stops_before_installation(self):
         def output(args):
             return 'v24.0.0' if args[0]=='node' else 'rustc 1.95.0' if args[0]=='rustc' else '/absent'

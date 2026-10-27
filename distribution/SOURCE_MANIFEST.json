@@ -45,9 +45,13 @@
       "path": "_shared/asr.py",
       "source": "canonical-skills/_shared/asr.py",
       "source_sha256": "b04607d58497a47f402fa80e1d4faafefc44b9f8023bae5a650bbd01dc908f27",
-      "distribution_sha256": "b04607d58497a47f402fa80e1d4faafefc44b9f8023bae5a650bbd01dc908f27",
-      "bytes": 12300,
-      "transforms": []
+      "distribution_sha256": "9fb11550ad3dd6dc566fe5176ca91bb13b161dd0ae9d22f6baabf4317d35915b",
+      "bytes": 12616,
+      "transforms": [
+        {
+          "patch": "team-onboarding-provider-routing"
+        }
+      ]
     },
     {
       "path": "_shared/bench.py",
@@ -3695,9 +3699,13 @@
       "path": "caption-clips/scripts/transcribe.py",
       "source": "canonical-skills/caption-clips/scripts/transcribe.py",
       "source_sha256": "730e8c006aec03e1a6522648db4852e9c9e59c88eba069d4e977bedbfcece8a5",
-      "distribution_sha256": "730e8c006aec03e1a6522648db4852e9c9e59c88eba069d4e977bedbfcece8a5",
-      "bytes": 4496,
-      "transforms": []
+      "distribution_sha256": "84c3d5ac95be0675144e6804e29edf6d9aa9a5ecccc7a91c9b0bfc66a9b64f00",
+      "bytes": 4915,
+      "transforms": [
+        {
+          "patch": "team-onboarding-provider-routing"
+        }
+      ]
     },
     {
       "path": "caption-clips/scripts/transcribe_lv3.py",

@@ -105,10 +105,28 @@ def check_configuration(config):
             'qualification': 'Local configuration only; token validity, restricted scope and live guidance retrieval are not verified.'}
 
 
+class InvalidBrainRequest(ValueError):
+    pass
+
 def fetch(project, config, request):
     allowed = {'format', 'problem', 'output', 'projectPrefix', 'heldOut', 'readingOverlays', 'brand', 'productionType', 'stage'}
-    require(set(request) <= allowed, 'Unknown brain request field; this command only retrieves guidance')
-    require(isinstance(request.get('format'), str) and isinstance(request.get('problem'), str), 'Specify the content-unit format and editorial problem')
+    if not isinstance(request, dict) or set(request) - allowed:
+        raise InvalidBrainRequest('Unknown brain request field; this command only retrieves guidance')
+    if not isinstance(request.get('format'), str) or not isinstance(request.get('problem'), str) or not isinstance(request.get('output'), str):
+        raise InvalidBrainRequest('Specify format, problem and an output directory')
+    reader = owner()
+    if not 3 <= len(request['problem'].strip()) <= 240:
+        raise InvalidBrainRequest('Editorial problem must be 3–240 characters; shorten it and retry. No request was sent.')
+    if request['format'] not in reader.FORMATS:
+        raise InvalidBrainRequest('Unsupported content format; use a packaged editorial format. No request was sent.')
+    overlays = request.get('readingOverlays', [])
+    if not isinstance(overlays, list) or not all(isinstance(x,str) for x in overlays) or len(overlays)>2 or len(set(overlays))!=len(overlays) or any(x not in reader.READING_OVERLAYS for x in overlays) or ('l1' in overlays and request['format']!='q_and_a'):
+        raise InvalidBrainRequest('Unsupported required-reading overlay')
+    held = request.get('heldOut', [])
+    if not isinstance(held,list) or not all(isinstance(x,str) for x in held):
+        raise InvalidBrainRequest('heldOut must be a list of source-prefix strings')
+    try: reader.validate_scope(request.get('brand'),request.get('productionType'),request.get('stage'))
+    except ValueError as error: raise InvalidBrainRequest(str(error)) from None
     target = inside(Path(project['root']) / '10_WORK', request['output'])
     require(target != (Path(project['root']) / '10_WORK').resolve(), 'Use a new guidance directory')
     require(not target.exists(), 'Guidance destination exists; preserve it and use a new request directory')
@@ -148,6 +166,9 @@ if __name__ == '__main__':
     try:
         project = read(args.project); request = read(inside(project['root'], args.request))
         print(json.dumps(fetch(project, read(args.config), request), indent=2))
+    except InvalidBrainRequest as error:
+        print(json.dumps({'status': 'invalid-request', 'error': str(error)}), file=sys.stderr)
+        sys.exit(2)
     except Exception as error:
         print(json.dumps({'status': 'brain-unavailable', 'error': str(error)}), file=sys.stderr)
         sys.exit(1)

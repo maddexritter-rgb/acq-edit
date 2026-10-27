@@ -148,6 +148,47 @@ def verify_connections():
     print(json.dumps(results,indent=2))
     return all(x['status']=='read-verified' for x in results)
 
+def ensure_credentials(reenter=False):
+    """Reuse private shared keys; presence is not provider authentication."""
+    from credentials import KEYS
+    root = Path(os.environ.get('ACQ_EDIT_CREDENTIALS_HOME', str(HOME)))
+    file = root/'credentials.json'
+    saved = {}
+    if file.exists() or file.is_symlink():
+        if file.is_symlink() or file.stat().st_uid != os.getuid() or file.stat().st_mode & 0o077:
+            raise ValueError('Credential file needs private ownership/mode 0600; existing file preserved')
+        try:
+            saved = json.loads(file.read_text())
+            if not isinstance(saved, dict): raise ValueError()
+        except (ValueError, OSError):
+            raise ValueError('Existing credentials are unreadable; use private key setup to repair') from None
+    complete = all(isinstance(os.environ.get(key) or saved.get(key), str) and
+                   (os.environ.get(key) or saved.get(key)).strip() for key in KEYS)
+    if complete and not reenter:
+        print('Reusing saved editing keys. Run onboard verify for a provider read check.')
+        return 'reused'
+    execute(['node', 'dist/cli.js', 'credentials'])
+    return 'entered'
+
+
+def configure_delivery(state, state_file, stage, defer=False):
+    # A cancelled form is not consent to defer. Only this explicit choice skips it.
+    if defer:
+        state['steps']['delivery'] = 'deferred-by-user'
+        state['status'] = 'editing-configured-delivery-deferred'
+        state['currentStep'] = 'delivery'
+        save(state_file, state)
+        return {'ready': False, 'deferred': True, 'status': state['status']}
+    state['status'] = 'delivery-pending'; state['steps']['delivery'] = 'pending'
+    save(state_file, state)
+    stage('delivery-connections', delivery_connections)
+    check = delivery_check()
+    state['steps']['delivery'] = 'read-verified' if check['ready'] else 'pending'
+    state['status'] = 'delivery-read-verified' if check['ready'] else 'delivery-pending'
+    state['currentStep'] = 'delivery'; save(state_file, state)
+    return check
+
+
 def delivery_connections():
     """Resume the actual credential/login steps; the agent handles account-page guidance."""
     owner = ROOT/'distribution/skills/monday/scripts'
@@ -195,6 +236,8 @@ def main():
     parser.add_argument('agent',nargs='?',choices=['codex','claude'],default='codex')
     parser.add_argument('--non-interactive', action='store_true', help='Use saved/default settings and explicit --storage-root; key entry remains in the browser')
     parser.add_argument('--storage-root', type=Path)
+    parser.add_argument('--defer-delivery', action='store_true', help='Explicitly configure local editing with delivery deferred; never inferred from cancellation')
+    parser.add_argument('--reenter-keys', action='store_true', help='Open private entry even when both shared keys exist')
     parser.add_argument('--source-build',action='store_true',help='Explicit FilmCraft source build; requires Rust and build tools')
     a=parser.parse_args()
     if a.action=='guide':
@@ -237,12 +280,11 @@ def main():
             finally:
                 state.setdefault('timings',{}).setdefault(name,[]).append(round(time.monotonic()-started,3));save(state_file,state)
             return result
-        if state['steps'].get('engine')!='completed':
-            def prerequisites():
-                from install_engine import preflight
-                result=preflight(a.action,a.source_build)
-                if result['errors']:raise ValueError('Selected engine prerequisites: '+ '; '.join(result['errors']))
-            stage('prerequisites',prerequisites)
+        def prerequisites():
+            from install_engine import preflight
+            result=preflight(a.action,a.source_build)
+            if result['errors']:raise ValueError('Selected engine prerequisites: '+ '; '.join(result['errors']))
+        stage('prerequisites',prerequisites)
         release=json.loads((ROOT/'release.json').read_text())
         bundle=stage('assets',lambda:assets(release))
         stage('fonts',lambda:install_fonts(bundle))
@@ -258,21 +300,18 @@ def main():
         else: stage('skills-check',lambda:execute(['python3.11','scripts/materialize.py','--verify']))
         env={**os.environ,'ACQ_EDIT_TEAM_BRAIN_DIR':str(brain)}
         stage('configuration',lambda:execute(['node','dist/cli.js','setup',a.action,a.agent]+(['--non-interactive'] if a.non_interactive else [])+(['--storage-root',str(a.storage_root)] if a.storage_root else []),env=env))
-        stage('credentials',lambda:execute(['node','dist/cli.js','credentials']))
-        state['status']='delivery-pending';state['steps']['delivery']='pending';save(state_file,state)
-        stage('delivery-connections',delivery_connections)
-        delivery = delivery_check()
-        state['steps']['delivery'] = 'read-verified' if delivery['ready'] else 'pending'
-        state['status'] = 'delivery-read-verified' if delivery['ready'] else 'delivery-pending'
-        state['currentStep'] = 'delivery';save(state_file,state)
+        stage('credentials',lambda:ensure_credentials(a.reenter_keys))
+        delivery = configure_delivery(state,state_file,stage,a.defer_delivery)
         print(json.dumps(delivery,indent=2))
         if a.action=='premiere':
             print('Next: acq-edit --engine premiere onboard premiere-panel; open the ACQ Edit Agent panel in Premiere.')
-        if not delivery['ready']:
+        if delivery.get('deferred'):
+            print('Local editing configured; delivery deferred by your choice. Full delivery setup remains pending.')
+        elif not delivery['ready']:
             print('Full onboarding is DELIVERY PENDING. Your agent must finish the failed account/destination step using docs/ONBOARDING.md, then run acq-edit onboard delivery. Setup does not upload clips.')
         print('Also run acq-edit onboard verify and acq-edit doctor before an editing test.')
         execute(['node','dist/cli.js','doctor'])
-        if not delivery['ready']: sys.exit(2)
+        if not delivery['ready'] and not delivery.get('deferred'): sys.exit(2)
     finally: lock.unlink()
 
 if __name__=='__main__':

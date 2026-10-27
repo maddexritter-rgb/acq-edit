@@ -1,3 +1,4 @@
+import {agentReadiness} from './agent-readiness.js';
 import path from 'node:path';
 import {access,stat,constants} from 'node:fs/promises';
 import {type Config,ROOT,HOME,secretEnv,agentExecutable} from './config.js';
@@ -39,6 +40,10 @@ export async function doctor(c:Config,tools:DoctorTools={}){
  for(const [i,item] of entries.entries()){
   checks.dependencies[item.id]=availability[i];checks[item.binary]=availability[i];
   if(!availability[i]?.available)issue(item.id,item.repair,item.required);
+ }
+ if(c.agent==='claude'&&checks.dependencies.agent.available){
+  checks.agentReadiness=await agentReadiness(c,c.agent,execute,env);
+  for(const repair of checks.agentReadiness.problems)issue('agent-readiness',repair);
  }
  try{await (tools.storage||checkStorage)(c.storageRoot);checks.storage={ready:true}}
  catch{checks.storage={ready:false};issue('storage','Mount or choose an existing writable project storage directory, then rerun setup.');}

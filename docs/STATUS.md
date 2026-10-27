@@ -1,3 +1,12 @@
+## Teammate installation and worker repairs — preview.12
+
+See [TEAM_SESSION_REPAIR_LEDGER.md](TEAM_SESSION_REPAIR_LEDGER.md) for evidence,
+new fixes, guards that worked and remaining limitations. This release adds executed
+media prerequisite checks, provider-preserving FFmpeg setup, reusable credentials,
+explicit delivery deferral, Claude readiness/project smoke checks, strict toolkit ASR
+routing, caption boundary precision and verified preparation-failure recovery.
+Premiere qualification and native-only completion boundaries from preview.11 remain.
+
 ## Session repairs and separate editor workflows — preview.11
 
 The session audit and remaining qualification boundaries are in

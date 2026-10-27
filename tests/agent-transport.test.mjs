@@ -25,3 +25,11 @@ test('abort waits for termination of an uncooperative owned process',async t=>{
 });
 
 test('Claude resume requires the exact session',async()=>{await assert.rejects(runAgentTransport(opts('claude-success',{session:'different'})),/different session/)});
+
+test('Claude early result does not finish until the background work and final result settle',async()=>{
+ const logs=[];await runAgentTransport(opts('claude-background',{onLine:async line=>logs.push(JSON.parse(line))}));
+ assert.equal(logs.filter(x=>x.type==='result').length,2);assert(logs.some(x=>x.type==='background-finished'));
+});
+test('Claude early success cannot hide a later failure',async()=>{
+ await assert.rejects(runAgentTransport(opts('claude-late-error')),/late failure/);
+});

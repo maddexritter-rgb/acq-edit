@@ -226,3 +226,14 @@ test('removed headline routes refuse without spawning or reserving a project',as
  }
  assert.equal(launched,false);assert.equal(f.store.nativeOperations('p').length,0);f.store.assertNativeSettled('p');
 });
+
+test('verified preparation refusal preserves evidence and releases project without editor reconciliation',async t=>{
+ const f=await fixture(t);const packetSha256=await sha256(f.packet);
+ await assert.rejects(executeNative(f.store,f.config,'p','captions',f.packet,{execute:async(c,a,o)=>{o.onSpawn(2147483647);return JSON.stringify({schema:'acq-edit/preparation-failure-v1',status:'validation-failed',action:'captions',projectId:'p',backend:'filmcraft',packetSha256,nativeEditorStarted:false,error:'Genuine overlap'})}}),/Preparation validation failed/);
+ const op=f.store.nativeOperations('p')[0];assert.equal(op.state,'validation_failed');assert.equal(op.resultSha256,await sha256(op.resultPath));f.store.assertNativeSettled('p');
+});
+test('native construction cannot claim a preparation-only failure',async t=>{
+ const f=await fixture(t);
+ await assert.rejects(executeNative(f.store,f.config,'p','build',f.packet,{execute:async(c,a,o)=>{o.onSpawn(2147483647);return JSON.stringify({schema:'acq-edit/preparation-failure-v1',status:'validation-failed',action:'build',projectId:'p',backend:'filmcraft',packetSha256:await sha256(f.packet),nativeEditorStarted:false})}}),/requires reconciliation/);
+ assert.equal(f.store.nativeOperations('p')[0].state,'reconciliation_required');
+});

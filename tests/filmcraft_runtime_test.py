@@ -66,6 +66,7 @@ class Runtime(unittest.TestCase):
         with patch.object(runtime.platform,'system',return_value='Darwin'),patch.object(runtime.platform,'machine',return_value='arm64'),patch.object(runtime.platform,'mac_ver',return_value=('14.7',(),'')):
             self.assertIn('15.7',runtime.compatibility(spec))
 
+    @patch.object(install_engine, 'media_tool_ready', lambda *_: True)
     def test_prebuilt_preflight_does_not_require_rust_or_xcode(self):
         with patch.object(runtime,'specification',return_value=({},{})),patch.object(runtime,'compatibility',return_value=None),patch.object(install_engine.shutil,'which',side_effect=lambda name: '/bin/'+name if name in ['node','ffmpeg','ffprobe'] else None),patch.object(install_engine,'output',return_value='v24.0.0'):
             check=install_engine.preflight('filmcraft')

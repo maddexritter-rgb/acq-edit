@@ -39,6 +39,14 @@ def output(args, cwd=None):
     return subprocess.check_output(args, cwd=cwd, text=True, stderr=subprocess.STDOUT).strip()
 
 
+def media_tool_ready(executable, name):
+    try:
+        probe = subprocess.run([executable, '-version'], capture_output=True, text=True, timeout=15)
+        return probe.returncode == 0 and probe.stdout.startswith(name + ' version ')
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
 def preflight(backend, source_build=False):
     required = ['node', 'ffmpeg', 'ffprobe']
     if backend == 'filmcraft' and source_build:
@@ -48,6 +56,10 @@ def preflight(backend, source_build=False):
         required += ['npm']
     tools = {name: shutil.which(name) for name in required}
     errors = ['Missing executable: ' + name for name, executable in tools.items() if not executable]
+    for name in ('ffmpeg', 'ffprobe'):
+        if tools[name]:
+            if not media_tool_ready(tools[name],name):
+                errors.append(name + ' exists but cannot run. Repair its current installation and shared libraries, then retry; ACQ Edit will not replace another tap automatically.')
     if backend == 'filmcraft' and not source_build:
         try:
             _,spec=filmcraft_runtime.specification(ROOT)
