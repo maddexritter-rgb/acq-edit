@@ -25,7 +25,7 @@ class Discovery(unittest.TestCase):
         (root / 'docs').mkdir(parents=True)
         (root / 'docs/AGENT_WORKFLOW.md').write_text('Fixed backend; standalone stages preserve unrelated layers.')
         entries = []
-        for owner in ('edit', 'caption-clips', 'monday'):
+        for owner in (*agent_skills.PUBLIC_SKILLS, 'watch', 'promo'):
             for name, data in [('SKILL.md', f'---\nname: {owner}\ndescription: Example workflow\n---\nUse __ACQ_SKILLS__/{owner}/scripts/helper.py'), ('scripts/helper.py', 'print("fixture")')]:
                 relative = owner + '/' + name
                 target = root / 'distribution/skills' / relative
@@ -104,7 +104,7 @@ class Discovery(unittest.TestCase):
         self.assertFalse((self.root / '.agents').exists())
 
     def test_unknown_names_and_tampered_source_are_rejected(self):
-        with self.assertRaisesRegex(ValueError, 'Unknown skill'): self.install(only=['../../outside'])
+        with self.assertRaisesRegex(ValueError, 'Not a public picker skill'): self.install(only=['../../outside'])
         (self.root / 'distribution/skills/edit/SKILL.md').write_text('changed')
         with self.assertRaisesRegex(ValueError, 'Changed packaged skill'): self.install()
         self.assertFalse((self.root / '.agents').exists())
@@ -127,6 +127,53 @@ class Discovery(unittest.TestCase):
         self.assertEqual(command, [sys.executable, str(self.root / 'scripts/agent_skills.py'), 'install', '--agent', 'codex', '--only', 'monday'])
         chdir.assert_called_once_with(self.root)
         self.assertFalse((self.root / 'dist').exists())
+
+    def legacy_extras(self):
+        self.install(scope='user')
+        folder, receipt_path = agent_skills.locations(self.root, 'codex', 'user', self.home)
+        receipt = agent_skills.read_receipt(receipt_path)
+        for name in ('watch', 'promo'):
+            target = self.root/'.local/skills'/name
+            (folder/name).symlink_to(target)
+            receipt['links'][name] = {'target': str(target), 'toolkit': str(self.root)}
+        agent_skills.save_receipt(receipt_path, receipt)
+        return folder
+
+    def test_default_is_exactly_six_and_internal_skills_cannot_be_exposed(self):
+        self.assertEqual(set(agent_skills.selected(self.root, None)), set(agent_skills.PUBLIC_SKILLS))
+        with self.assertRaisesRegex(ValueError, 'Not a public picker skill'):
+            self.install(only=['watch'])
+        result = self.install()
+        self.assertEqual(len(result['skills']), 6)
+        self.assertTrue((self.root/'.local/skills/watch/SKILL.md').is_file())
+
+    def test_legacy_extras_removed_without_deleting_runtime_and_repeat_is_safe(self):
+        folder = self.legacy_extras()
+        self.assertFalse(agent_skills.status(self.root, 'codex', 'user', home=self.home)['ready'])
+        result = self.install(scope='user')
+        self.assertEqual(set(result['removedInternalEntries']), {'watch', 'promo'})
+        self.assertEqual(set(p.name for p in folder.iterdir()), set(agent_skills.PUBLIC_SKILLS))
+        for name in ('watch', 'promo'):
+            self.assertTrue((self.root/'.local/skills'/name/'SKILL.md').is_file())
+        self.assertEqual(self.install(scope='user')['removedInternalEntries'], [])
+
+    def test_modified_extra_and_unowned_skill_are_preserved(self):
+        folder = self.legacy_extras()
+        (folder/'watch').unlink(); (folder/'watch').mkdir()
+        (folder/'watch/SKILL.md').write_text('user work')
+        (folder/'personal').mkdir()
+        result = self.install(scope='user')
+        self.assertEqual(result['preservedModifiedEntries'], ['watch'])
+        self.assertEqual((folder/'watch/SKILL.md').read_text(), 'user work')
+        self.assertTrue((folder/'personal').is_dir())
+
+    def test_upgrade_prunes_old_extras_and_keeps_internal_dependency_bytes(self):
+        folder = self.legacy_extras()
+        next_root = self.fixture('version next')
+        agent_skills.register(next_root, 'codex', 'user', home=self.home, update_owned=True)
+        self.assertEqual(set(p.name for p in folder.iterdir()), set(agent_skills.PUBLIC_SKILLS))
+        self.assertTrue((self.root/'.local/skills/watch/SKILL.md').is_file())
+        self.assertTrue((next_root/'.local/skills/watch/SKILL.md').is_file())
 
     def test_lock_prevents_parallel_writers(self):
         parent = self.root / '.agents'; parent.mkdir()

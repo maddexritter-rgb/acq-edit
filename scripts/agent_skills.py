@@ -13,6 +13,7 @@ from materialize import materialize, verify, RECEIPT
 
 ROOT = Path(__file__).resolve().parents[1]
 AGENTS = {'codex': '.agents', 'claude': '.claude'}
+PUBLIC_SKILLS = ('edit', 'assembly-design', 'horizontal-to-vertical', 'caption-clips', 'music', 'monday')
 
 
 def catalog(root):
@@ -59,6 +60,9 @@ def read_receipt(path):
     receipt = json.loads(path.read_text())
     if receipt.get('schema') != 'acq-edit/skill-discovery-v1' or not isinstance(receipt.get('links'), dict):
         raise ValueError('Unrecognized discovery receipt preserved')
+    for name, entry in receipt['links'].items():
+        if not re.fullmatch('[a-z][a-z0-9-]*', name) or not isinstance(entry, dict):
+            raise ValueError('Invalid discovery ownership record; preserved')
     return receipt
 
 
@@ -75,11 +79,30 @@ def save_receipt(path, receipt):
 
 def selected(root, only):
     skills = catalog(root)
-    names = sorted(set(only or skills))
+    names = sorted(set(only or PUBLIC_SKILLS))
+    internal = set(names) - set(PUBLIC_SKILLS)
+    if internal:
+        raise ValueError('Not a public picker skill: ' + ', '.join(sorted(internal)))
     unknown = set(names) - skills.keys()
     if unknown:
         raise ValueError('Unknown skill(s): ' + ', '.join(sorted(unknown)))
     return {name: skills[name] for name in names}
+
+
+def extra_links(folder, receipt):
+    removable, preserved = [], []
+    for name, entry in receipt['links'].items():
+        if name in PUBLIC_SKILLS:
+            continue
+        link = folder/name
+        expected = str(Path(entry.get('toolkit', ''))/'.local/skills'/name)
+        if (link.is_symlink() and entry.get('target') == expected
+                and Path(entry.get('toolkit', '')).is_absolute()
+                and os.readlink(link) == expected):
+            removable.append(name)
+        elif link.exists() or link.is_symlink():
+            preserved.append(name)
+    return removable, preserved
 
 
 def register(root, agent, scope='workspace', only=None, home=None, update_owned=False):
@@ -96,6 +119,7 @@ def register(root, agent, scope='workspace', only=None, home=None, update_owned=
         with os.fdopen(fd, 'w') as stream:
             stream.write(str(os.getpid()))
         receipt = read_receipt(receipt_path)
+        extras, preserved = extra_links(folder, receipt)
         operations = []
         conflicts = []
         for name, target in skills.items():
@@ -125,7 +149,17 @@ def register(root, agent, scope='workspace', only=None, home=None, update_owned=
                 link.symlink_to(target, target_is_directory=True)
             receipt['links'][name] = {'target': str(target), 'toolkit': str(root)}
             save_receipt(receipt_path, receipt)
+        # Remove only discovery aliases still owned by an older toolkit registration.
+        # Supporting runtime folders and user-authored skills remain intact.
+        for name in extras:
+            link = folder/name
+            if not link.is_symlink() or os.readlink(link) != receipt['links'][name]['target']:
+                raise ValueError('Extra discovery link changed; preserved: ' + name)
+            link.unlink()
+            del receipt['links'][name]
+            save_receipt(receipt_path, receipt)
         return {'ready': True, 'agent': agent, 'scope': scope, 'folder': str(folder), 'skills': list(skills),
+                'removedInternalEntries': extras, 'preservedModifiedEntries': preserved,
                 'qualification': 'Discovery links verified; reopen the agent session to refresh its skill picker. Native editing prerequisites are separate.'}
     finally:
         lock.unlink()
@@ -133,7 +167,7 @@ def register(root, agent, scope='workspace', only=None, home=None, update_owned=
 
 def status(root, agent, scope='workspace', only=None, home=None):
     root = Path(root).absolute()
-    folder, _ = locations(root, agent, scope, Path(home or Path.home()).absolute())
+    folder, receipt_path = locations(root, agent, scope, Path(home or Path.home()).absolute())
     safe_directories(folder)
     runtime_error = None
     try:
@@ -146,7 +180,9 @@ def status(root, agent, scope='workspace', only=None, home=None):
         state = ('registered' if link.is_symlink() and os.readlink(link) == str(target) and (link / 'SKILL.md').is_file()
                  else 'conflict' if link.exists() or link.is_symlink() else 'missing')
         states.append({'name': name, 'state': state})
-    return {'ready': runtime_error is None and all(s['state'] == 'registered' for s in states),
+    extras, preserved = extra_links(folder, read_receipt(receipt_path))
+    return {'ready': runtime_error is None and not extras and all(s['state'] == 'registered' for s in states),
+            'extraRegisteredSkills': extras, 'preservedModifiedEntries': preserved,
             'agent': agent, 'scope': scope, 'folder': str(folder), 'runtimeRepair': runtime_error, 'skills': states}
 
 

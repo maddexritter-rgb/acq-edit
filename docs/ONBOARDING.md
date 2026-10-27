@@ -47,11 +47,14 @@ it does not download a separate conversational model.
 
 ### Make the skills available
 
-Onboarding now registers the packaged skills in this toolkit project for the selected agent.
+Onboarding registers only six picker skills: edit, assembly-design, horizontal-to-vertical,
+caption-clips, music and monday. Other packaged owners stay internal.
 After installation, help the user reopen the project/session if its skill picker is stale.
 Offer to make them available in all chats: run `acq-edit skills install --agent codex --scope user`
 (or `claude`) when that scope is requested. For weekly updates add `--update-owned`; this
 retargets only previously registered toolkit links, never replaces unrelated personal skills.
+Registration also removes older receipt-owned internal picker entries, keeping their runtime
+files intact. Refresh both workspace and personal scope if both were registered previously.
 If the user only wants captions, assembly, music or delivery, follow [SKILLS.md](SKILLS.md)
 and set up that capability only. Do not require an editing engine for standalone Monday delivery.
 
