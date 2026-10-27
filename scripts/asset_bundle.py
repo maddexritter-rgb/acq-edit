@@ -96,6 +96,36 @@ def install(source, target):
     shutil.copytree(source, target, symlinks=True)
     return verify(target)
 
+def private_music(source, target, version, authorization):
+    """Issue a separate music-only release from a verified bundle and owner grant."""
+    source, target = Path(source), Path(target)
+    proof = verify(source)
+    grant = json.loads(Path(authorization).read_text())
+    if grant.get('scope') != 'private-team-music' or not all(grant.get(k) for k in ('authorizedBy', 'statement', 'date')):
+        raise ValueError('Explicit private-team music authorization required')
+    if target.exists():
+        raise ValueError('Existing bundle preserved; choose a new version directory')
+    original = json.loads((source / 'asset-bundle.json').read_text())
+    names = [n for n in original['files'] if PurePosixPath(n).is_relative_to(PurePosixPath(MUSIC.as_posix()))]
+    if not names:
+        raise ValueError('Source bundle contains no music library')
+    target.mkdir(parents=True)
+    for name in names:
+        dest = safe(target, name); dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(safe(source, name), dest)
+        if digest(dest) != original['files'][name]:
+            raise ValueError('Music source changed during release preparation: '+name)
+    rights = {**grant, 'sourceManifestSha256': proof['manifestSha256'],
+              'assets': {n: original['files'][n] for n in names},
+              'notice': 'Owner-authorized private team distribution only. No public redistribution or font grant.'}
+    (target / 'MUSIC_RIGHTS.json').write_text(json.dumps(rights, indent=2)+'\n')
+    manifest = {'schema': 'acq-edit/assets-v1', 'version': version,
+                'distribution': 'owner-authorized-private-team-music',
+                'musicTracks': original['musicTracks'], 'unavailableMusic': original.get('unavailableMusic', []),
+                'files': {p.relative_to(target).as_posix(): digest(p) for p in sorted(target.rglob('*')) if p.is_file()}}
+    (target / 'asset-bundle.json').write_text(json.dumps(manifest, indent=2)+'\n')
+    return verify(target)
+
 if __name__ == '__main__':
     p = argparse.ArgumentParser()
     s = p.add_subparsers(dest='command', required=True)
@@ -105,8 +135,12 @@ if __name__ == '__main__':
     v = s.add_parser('verify'); v.add_argument('root')
     v = s.add_parser('runtime-check'); v.add_argument('root')
     i = s.add_parser('install'); i.add_argument('source'); i.add_argument('target')
+    r = s.add_parser('build-private-music'); r.add_argument('source'); r.add_argument('target')
+    r.add_argument('--version', required=True); r.add_argument('--authorization', required=True)
     a = p.parse_args()
     if a.command == 'runtime-check':
         a.root = json.loads((Path(a.root) / '.local/skills/.acq-materialization.json').read_text())['assets']
     print(json.dumps(build(a.music, a.decisions, a.target, a.version, a.font, a.profile) if a.command == 'build-local'
-                     else install(a.source, a.target) if a.command == 'install' else verify(a.root)))
+                     else install(a.source, a.target) if a.command == 'install'
+                     else private_music(a.source, a.target, a.version, a.authorization) if a.command == 'build-private-music'
+                     else verify(a.root)))
