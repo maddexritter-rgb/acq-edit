@@ -6,6 +6,13 @@ A Mac-based editing toolkit for Codex and Claude Code. Give your agent footage a
 
 **New-Mac preview.** FilmCraft and Premiere have produced real native caption proofs; clean-Mac installation and full team acceptance still require the new-machine test. Resolve work is paused. See [evidence and remaining work](docs/STATUS.md).
 
+## Individual skills
+
+Use the whole `edit` workflow or just `assembly-design`, `horizontal-to-vertical`,
+`caption-clips`, `music`, or `monday`. Normal onboarding registers skills in the toolkit
+project. Ask your agent to make them available in all chats, or install only selected skills.
+[Skill picker setup and standalone workflows](docs/SKILLS.md) explain both options.
+
 ## Start here
 
 Open this repo in Codex or Claude Code and say **“Help me get set up.”** Your agent will guide

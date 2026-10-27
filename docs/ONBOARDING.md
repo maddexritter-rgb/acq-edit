@@ -45,6 +45,16 @@ it does not download a separate conversational model.
 - If an earlier session is already configured, summarize the remaining steps and resume there.
   Setup requests authorize routine installation, not purchases, unrelated editor changes or uploads.
 
+### Make the skills available
+
+Onboarding now registers the packaged skills in this toolkit project for the selected agent.
+After installation, help the user reopen the project/session if its skill picker is stale.
+Offer to make them available in all chats: run `acq-edit skills install --agent codex --scope user`
+(or `claude`) when that scope is requested. For weekly updates add `--update-owned`; this
+retargets only previously registered toolkit links, never replaces unrelated personal skills.
+If the user only wants captions, assembly, music or delivery, follow [SKILLS.md](SKILLS.md)
+and set up that capability only. Do not require an editing engine for standalone Monday delivery.
+
 ### Walk the user through connections
 
 First confirm the chosen engine and project storage, then follow the installation steps below.

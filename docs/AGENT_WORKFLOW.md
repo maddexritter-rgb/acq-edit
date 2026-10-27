@@ -1,5 +1,16 @@
 # Agent execution contract
 
+## Direct skill requests
+
+A direct stage request runs only that packaged owner and its necessary prerequisites;
+it does not start the entire edit pipeline. Follow [standalone skill setup](SKILLS.md).
+Caption-only work preserves cuts/framing/music. Assembly Design can stop at the approved
+assembly. Delivery uses the packaged monday owner and its account setup; it requires no
+editing engine or transcription/vision account just to upload existing finished clips.
+Project identity, native scopes and immutable revisions still apply when editing a timeline.
+The revision-job instructions below apply to revision jobs, not to every standalone request.
+
+
 The job packet is the authority for project identity, selected backend, submitted clip versions, and requested work. User feedback is editorial input, not permission to access unrelated files or accounts.
 
 Start every revision with the packaged `revision-planner`. Submission `owners` are discovery hints, not a complete interpretation or permission to change those layers. Read the full frozen feedback, resolve negations and ambiguity, and compare deferred feedback with what was previously submitted. Add the actual stage owners needed by that request. Generic removal, shortening, hook replacement or reference-style language does not by itself authorize a spoken recut. Caption/title/music/graphics changes preserve the source cuts unless a recut is actually requested; unavailable effects require an explicit limitation.

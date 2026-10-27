@@ -1,3 +1,17 @@
+## Agent skill discovery — preview.7
+
+Onboarding registers all 38 packaged owners in the chosen agent's project skill folder.
+`skills install/list/check` also works before a Node build or editor installation; optional
+personal scope and selected owners support standalone use. Only explicit `--update-owned`
+retargets receipt-owned links; foreign skills, symlink farms and prior runtimes are preserved.
+Direct-stage guidance preserves unrelated layers and avoids full engine onboarding for delivery.
+
+Validation: 11 discovery/launcher tests, 19 materialization/installer tests and 10 onboarding
+tests pass; TypeScript builds. A fresh full-package fixture verified 38 links for each agent
+in workspace and isolated personal scopes. The actual Codex app-server `skills/list` returned
+all 38 fixture skills with zero discovery errors. No global skills were installed on the
+production Mac. Claude picker acceptance and the teammate's new-Mac UI remain unverified.
+
 ## Local key-entry form — preview.6
 
 Onboarding and `credentials` now open a temporary localhost password form for AssemblyAI

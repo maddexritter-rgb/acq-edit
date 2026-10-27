@@ -31,7 +31,7 @@ def user_runtime(package=PACKAGE, home=None):
     staging = Path(tempfile.mkdtemp(prefix=version+'.install-', dir=parent))
     # Interrupted staging is retained; no destructive cleanup or takeover.
     for item in package.iterdir():
-        if item.name in {'.git', '.local', 'node_modules', '__pycache__'}:
+        if item.name in {'.git', '.local', '.agents', '.claude', 'node_modules', '__pycache__'}:
             continue
         if item.is_symlink():
             raise ValueError('Release source symlink refused')
@@ -50,6 +50,8 @@ def main():
     root = user_runtime()
     if args and args[0] == 'onboard':
         command = [sys.executable, str(root/'scripts/onboard.py'), *args[1:]]
+    elif args and args[0] == 'skills':
+        command = [sys.executable, str(root/'scripts/agent_skills.py'), *args[1:]]
     elif args and args[0] == 'delivery':
         mapping = {'credentials':'connect.py', 'check':'connect.py', 'login':'setup_frameio_oauth.py'}
         action = args[1] if len(args)>1 else 'help'
