@@ -8,6 +8,13 @@ A private, Mac-based editing toolkit for Codex and Claude Code. Give your agent 
 
 ## Start here
 
+Open this repo in Codex or Claude Code and say **“Help me get set up.”** Your agent will guide
+you one step at a time, give you the account links, explain where to enter keys privately and
+help troubleshoot through your first clip. For a Homebrew/Workbrew package, run
+`acq-edit onboard guide` to find the installed folder to open. The agent instructions are in
+[AGENTS.md](AGENTS.md), with a [Claude Code entrypoint](CLAUDE.md) and one shared
+[onboarding guide](docs/ONBOARDING.md).
+
 Use the [guided new-Mac onboarding](docs/ONBOARDING.md) for Homebrew or Workbrew, bundled
 assets, personal credentials, editor setup and optional Frame/Monday delivery.
 
@@ -17,7 +24,7 @@ gh auth login
 gh auth setup-git
 brew tap maddexritter-rgb/acq https://github.com/maddexritter-rgb/homebrew-acq.git
 brew install maddexritter-rgb/acq/acq-edit
-acq-edit onboard filmcraft codex  # or premiere / claude
+acq-edit onboard guide  # Open the shown folder in your agent and ask for setup
 ```
 
 Use Workbrew's existing `brew` command when installed. Private repository access is required.

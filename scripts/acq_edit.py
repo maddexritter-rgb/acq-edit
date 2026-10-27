@@ -59,7 +59,7 @@ def main():
         if action in {'credentials','check'}: command.append(action)
     else:
         if not (root/'dist/cli.js').is_file():
-            raise ValueError('Run acq-edit onboard filmcraft codex (or premiere / claude) first')
+            raise ValueError('Run acq-edit onboard guide for guided setup, or acq-edit onboard filmcraft codex (or premiere / claude) first')
         command = ['node', str(root/'dist/cli.js'), *args]
     os.chdir(root)
     os.execvp(command[0], command)

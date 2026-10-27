@@ -29,7 +29,9 @@ class AcqEdit < Formula
 
   def caveats
     <<~EOS
-      Run as your own user: acq-edit onboard filmcraft codex
+      Start with: acq-edit onboard guide
+      Open the shown folder in Codex or Claude Code and ask for guided setup.
+      Direct setup: acq-edit onboard filmcraft codex
       Alternatives: premiere / claude. Sign into your selected agent first.
       FilmCraft also needs Rust and Xcode Command Line Tools.
       Private team assets require your GitHub login.
