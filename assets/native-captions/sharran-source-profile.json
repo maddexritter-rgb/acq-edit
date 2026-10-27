@@ -1,0 +1,20 @@
+{
+  "project_sha256": "0aedb69b8a19b8564f7b8c5888c09f84653b6634abd088d9d13285d36402d1e9",
+  "y_pct": 69,
+  "donors": {
+    "semibold": {
+      "item_id": "251",
+      "runs": {
+        "base": 0
+      },
+      "italic": false
+    },
+    "italic": {
+      "item_id": "737",
+      "runs": {
+        "base": 0
+      },
+      "italic": true
+    }
+  }
+}

@@ -44,11 +44,12 @@ def measure(handoff, plan, binary, output):
             if key not in cache:
                 center = [plan['width']/2, plan['height']/2]
                 g = client.run('graphics.newText', {'newClip': True, 'text': card['text'], 'position': center,
-                    'font': style['font'], 'fontStyle': style['italicStyle'] if card['italic'] else style['fontStyle'],
+                    'font': style['font'], 'fontStyle': style['italicStyle'] if card['italic'] and not style.get('syntheticQuoteItalic') else style['fontStyle'],
                     'size': style['size'], 'time': i*3*ticks, 'seconds': 3/fps, 'track': 0})
                 client.run('graphics.set', {'clip': g['clip'], 'layer': g['layer'], 'props': {
                     'align': 'center', 'fill_color': '#ffffff', 'shadow': False, 'stroke': False,
-                    'background': False, 'fauxBold': False, 'fauxItalic': False}})
+                    'background': False, 'fauxBold': False,
+                    'fauxItalic': bool(card['italic'] and style.get('syntheticQuoteItalic'))}})
                 apply_character_styles(client, g['clip'], g['layer'], card)
                 image = output / f'ink-{i:03d}.png'
                 client.run('file.exportFrame', {'path': str(image), 'format': 'png', 'target': 'program', 'time': i*3*ticks})

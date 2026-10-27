@@ -1,0 +1,595 @@
+<?xml version='1.0' encoding='utf-8'?>
+<NativeGraphicDonors><VideoClipTrackItem ObjectID="737" ClassID="368b0406-29e3-4923-9fcd-094fbf9a1089" Version="8">
+		<ClipTrackItem Version="8">
+			<ComponentOwner Version="1">
+				<Components ObjectRef="738" />
+			</ComponentOwner>
+			<TrackItem Version="4">
+				<Node Version="1">
+					<Properties Version="1">
+						<BE.Mogrt.LicenseID>932f0662-275f-40b3-8a78-4eb7e14df7e4</BE.Mogrt.LicenseID>
+						<BE.RushInspectorPanel.MogrtIdentifier>932f0662-275f-40b3-8a78-4eb7e14df7e4</BE.RushInspectorPanel.MogrtIdentifier>
+					</Properties>
+				</Node>
+				<Start>6769939176000</Start>
+				<End>7119560448000</End>
+			</TrackItem>
+			<SubClip ObjectRef="739" />
+		</ClipTrackItem>
+		<ToneMapSettings>{"peak":-1,"version":3}</ToneMapSettings>
+		<FrameRect>0,0,1080,1920</FrameRect>
+		<PixelAspectRatio>1,1</PixelAspectRatio>
+	</VideoClipTrackItem>
+	<SubClip ObjectID="739" ClassID="e0c58dc9-dbdd-4166-aef7-5db7e3f22e84" Version="6">
+		<Clip ObjectRef="741" />
+		<MasterClip ObjectURef="c58c0604-92b2-446d-a328-a1fd6fa607dc" />
+		<OrigChGrp>0</OrigChGrp>
+		<Name>Graphic</Name>
+	</SubClip>
+	<MasterClip ObjectUID="c58c0604-92b2-446d-a328-a1fd6fa607dc" ClassID="fb11c33a-b0a9-4465-aa94-b6d5db2628cf" Version="12">
+		<LoggingInfo ObjectRef="197" />
+		<Clips Version="1">
+			<Clip Index="0" ObjectRef="198" />
+		</Clips>
+		<AudioClipChannelGroups ObjectRef="199" />
+		<Name>Graphic</Name>
+		<MasterClipChangeVersion>0</MasterClipChangeVersion>
+	</MasterClip>
+	<ClipChannelGroupVectorSerializer ObjectID="199" ClassID="a3127a8c-95d4-456e-a7f5-171b3f922426" Version="1">
+	</ClipChannelGroupVectorSerializer>
+	<VideoClip ObjectID="198" ClassID="9308dbef-2440-4acb-9ab2-953b9a4e82ec" Version="11">
+		<Clip Version="18">
+			<Node Version="1">
+				<Properties Version="1">
+					<BE.Prefs.SyntheticMedia.DefaultIsDropFrame>false</BE.Prefs.SyntheticMedia.DefaultIsDropFrame>
+				</Properties>
+			</Node>
+			<Source ObjectRef="196" />
+			<ClipID>871e1186-b301-4356-82a4-c6dedaf928fe</ClipID>
+			<InUse>false</InUse>
+			<InPoint>0</InPoint>
+			<OutPoint>1260755496000</OutPoint>
+		</Clip>
+	</VideoClip>
+	<VideoMediaSource ObjectID="196" ClassID="e64ddf74-8fac-4682-8aa8-0e0ca2248949" Version="2">
+		<MediaSource Version="4">
+			<Content Version="10">
+			</Content>
+			<Media ObjectURef="1539c946-64fd-4cc6-9c6a-d79c53f4bc26" />
+		</MediaSource>
+		<OriginalDuration>10973491200000000</OriginalDuration>
+	</VideoMediaSource>
+	<Media ObjectUID="1539c946-64fd-4cc6-9c6a-d79c53f4bc26" ClassID="7a5c103e-f3ac-4391-b6b4-7cc3d2f9a7ff" Version="30">
+		<VideoStream ObjectRef="249" />
+		<ModificationState Encoding="base64" BinaryHash="82c86a68-ae7e-4513-72b1-ac990000001c">NQvJw80EAfw49I0CAAAAQA==
+		</ModificationState>
+		<FilePath>1196574294</FilePath>
+		<ImplementationID>42008e7a-de6f-4270-96de-7e287abb9b4b</ImplementationID>
+		<Infinite>true</Infinite>
+		<Title>Graphic</Title>
+		<ActualMediaFilePath>1196574294</ActualMediaFilePath>
+	</Media>
+	<VideoStream ObjectID="249" ClassID="a36e4719-3ec6-4a0c-ab11-8b4aab377aa5" Version="22">
+		<CodecType>1431194446</CodecType>
+		<IsStill>true</IsStill>
+		<IsContinuousTime>true</IsContinuousTime>
+		<OriginalColorSpace>{"baseColorProfile":{"colorProfileName":"BT.709 RGB Full"},"baseProfileType":1}</OriginalColorSpace>
+		<AlphaInfoIsUncertain>true</AlphaInfoIsUncertain>
+		<FieldTypeIsUncertain>true</FieldTypeIsUncertain>
+		<FrameRate>10594584000</FrameRate>
+		<Duration>10973491200000000</Duration>
+		<FrameRect>0,0,1080,1920</FrameRect>
+		<AlphaType>1</AlphaType>
+	</VideoStream>
+	<ClipLoggingInfo ObjectID="197" ClassID="77ab7fdd-dcdf-465d-9906-7a330ca1e738" Version="10">
+		<CaptureMode>2</CaptureMode>
+		<ClipName>Graphic</ClipName>
+		<MediaFrameRate>10594584000</MediaFrameRate>
+		<TimecodeFormat>110</TimecodeFormat>
+	</ClipLoggingInfo>
+	<VideoClip ObjectID="741" ClassID="9308dbef-2440-4acb-9ab2-953b9a4e82ec" Version="11">
+		<Clip Version="18">
+			<Node Version="1">
+				<Properties Version="1">
+					<BE.Prefs.SyntheticMedia.DefaultIsDropFrame>false</BE.Prefs.SyntheticMedia.DefaultIsDropFrame>
+				</Properties>
+			</Node>
+			<Source ObjectRef="196" />
+			<ClipID>deb61919-7a7d-452e-a5ef-0f395e271223</ClipID>
+			<InPoint>915033030912000</InPoint>
+			<OutPoint>915382652184000</OutPoint>
+		</Clip>
+	</VideoClip>
+	<VideoComponentChain ObjectID="738" ClassID="0970e08a-f58f-4108-b29a-1a717b8e12e2" Version="3">
+		<DefaultMotion>true</DefaultMotion>
+		<DefaultOpacity>true</DefaultOpacity>
+		<DefaultMotionComponentID>6</DefaultMotionComponentID>
+		<DefaultOpacityComponentID>7</DefaultOpacityComponentID>
+		<ComponentChain Version="3">
+			<Node Version="1">
+				<Properties Version="1">
+					<MZ.ComponentChain.ActiveComponentID>7</MZ.ComponentChain.ActiveComponentID>
+					<MZ.ComponentChain.ActiveComponentParamIndex>4294967295</MZ.ComponentChain.ActiveComponentParamIndex>
+				</Properties>
+			</Node>
+			<Components Version="1">
+				<Component Index="0" ObjectRef="740" />
+			</Components>
+		</ComponentChain>
+	</VideoComponentChain>
+	<VideoFilterComponent ObjectID="740" ClassID="d10da199-beea-4dd1-b941-ed3a78766d50" Version="9">
+		<Component Version="7">
+			<Params Version="1">
+				<Param Index="0" ObjectRef="742" />
+				<Param Index="1" ObjectRef="743" />
+				<Param Index="2" ObjectRef="744" />
+				<Param Index="3" ObjectRef="745" />
+				<Param Index="4" ObjectRef="746" />
+				<Param Index="5" ObjectRef="747" />
+				<Param Index="6" ObjectRef="748" />
+				<Param Index="7" ObjectRef="749" />
+				<Param Index="8" ObjectRef="750" />
+				<Param Index="9" ObjectRef="751" />
+				<Param Index="10" ObjectRef="752" />
+				<Param Index="11" ObjectRef="753" />
+				<Param Index="12" ObjectRef="754" />
+				<Param Index="13" ObjectRef="755" />
+				<Param Index="14" ObjectRef="756" />
+				<Param Index="15" ObjectRef="757" />
+				<Param Index="16" ObjectRef="758" />
+				<Param Index="17" ObjectRef="759" />
+				<Param Index="18" ObjectRef="760" />
+				<Param Index="19" ObjectRef="761" />
+				<Param Index="20" ObjectRef="762" />
+				<Param Index="21" ObjectRef="763" />
+			</Params>
+			<ID>4</ID>
+			<DisplayName>Text</DisplayName>
+			<InstanceName>test</InstanceName>
+		</Component>
+		<PremiereFilterPrivateData Encoding="base64" BinaryHash="c40c6399-6b26-8c2c-feaf-d01b0000000d">AA==
+		</PremiereFilterPrivateData>
+		<VideoFilterType>2</VideoFilterType>
+		<MatchName>AE.ADBE Text</MatchName>
+	</VideoFilterComponent>
+	<VideoComponentParam ObjectID="763" ClassID="cc12343e-f113-4d3b-ae05-b287db77d461" Version="10">
+		<ParameterID>22</ParameterID>
+		<Name> </Name>
+		<StartKeyframe>-91445760000000000,false,0,0,0,0,0,0</StartKeyframe>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="762" ClassID="fe47129e-6c94-4fc0-95d5-c056a517aaf3" Version="10">
+		<ParameterID>21</ParameterID>
+		<ParameterControlType>3</ParameterControlType>
+		<Name>Parent Rotation</Name>
+		<StartKeyframe>-91445760000000000,0.,0,0,0,0,0,0</StartKeyframe>
+		<UpperBound>32767</UpperBound>
+		<LowerBound>-32768</LowerBound>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="761" ClassID="fe47129e-6c94-4fc0-95d5-c056a517aaf3" Version="10">
+		<ParameterID>20</ParameterID>
+		<Name>Parent Height</Name>
+		<StartKeyframe>-91445760000000000,0.,0,0,0,0,0,0</StartKeyframe>
+		<UpperBound>20000</UpperBound>
+		<LowerBound>0</LowerBound>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="760" ClassID="fe47129e-6c94-4fc0-95d5-c056a517aaf3" Version="10">
+		<ParameterID>19</ParameterID>
+		<Name>Parent Width</Name>
+		<StartKeyframe>-91445760000000000,0.,0,0,0,0,0,0</StartKeyframe>
+		<UpperBound>20000</UpperBound>
+		<LowerBound>0</LowerBound>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="759" ClassID="cc12343e-f113-4d3b-ae05-b287db77d461" Version="10">
+		<ParameterID>18</ParameterID>
+		<Name> </Name>
+		<StartKeyframe>-91445760000000000,false,0,0,0,0,0,0</StartKeyframe>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="758" ClassID="cc12343e-f113-4d3b-ae05-b287db77d461" Version="10">
+		<ParameterID>17</ParameterID>
+		<Name> </Name>
+		<StartKeyframe>-91445760000000000,false,0,0,0,0,0,0</StartKeyframe>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="757" ClassID="cc12343e-f113-4d3b-ae05-b287db77d461" Version="10">
+		<ParameterID>16</ParameterID>
+		<Name> </Name>
+		<StartKeyframe>-91445760000000000,false,0,0,0,0,0,0</StartKeyframe>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="756" ClassID="cc12343e-f113-4d3b-ae05-b287db77d461" Version="10">
+		<ParameterID>15</ParameterID>
+		<Name> </Name>
+		<StartKeyframe>-91445760000000000,false,0,0,0,0,0,0</StartKeyframe>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="755" ClassID="a4ff2d6e-7ac2-44f8-9d52-17d9ca50e542" Version="10">
+		<ParameterID>14</ParameterID>
+		<Name>end</Name>
+		<StartKeyframe>-91445760000000000,4.,0,0,0,0,0,0</StartKeyframe>
+		<UpperBound>1000000000</UpperBound>
+		<LowerBound>-100</LowerBound>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="754" ClassID="a4ff2d6e-7ac2-44f8-9d52-17d9ca50e542" Version="10">
+		<ParameterID>13</ParameterID>
+		<Name>start</Name>
+		<StartKeyframe>-91445760000000000,4.,0,0,0,0,0,0</StartKeyframe>
+		<UpperBound>1000000000</UpperBound>
+		<LowerBound>-100</LowerBound>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="753" ClassID="a4ff2d6e-7ac2-44f8-9d52-17d9ca50e542" Version="10">
+		<ParameterID>12</ParameterID>
+		<Name> </Name>
+		<StartKeyframe>-91445760000000000,0.,0,0,0,0,0,0</StartKeyframe>
+		<UpperBound>32768</UpperBound>
+		<LowerBound>0</LowerBound>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="752" ClassID="a4ff2d6e-7ac2-44f8-9d52-17d9ca50e542" Version="10">
+		<ParameterID>11</ParameterID>
+		<Name> </Name>
+		<StartKeyframe>-91445760000000000,0.,0,0,0,0,0,0</StartKeyframe>
+		<UpperBound>32768</UpperBound>
+		<LowerBound>0</LowerBound>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="751" ClassID="cc12343e-f113-4d3b-ae05-b287db77d461" Version="10">
+		<ParameterID>10</ParameterID>
+		<ParameterControlType>12</ParameterControlType>
+		<StartKeyframe>-91445760000000000,false,0,0,0,0,0,0</StartKeyframe>
+		<UpperBound>false</UpperBound>
+	</VideoComponentParam>
+	<PointComponentParam ObjectID="750" ClassID="ca81d347-309b-44d2-acc7-1c572efb973c" Version="4">
+		<ParameterID>9</ParameterID>
+		<Name>Anchor Point</Name>
+		<StartKeyframe>-91445760000000000,0:0,0,0,0,0,0,0,5,4,0,0,0,0</StartKeyframe>
+	</PointComponentParam>
+	<VideoComponentParam ObjectID="749" ClassID="fe47129e-6c94-4fc0-95d5-c056a517aaf3" Version="10">
+		<ParameterID>8</ParameterID>
+		<Name>Opacity</Name>
+		<StartKeyframe>-91445760000000000,100.,0,0,0,0,0,0</StartKeyframe>
+		<UpperBound>100</UpperBound>
+		<LowerBound>0</LowerBound>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="748" ClassID="fe47129e-6c94-4fc0-95d5-c056a517aaf3" Version="10">
+		<ParameterID>7</ParameterID>
+		<ParameterControlType>3</ParameterControlType>
+		<Name>Rotation</Name>
+		<StartKeyframe>-91445760000000000,0.,0,0,0,0,0,0</StartKeyframe>
+		<UpperBound>32767</UpperBound>
+		<LowerBound>-32768</LowerBound>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="747" ClassID="cc12343e-f113-4d3b-ae05-b287db77d461" Version="10">
+		<ParameterID>6</ParameterID>
+		<Name> </Name>
+		<StartKeyframe>-91445760000000000,true,0,0,0,0,0,0</StartKeyframe>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="746" ClassID="fe47129e-6c94-4fc0-95d5-c056a517aaf3" Version="10">
+		<ParameterID>5</ParameterID>
+		<Name>Horizontal Scale</Name>
+		<StartKeyframe>-91445760000000000,100.,0,0,0,0,0,0</StartKeyframe>
+		<UpperBound>4000</UpperBound>
+		<LowerBound>0</LowerBound>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="745" ClassID="fe47129e-6c94-4fc0-95d5-c056a517aaf3" Version="10">
+		<ParameterID>4</ParameterID>
+		<Name>Scale</Name>
+		<StartKeyframe>-91445760000000000,100.,0,0,0,0,0,0</StartKeyframe>
+		<UpperBound>4000</UpperBound>
+		<LowerBound>0</LowerBound>
+	</VideoComponentParam>
+	<PointComponentParam ObjectID="744" ClassID="ca81d347-309b-44d2-acc7-1c572efb973c" Version="4">
+		<ParameterID>3</ParameterID>
+		<Name>Position</Name>
+		<StartKeyframe>-91445760000000000,0.500000000:0.690000000,0,0,0,0,0,0,5,4,0,0,0,0</StartKeyframe>
+	</PointComponentParam>
+	<VideoComponentParam ObjectID="743" ClassID="cc12343e-f113-4d3b-ae05-b287db77d461" Version="10">
+		<ParameterID>2</ParameterID>
+		<ParameterControlType>11</ParameterControlType>
+		<Name>Transform</Name>
+		<StartKeyframe>-91445760000000000,false,0,0,0,0,0,0</StartKeyframe>
+		<UpperBound>false</UpperBound>
+	</VideoComponentParam>
+	<ArbVideoComponentParam ObjectID="742" ClassID="313e54d4-6903-49ad-b0bf-8262cdd10f4e" Version="3">
+		<Node Version="1">
+			<Properties Version="1">
+				<ECP.Graphics.Expanded>true</ECP.Graphics.Expanded>
+			</Properties>
+		</Node>
+		<ParameterID>1</ParameterID>
+		<ParameterControlType>9</ParameterControlType>
+		<Name>Source Text</Name>
+		<StartKeyframePosition>-91445760000000000</StartKeyframePosition>
+		<StartKeyframeValue Encoding="base64" BinaryHash="adba4d1b-9088-428e-a96c-a5fc54c371a5">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</StartKeyframeValue>
+	</ArbVideoComponentParam>
+	<VideoClipTrackItem ObjectID="251" ClassID="368b0406-29e3-4923-9fcd-094fbf9a1089" Version="8">
+		<ClipTrackItem Version="8">
+			<ComponentOwner Version="1">
+				<Components ObjectRef="252" />
+			</ComponentOwner>
+			<TrackItem Version="4">
+				<Node Version="1">
+					<Properties Version="1">
+						<BE.Mogrt.LicenseID>932f0662-275f-40b3-8a78-4eb7e14df7e4</BE.Mogrt.LicenseID>
+						<BE.RushInspectorPanel.MogrtIdentifier>932f0662-275f-40b3-8a78-4eb7e14df7e4</BE.RushInspectorPanel.MogrtIdentifier>
+					</Properties>
+				</Node>
+				<End>497945448000</End>
+			<Start>0</Start></TrackItem>
+			<SubClip ObjectRef="253" />
+		</ClipTrackItem>
+		<ToneMapSettings>{"peak":-1,"version":3}</ToneMapSettings>
+		<FrameRect>0,0,1080,1920</FrameRect>
+		<PixelAspectRatio>1,1</PixelAspectRatio>
+	</VideoClipTrackItem>
+	<SubClip ObjectID="253" ClassID="e0c58dc9-dbdd-4166-aef7-5db7e3f22e84" Version="6">
+		<Clip ObjectRef="255" />
+		<MasterClip ObjectURef="011edd9f-a222-40e2-a92b-94567d08d252" />
+		<OrigChGrp>0</OrigChGrp>
+		<Name>Graphic</Name>
+	</SubClip>
+	<MasterClip ObjectUID="011edd9f-a222-40e2-a92b-94567d08d252" ClassID="fb11c33a-b0a9-4465-aa94-b6d5db2628cf" Version="12">
+		<LoggingInfo ObjectRef="171" />
+		<Clips Version="1">
+			<Clip Index="0" ObjectRef="172" />
+		</Clips>
+		<AudioClipChannelGroups ObjectRef="173" />
+		<Name>Graphic</Name>
+		<MasterClipChangeVersion>0</MasterClipChangeVersion>
+	</MasterClip>
+	<ClipChannelGroupVectorSerializer ObjectID="173" ClassID="a3127a8c-95d4-456e-a7f5-171b3f922426" Version="1">
+	</ClipChannelGroupVectorSerializer>
+	<VideoClip ObjectID="172" ClassID="9308dbef-2440-4acb-9ab2-953b9a4e82ec" Version="11">
+		<Clip Version="18">
+			<Node Version="1">
+				<Properties Version="1">
+					<BE.Prefs.SyntheticMedia.DefaultIsDropFrame>false</BE.Prefs.SyntheticMedia.DefaultIsDropFrame>
+				</Properties>
+			</Node>
+			<Source ObjectRef="170" />
+			<ClipID>88e08d79-7f6e-453b-8693-d9c535e56a3a</ClipID>
+			<InUse>false</InUse>
+			<InPoint>0</InPoint>
+			<OutPoint>1260755496000</OutPoint>
+		</Clip>
+	</VideoClip>
+	<VideoMediaSource ObjectID="170" ClassID="e64ddf74-8fac-4682-8aa8-0e0ca2248949" Version="2">
+		<MediaSource Version="4">
+			<Content Version="10">
+			</Content>
+			<Media ObjectURef="b5ee1731-c08f-447e-909c-5f85aa32e5a1" />
+		</MediaSource>
+		<OriginalDuration>10973491200000000</OriginalDuration>
+	</VideoMediaSource>
+	<Media ObjectUID="b5ee1731-c08f-447e-909c-5f85aa32e5a1" ClassID="7a5c103e-f3ac-4391-b6b4-7cc3d2f9a7ff" Version="30">
+		<VideoStream ObjectRef="248" />
+		<ModificationState Encoding="base64" BinaryHash="82c86a68-ae7e-4513-72b1-ac990000001c">NQvJw80EAfw49I0CAAAAQA==
+		</ModificationState>
+		<FilePath>1196574294</FilePath>
+		<ImplementationID>42008e7a-de6f-4270-96de-7e287abb9b4b</ImplementationID>
+		<Infinite>true</Infinite>
+		<Title>Graphic</Title>
+		<ActualMediaFilePath>1196574294</ActualMediaFilePath>
+	</Media>
+	<VideoStream ObjectID="248" ClassID="a36e4719-3ec6-4a0c-ab11-8b4aab377aa5" Version="22">
+		<CodecType>1431194446</CodecType>
+		<IsStill>true</IsStill>
+		<IsContinuousTime>true</IsContinuousTime>
+		<OriginalColorSpace>{"baseColorProfile":{"colorProfileName":"BT.709 RGB Full"},"baseProfileType":1}</OriginalColorSpace>
+		<AlphaInfoIsUncertain>true</AlphaInfoIsUncertain>
+		<FieldTypeIsUncertain>true</FieldTypeIsUncertain>
+		<FrameRate>10594584000</FrameRate>
+		<Duration>10973491200000000</Duration>
+		<FrameRect>0,0,1080,1920</FrameRect>
+		<AlphaType>1</AlphaType>
+	</VideoStream>
+	<ClipLoggingInfo ObjectID="171" ClassID="77ab7fdd-dcdf-465d-9906-7a330ca1e738" Version="10">
+		<CaptureMode>2</CaptureMode>
+		<ClipName>Graphic</ClipName>
+		<MediaFrameRate>10594584000</MediaFrameRate>
+		<TimecodeFormat>110</TimecodeFormat>
+	</ClipLoggingInfo>
+	<VideoClip ObjectID="255" ClassID="9308dbef-2440-4acb-9ab2-953b9a4e82ec" Version="11">
+		<Clip Version="18">
+			<Node Version="1">
+				<Properties Version="1">
+					<BE.Prefs.SyntheticMedia.DefaultIsDropFrame>false</BE.Prefs.SyntheticMedia.DefaultIsDropFrame>
+				</Properties>
+			</Node>
+			<Source ObjectRef="170" />
+			<ClipID>4673711a-00e3-4c49-a495-1a7046a0ac3f</ClipID>
+			<InPoint>914450328792000</InPoint>
+			<OutPoint>914948274240000</OutPoint>
+		</Clip>
+	</VideoClip>
+	<VideoComponentChain ObjectID="252" ClassID="0970e08a-f58f-4108-b29a-1a717b8e12e2" Version="3">
+		<DefaultMotion>true</DefaultMotion>
+		<DefaultOpacity>true</DefaultOpacity>
+		<DefaultMotionComponentID>6</DefaultMotionComponentID>
+		<DefaultOpacityComponentID>7</DefaultOpacityComponentID>
+		<ComponentChain Version="3">
+			<Node Version="1">
+				<Properties Version="1">
+					<MZ.ComponentChain.ActiveComponentID>7</MZ.ComponentChain.ActiveComponentID>
+					<MZ.ComponentChain.ActiveComponentParamIndex>4294967295</MZ.ComponentChain.ActiveComponentParamIndex>
+				</Properties>
+			</Node>
+			<Components Version="1">
+				<Component Index="0" ObjectRef="254" />
+			</Components>
+		</ComponentChain>
+	</VideoComponentChain>
+	<VideoFilterComponent ObjectID="254" ClassID="d10da199-beea-4dd1-b941-ed3a78766d50" Version="9">
+		<Component Version="7">
+			<Params Version="1">
+				<Param Index="0" ObjectRef="256" />
+				<Param Index="1" ObjectRef="257" />
+				<Param Index="2" ObjectRef="258" />
+				<Param Index="3" ObjectRef="259" />
+				<Param Index="4" ObjectRef="260" />
+				<Param Index="5" ObjectRef="261" />
+				<Param Index="6" ObjectRef="262" />
+				<Param Index="7" ObjectRef="263" />
+				<Param Index="8" ObjectRef="264" />
+				<Param Index="9" ObjectRef="265" />
+				<Param Index="10" ObjectRef="266" />
+				<Param Index="11" ObjectRef="267" />
+				<Param Index="12" ObjectRef="268" />
+				<Param Index="13" ObjectRef="269" />
+				<Param Index="14" ObjectRef="270" />
+				<Param Index="15" ObjectRef="271" />
+				<Param Index="16" ObjectRef="272" />
+				<Param Index="17" ObjectRef="273" />
+				<Param Index="18" ObjectRef="274" />
+				<Param Index="19" ObjectRef="275" />
+				<Param Index="20" ObjectRef="276" />
+				<Param Index="21" ObjectRef="277" />
+			</Params>
+			<ID>4</ID>
+			<DisplayName>Text</DisplayName>
+			<InstanceName>test</InstanceName>
+		</Component>
+		<PremiereFilterPrivateData Encoding="base64" BinaryHash="c40c6399-6b26-8c2c-feaf-d01b0000000d">AA==
+		</PremiereFilterPrivateData>
+		<VideoFilterType>2</VideoFilterType>
+		<MatchName>AE.ADBE Text</MatchName>
+	</VideoFilterComponent>
+	<VideoComponentParam ObjectID="277" ClassID="cc12343e-f113-4d3b-ae05-b287db77d461" Version="10">
+		<ParameterID>22</ParameterID>
+		<Name> </Name>
+		<StartKeyframe>-91445760000000000,false,0,0,0,0,0,0</StartKeyframe>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="276" ClassID="fe47129e-6c94-4fc0-95d5-c056a517aaf3" Version="10">
+		<ParameterID>21</ParameterID>
+		<ParameterControlType>3</ParameterControlType>
+		<Name>Parent Rotation</Name>
+		<StartKeyframe>-91445760000000000,0.,0,0,0,0,0,0</StartKeyframe>
+		<UpperBound>32767</UpperBound>
+		<LowerBound>-32768</LowerBound>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="275" ClassID="fe47129e-6c94-4fc0-95d5-c056a517aaf3" Version="10">
+		<ParameterID>20</ParameterID>
+		<Name>Parent Height</Name>
+		<StartKeyframe>-91445760000000000,0.,0,0,0,0,0,0</StartKeyframe>
+		<UpperBound>20000</UpperBound>
+		<LowerBound>0</LowerBound>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="274" ClassID="fe47129e-6c94-4fc0-95d5-c056a517aaf3" Version="10">
+		<ParameterID>19</ParameterID>
+		<Name>Parent Width</Name>
+		<StartKeyframe>-91445760000000000,0.,0,0,0,0,0,0</StartKeyframe>
+		<UpperBound>20000</UpperBound>
+		<LowerBound>0</LowerBound>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="273" ClassID="cc12343e-f113-4d3b-ae05-b287db77d461" Version="10">
+		<ParameterID>18</ParameterID>
+		<Name> </Name>
+		<StartKeyframe>-91445760000000000,false,0,0,0,0,0,0</StartKeyframe>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="272" ClassID="cc12343e-f113-4d3b-ae05-b287db77d461" Version="10">
+		<ParameterID>17</ParameterID>
+		<Name> </Name>
+		<StartKeyframe>-91445760000000000,false,0,0,0,0,0,0</StartKeyframe>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="271" ClassID="cc12343e-f113-4d3b-ae05-b287db77d461" Version="10">
+		<ParameterID>16</ParameterID>
+		<Name> </Name>
+		<StartKeyframe>-91445760000000000,false,0,0,0,0,0,0</StartKeyframe>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="270" ClassID="cc12343e-f113-4d3b-ae05-b287db77d461" Version="10">
+		<ParameterID>15</ParameterID>
+		<Name> </Name>
+		<StartKeyframe>-91445760000000000,false,0,0,0,0,0,0</StartKeyframe>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="269" ClassID="a4ff2d6e-7ac2-44f8-9d52-17d9ca50e542" Version="10">
+		<ParameterID>14</ParameterID>
+		<Name>end</Name>
+		<StartKeyframe>-91445760000000000,4.,0,0,0,0,0,0</StartKeyframe>
+		<UpperBound>1000000000</UpperBound>
+		<LowerBound>-100</LowerBound>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="268" ClassID="a4ff2d6e-7ac2-44f8-9d52-17d9ca50e542" Version="10">
+		<ParameterID>13</ParameterID>
+		<Name>start</Name>
+		<StartKeyframe>-91445760000000000,4.,0,0,0,0,0,0</StartKeyframe>
+		<UpperBound>1000000000</UpperBound>
+		<LowerBound>-100</LowerBound>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="267" ClassID="a4ff2d6e-7ac2-44f8-9d52-17d9ca50e542" Version="10">
+		<ParameterID>12</ParameterID>
+		<Name> </Name>
+		<StartKeyframe>-91445760000000000,0.,0,0,0,0,0,0</StartKeyframe>
+		<UpperBound>32768</UpperBound>
+		<LowerBound>0</LowerBound>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="266" ClassID="a4ff2d6e-7ac2-44f8-9d52-17d9ca50e542" Version="10">
+		<ParameterID>11</ParameterID>
+		<Name> </Name>
+		<StartKeyframe>-91445760000000000,0.,0,0,0,0,0,0</StartKeyframe>
+		<UpperBound>32768</UpperBound>
+		<LowerBound>0</LowerBound>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="265" ClassID="cc12343e-f113-4d3b-ae05-b287db77d461" Version="10">
+		<ParameterID>10</ParameterID>
+		<ParameterControlType>12</ParameterControlType>
+		<StartKeyframe>-91445760000000000,false,0,0,0,0,0,0</StartKeyframe>
+		<UpperBound>false</UpperBound>
+	</VideoComponentParam>
+	<PointComponentParam ObjectID="264" ClassID="ca81d347-309b-44d2-acc7-1c572efb973c" Version="4">
+		<ParameterID>9</ParameterID>
+		<Name>Anchor Point</Name>
+		<StartKeyframe>-91445760000000000,0:0,0,0,0,0,0,0,5,4,0,0,0,0</StartKeyframe>
+	</PointComponentParam>
+	<VideoComponentParam ObjectID="263" ClassID="fe47129e-6c94-4fc0-95d5-c056a517aaf3" Version="10">
+		<ParameterID>8</ParameterID>
+		<Name>Opacity</Name>
+		<StartKeyframe>-91445760000000000,100.,0,0,0,0,0,0</StartKeyframe>
+		<UpperBound>100</UpperBound>
+		<LowerBound>0</LowerBound>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="262" ClassID="fe47129e-6c94-4fc0-95d5-c056a517aaf3" Version="10">
+		<ParameterID>7</ParameterID>
+		<ParameterControlType>3</ParameterControlType>
+		<Name>Rotation</Name>
+		<StartKeyframe>-91445760000000000,0.,0,0,0,0,0,0</StartKeyframe>
+		<UpperBound>32767</UpperBound>
+		<LowerBound>-32768</LowerBound>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="261" ClassID="cc12343e-f113-4d3b-ae05-b287db77d461" Version="10">
+		<ParameterID>6</ParameterID>
+		<Name> </Name>
+		<StartKeyframe>-91445760000000000,true,0,0,0,0,0,0</StartKeyframe>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="260" ClassID="fe47129e-6c94-4fc0-95d5-c056a517aaf3" Version="10">
+		<ParameterID>5</ParameterID>
+		<Name>Horizontal Scale</Name>
+		<StartKeyframe>-91445760000000000,100.,0,0,0,0,0,0</StartKeyframe>
+		<UpperBound>4000</UpperBound>
+		<LowerBound>0</LowerBound>
+	</VideoComponentParam>
+	<VideoComponentParam ObjectID="259" ClassID="fe47129e-6c94-4fc0-95d5-c056a517aaf3" Version="10">
+		<ParameterID>4</ParameterID>
+		<Name>Scale</Name>
+		<StartKeyframe>-91445760000000000,100.,0,0,0,0,0,0</StartKeyframe>
+		<UpperBound>4000</UpperBound>
+		<LowerBound>0</LowerBound>
+	</VideoComponentParam>
+	<PointComponentParam ObjectID="258" ClassID="ca81d347-309b-44d2-acc7-1c572efb973c" Version="4">
+		<ParameterID>3</ParameterID>
+		<Name>Position</Name>
+		<StartKeyframe>-91445760000000000,0.500000000:0.690000000,0,0,0,0,0,0,5,4,0,0,0,0</StartKeyframe>
+	</PointComponentParam>
+	<VideoComponentParam ObjectID="257" ClassID="cc12343e-f113-4d3b-ae05-b287db77d461" Version="10">
+		<ParameterID>2</ParameterID>
+		<ParameterControlType>11</ParameterControlType>
+		<Name>Transform</Name>
+		<StartKeyframe>-91445760000000000,false,0,0,0,0,0,0</StartKeyframe>
+		<UpperBound>false</UpperBound>
+	</VideoComponentParam>
+	<ArbVideoComponentParam ObjectID="256" ClassID="313e54d4-6903-49ad-b0bf-8262cdd10f4e" Version="3">
+		<Node Version="1">
+			<Properties Version="1">
+				<ECP.Graphics.Expanded>true</ECP.Graphics.Expanded>
+			</Properties>
+		</Node>
+		<ParameterID>1</ParameterID>
+		<ParameterControlType>9</ParameterControlType>
+		<Name>Source Text</Name>
+		<StartKeyframePosition>-91445760000000000</StartKeyframePosition>
+		<StartKeyframeValue Encoding="base64" BinaryHash="34c70071-1937-4414-a109-43837633dd79">DAgAAAAAAABEMyIRDAAAAAAABgAKAAQABgAAAGQAAAAAAF4ANAAQAAwAAAAAADAAAAAAAAAAAAAAACwAKwAkAAAAIAAcABgAAAAAAAAAAAAAAAAAAAAAAAAAFgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAABcABwBeAAAAAAAAASwAAABMAAAA/AAAAAAAAQAAAMhCAAAgQAAAQEAAAIpCAAAAASQAAAACAAAAOP///zz///8EAAYABAAAAAAACgAIAAUABgAHAAoAAAAAAAAAAQAAACgHAAAcAAAAQ2xhc2hHcm90ZXNrVmFyaWFibGUtUmVndWxhcgAAAAABAAAADAAAAAgADgAEAAgACAAAAGwAAAA8AAAAAAA2ABgAAAAUAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAAAAgABAA2AAAAAgAAABAAAAAQAAAAAACAQAAAQEL0////+P////z///8EAAQABAAAAAIAAABBYQAABAAAACQBAAC0AgAASAQAAOAFAACIAQAAAAAAAEQzIhEMAAAAAAAGAAoABAAGAAAAZAAAAAAAXgA0ABAADAAAAAAAMAAAAAAAAAAAAAAALAArACQAAAAgABwAGAAAAAAAAAAAAAAAAAAAAAAAAAAWAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAFwAHAF4AAAAAAAABLAAAAEwAAAB0AAAAAAABAAAAyEIAACBAAABAQAAAikIAAAABJAAAAAIAAAA4////PP///wQABgAEAAAAAAAKAAgABQAGAAcACgAAAAAAAAABAAAABAAAABwAAABDbGFzaEdyb3Rlc2tWYXJpYWJsZS1SZWd1bGFyAAAAAAEAAAAMAAAACAAOAAQACAAIAAAAdAAAADwAAAAAADYAGAAAABQAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAACAAEADYAAAACAAAAEAAAABAAAAAAAIBAAABAQvT////4/////P///wQABAAEAAAAAgAAAEFhAAADAAAAVGhlAIwBAAAAAAAARDMiEQwAAAAAAAYACgAEAAYAAABkAAAAAABeADQAEAAMAAAAAAAwAAAAAAAAAAAAAAAsACsAJAAAACAAHAAYAAAAAAAAAAAAAAAAAAAAAAAAABYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAXAAcAXgAAAAAAAAEsAAAATAAAAHQAAAAAAAEAAADIQgAAIEAAAEBAAACKQgAAAAEkAAAAAgAAADj///88////BAAGAAQAAAAAAAoACAAFAAYABwAKAAAAAAAAAAEAAAAEAAAAHAAAAENsYXNoR3JvdGVza1ZhcmlhYmxlLVJlZ3VsYXIAAAAAAQAAAAwAAAAIAA4ABAAIAAgAAAB0AAAAPAAAAAAANgAYAAAAFAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAIAAQANgAAAAIAAAAQAAAAEAAAAAAAgEAAAEBC9P////j////8////BAAEAAQAAAACAAAAQWEAAAUAAAAgUGhpbAAAAJABAAAAAAAARDMiEQwAAAAAAAYACgAEAAYAAABkAAAAAABeADQAEAAMAAAAAAAwAAAAAAAAAAAAAAAsACsAJAAAACAAHAAYAAAAAAAAAAAAAAAAAAAAAAAAABYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAXAAcAXgAAAAAAAAEsAAAATAAAAHQAAAAAAAEAAADIQgAAIEAAAEBAAACKQgAAAAEkAAAAAgAAADj///88////BAAGAAQAAAAAAAoACAAFAAYABwAKAAAAAAAAAAEAAAAEAAAAHAAAAENsYXNoR3JvdGVza1ZhcmlhYmxlLVJlZ3VsYXIAAAAAAQAAAAwAAAAIAA4ABAAIAAgAAAB0AAAAPAAAAAAANgAYAAAAFAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAIAAQANgAAAAIAAAAQAAAAEAAAAAAAgEAAAEBC9P////j////8////BAAEAAQAAAACAAAAQWEAAAgAAAAgSmFja3NvbgAAAACQAQAAAAAAAEQzIhEMAAAAAAAGAAoABAAGAAAAZAAAAAAAXgA0ABAADAAAAAAAMAAAAAAAAAAAAAAALAArACQAAAAgABwAGAAAAAAAAAAAAAAAAAAAAAAAAAAWAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAFwAHAF4AAAAAAAABLAAAAEwAAAB0AAAAAAABAAAAyEIAACBAAABAQAAAikIAAAABJAAAAAIAAAA4////PP///wQABgAEAAAAAAAKAAgABQAGAAcACgAAAAAAAAABAAAABAAAABwAAABDbGFzaEdyb3Rlc2tWYXJpYWJsZS1SZWd1bGFyAAAAAAEAAAAMAAAACAAOAAQACAAIAAAAdAAAADwAAAAAADYAGAAAABQAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAACAAEADYAAAACAAAAEAAAABAAAAAAAIBAAABAQvT////4/////P///wQABAAEAAAAAgAAAEFhAAAIAAAAIHBhcmFkb3gAAAAADgAAAEludGVyLVNlbWlCb2xkAAA=</StartKeyframeValue>
+	</ArbVideoComponentParam>
+	</NativeGraphicDonors>
