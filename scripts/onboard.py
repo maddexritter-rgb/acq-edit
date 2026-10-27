@@ -160,7 +160,7 @@ def main():
         print('Then say: Help me get set up. Read AGENTS.md and docs/ONBOARDING.md, '
               'walk me through one step at a time, and resume any existing progress.')
         print('Your agent will explain the account links and help with questions. '
-              'Enter API keys only in the hidden local terminal prompts, not in chat.')
+              'Your agent opens a local setup page: paste your keys into the boxes and click Save keys.')
         return
     if a.action=='status':
         state=ROOT/'.local/onboarding.json'

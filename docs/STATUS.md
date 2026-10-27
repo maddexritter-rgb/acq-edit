@@ -1,3 +1,16 @@
+## Local key-entry form — preview.6
+
+Onboarding and `credentials` now open a temporary localhost password form for AssemblyAI
+and Gemini. The agent opens it; the user pastes and clicks Save. No JSON editing or
+interactive terminal is required. Blank fields preserve existing keys; saves merge under
+an exclusive lock and atomically write mode 0600. The endpoint requires a per-session
+bearer token, exact loopback Host and Origin, and JSON; no credential values are returned
+or logged. Cancel/expiry preserves existing credentials. Terminal entry is explicit opt-in.
+Provider connection checks remain a separate step; saving does not establish API validity.
+Validation: 11 credential regressions and 10 onboarding tests pass; TypeScript builds.
+A browser test with synthetic keys reached the saved confirmation, exited successfully,
+and wrote only the isolated fixture with mode 0600. New-Mac acceptance remains pending.
+
 # Implementation checkpoint — 2026-10-24
 
 Opening text headlines were removed from the current toolkit on 2026-10-26. Any hook qualification below records an earlier version, not current support. Existing pinned projects remain unchanged. See [removal and compatibility](NATIVE_HOOKS.md).
