@@ -74,11 +74,11 @@ def main():
     if fresh:args.remove('--fresh-runtime')
     if fresh and not (len(args)>1 and args[0]=='onboard' and args[1] in ('filmcraft','premiere')):raise ValueError('--fresh-runtime is only for engine onboarding')
     selected=None
-    if '--engine' in args:
+    if args[:1]==['--engine']:
         i=args.index('--engine')
         if i+1>=len(args):raise ValueError('--engine requires filmcraft or premiere')
         selected=args[i+1];del args[i:i+2]
-    if len(args)>1 and args[0]=='onboard' and args[1] in ('filmcraft','premiere'):selected=args[1]
+    if len(args)>1 and args[0]=='onboard' and args[1] in ('filmcraft','premiere','premiere-panel'):selected='premiere' if args[1]=='premiere-panel' else args[1]
     if selected is not None and selected not in ('filmcraft','premiere'):raise ValueError('Choose filmcraft or premiere')
     selected=selected or registry.get('default')
     if selected:

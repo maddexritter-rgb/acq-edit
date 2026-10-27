@@ -267,7 +267,7 @@ def main():
         state['currentStep'] = 'delivery';save(state_file,state)
         print(json.dumps(delivery,indent=2))
         if a.action=='premiere':
-            print('Next: acq-edit onboard premiere-panel; open the ACQ Edit Agent panel in Premiere.')
+            print('Next: acq-edit --engine premiere onboard premiere-panel; open the ACQ Edit Agent panel in Premiere.')
         if not delivery['ready']:
             print('Full onboarding is DELIVERY PENDING. Your agent must finish the failed account/destination step using docs/ONBOARDING.md, then run acq-edit onboard delivery. Setup does not upload clips.')
         print('Also run acq-edit onboard verify and acq-edit doctor before an editing test.')
