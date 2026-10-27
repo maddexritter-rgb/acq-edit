@@ -1,5 +1,6 @@
 import { createServer,type IncomingMessage,type ServerResponse } from 'node:http';
 import { createReadStream } from 'node:fs';
+import { pipeline } from 'node:stream';
 import { readFile,stat } from 'node:fs/promises';
 import path from 'node:path';
 import { randomBytes,timingSafeEqual } from 'node:crypto';
@@ -29,9 +30,11 @@ export function serve(store:Store,config:Config,runWorker=true){const token=rand
   match=url.pathname.match(/^\/(media|reference-media)\/([^/]+)$/);if(match&&req.method==='GET'){
    const isReference=match[1]==='reference-media',v=store.version(match[2]!),p=store.project(store.clip(v.clipId).projectId);const file=isReference?await referenceMedia(p,v):await containedFile(p.root,v.media),size=(await stat(file)).size;res.setHeader('Content-Type',path.extname(file).toLowerCase()==='.webm'?'video/webm':path.extname(file).toLowerCase()==='.mov'?'video/quicktime':'video/mp4');res.setHeader('Accept-Ranges','bytes');
    if(!isReference&&url.searchParams.has('download'))res.setHeader('Content-Disposition',`attachment; filename="clip-${v.clipId.slice(0,8)}-v${v.number}${path.extname(file)}"`);
+   // pipeline closes the response on read failures and releases the file on client disconnect.
+   // Headers may already be sent, so an interrupted response must not receive a JSON error body.
    const range=req.headers.range;if(range){const m=range.match(/^bytes=(\d*)-(\d*)$/);invariant(m&&(m[1]||m[2]),'Invalid byte range');const start=m[1]?Number(m[1]):Math.max(0,size-Number(m[2])),end=m[1]?(m[2]?Math.min(size-1,Number(m[2])):size-1):size-1;
-    if(start>=size||start>end){res.writeHead(416,{'Content-Range':`bytes */${size}`});res.end();return}res.writeHead(206,{'Content-Range':`bytes ${start}-${end}/${size}`,'Content-Length':end-start+1});createReadStream(file,{start,end}).pipe(res);
-   }else{res.writeHead(200,{'Content-Length':size});createReadStream(file).pipe(res)}return;
+    if(start>=size||start>end){res.writeHead(416,{'Content-Range':`bytes */${size}`});res.end();return}res.writeHead(206,{'Content-Range':`bytes ${start}-${end}/${size}`,'Content-Length':end-start+1});pipeline(createReadStream(file,{start,end}),res,()=>{});
+   }else{res.writeHead(200,{'Content-Length':size});pipeline(createReadStream(file),res,()=>{})}return;
   }
   const assets:Record<string,string>={'/':'index.html','/app.js':'app.js','/activity.js':'activity.js','/reference.js':'reference.js','/style.css':'style.css'};const asset=assets[url.pathname];if(asset&&req.method==='GET'){res.setHeader('Content-Type',asset.endsWith('.html')?'text/html; charset=utf-8':asset.endsWith('.css')?'text/css':'text/javascript');res.end(await readFile(path.join(ROOT,'web',asset)));return}
   json(res,{error:'Not found'},404);
