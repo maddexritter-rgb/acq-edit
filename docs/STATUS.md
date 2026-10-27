@@ -1,3 +1,15 @@
+## Six public picker skills — preview.9
+
+Discovery now exposes only edit, assembly-design, horizontal-to-vertical, caption-clips,
+music and monday. The full dependency chain remains materialized for internal use.
+Registration prunes older receipt-owned internal discovery links; underlying skill files,
+foreign links and user-modified entries remain intact. Modified entries are reported.
+Explicit --only accepts subsets of the public six, not internal owners.
+Validation: 15 discovery regressions and 10 onboarding tests pass. Full-package upgrades
+from 38 to six links passed for both agents in workspace and isolated personal scopes.
+Codex app-server discovered exactly six fixture skills with zero errors; all internal
+materialized files still verify. No production global skill directories were changed.
+
 ## Required delivery onboarding — preview.8
 
 Full onboarding now ends in delivery-pending until the agent guides Frame browser sign-in,

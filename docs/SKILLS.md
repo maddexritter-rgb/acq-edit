@@ -12,7 +12,6 @@ whole workflow. These are chat skills, not Bash aliases.
 | Add or restyle captions | `caption-clips` |
 | Choose and apply music | `music` |
 | Send finished clips to Frame.io and Monday | `monday` |
-| Review, render, or revise | `clip-review-room`, `render`, `revision-planner` |
 
 Claude Code supports `/edit`, `/caption-clips`, and the other skill names. In Codex, use the
 skill picker (search for the name) or explicitly mention `$edit`, `$caption-clips`, etc.;
@@ -22,8 +21,8 @@ the exact picker shortcut varies by client. Natural language also works, for exa
 ## Agent setup instructions
 
 Run these commands for the user; do not make them edit hidden folders or copy skill files.
-Normal onboarding registers all packaged owners in the installed toolkit's project for the
-chosen agent. For a skills-only installation, no editor, Rust, Node build, API key or asset
+Normal onboarding registers only the six public skills listed above in the installed toolkit's
+project for the chosen agent. For a skills-only installation, no editor, Rust, Node build, API key or asset
 download is required just to make the procedures selectable:
 
 ```sh
@@ -35,7 +34,8 @@ acq-edit skills list
 
 In a source checkout, use `python3 scripts/agent_skills.py` instead of `acq-edit skills`.
 The command materializes and verifies the complete repository dependency chain, then links
-owners into `.agents/skills` for Codex or `.claude/skills` for Claude Code. It does not copy
+only the six public owners (or a requested subset) into `.agents/skills` for Codex or
+`.claude/skills` for Claude Code. It does not copy
 procedures into a second source of truth or use this machine's global editing helpers.
 Open this toolkit folder in the agent and reopen the session if the picker has not refreshed.
 Check the actual picker before claiming that discovery was accepted by the host.
@@ -51,8 +51,14 @@ acq-edit skills install --agent claude --scope user --only caption-clips monday
 Personal scope uses the agent's user skill folder. Existing user skills and symlink farms are
 preserved. Conflicts are reported, never silently overwritten. On an upgrade, the agent may
 run the same install with `--update-owned` to move only receipt-owned links to the new verified
-release. Old runtimes and their projects remain intact. Skills not selected remain unchanged.
+release. Old runtimes and their projects remain intact. Other public skills not selected remain
+unchanged. Older toolkit-owned picker entries for
+internal helpers are removed on registration, while their underlying runtime files stay intact.
+User-modified or unowned entries are preserved and reported; they are never deleted.
 If an old unreceipted link conflicts, report its path and resolve explicitly; do not delete it.
+
+Only these six names are accepted by `--only`. Supporting owners such as watch, audits and
+render remain internal dependencies loaded by the public workflow; they are not picker entries.
 
 Registration is not proof of an editor, asset bundle, credentials, or rendered output. At first
 use, resolve only the requested capability's missing dependencies from repository instructions:
