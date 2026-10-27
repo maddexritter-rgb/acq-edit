@@ -151,6 +151,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action',nargs='?',default='guide',choices=['guide','filmcraft','premiere','status','verify','premiere-panel'])
     parser.add_argument('agent',nargs='?',choices=['codex','claude'],default='codex')
+    parser.add_argument('--source-build',action='store_true',help='Explicit FilmCraft source build; requires Rust and build tools')
     a=parser.parse_args()
     if a.action=='guide':
         print('Your personal setup guide runs in Codex or Claude Code.')
@@ -189,6 +190,12 @@ def main():
             finally:
                 state.setdefault('timings',{}).setdefault(name,[]).append(round(time.monotonic()-started,3));save(state_file,state)
             return result
+        if state['steps'].get('engine')!='completed':
+            def prerequisites():
+                from install_engine import preflight
+                result=preflight(a.action,a.source_build)
+                if result['errors']:raise ValueError('Selected engine prerequisites: '+ '; '.join(result['errors']))
+            stage('prerequisites',prerequisites)
         release=json.loads((ROOT/'release.json').read_text())
         bundle=stage('assets',lambda:assets(release))
         stage('fonts',lambda:install_fonts(bundle))
@@ -199,9 +206,7 @@ def main():
             stage('shared',lambda:execute(['bash','scripts/install_shared.sh']))
         else: stage('shared-check',lambda:execute([ROOT/'.local/venv/bin/python','python/check_framing_dependencies.py']))
         if state['steps'].get('engine')!='completed':
-            if a.action=='filmcraft' and not shutil.which('cargo'):
-                raise ValueError('FilmCraft needs Rust: run brew install rust and xcode-select --install, then resume this command')
-            stage('engine',lambda:execute(['python3.11','scripts/install_engine.py',a.action,'--assets',bundle]))
+            stage('engine',lambda:execute(['python3.11','scripts/install_engine.py',a.action,'--assets',bundle]+(['--source-build'] if a.source_build else [])))
         else: stage('skills-check',lambda:execute(['python3.11','scripts/materialize.py','--verify']))
         env={**os.environ,'ACQ_EDIT_TEAM_BRAIN_DIR':str(brain)}
         stage('configuration',lambda:execute(['node','dist/cli.js','setup',a.action,a.agent],env=env))
