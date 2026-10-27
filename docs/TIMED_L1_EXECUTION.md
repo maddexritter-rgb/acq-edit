@@ -231,3 +231,40 @@ command work. Optimization was outside the rebuild clock.
 This qualifies an identical prepared rebuild, not cold intake or new-moment editing.
 The 43:29 fresh-moment run included editorial decisions and repairs. Its difference
 from 6:34 is not a code-only speedup. The broader ten-minute target remains unproven.
+
+## Third fresh-moment result — 2026-10-26
+
+A fresh GitHub checkout beginning at `bfe1aa0` produced a new 96.263-second clip
+in **31:43**, including all retries, actual-render inspection and advancing browser
+playback. Sources and transcript were warm; clone installation preceded the clock.
+The 20-minute target failed. Different editorial content and uncontrolled cache/load
+mean the reduction from 43:29 is not a controlled code-performance comparison.
+
+| Foreground phase | Wall time |
+| --- | ---: |
+| Intake and skill reading | 1:21 |
+| Editorial and boundaries | 8:52 |
+| Framing and caption preparation | 9:59 |
+| Native build, repair, export and publication | 10:24 |
+| Remaining render inspection and playback | 1:07 |
+
+The successful build took 54.72 s, split shadow 1.34 s, native inspection 0.84 s,
+export plus integrity 254.74 s, and publication 4.62 s. Native encoding alone took
+182.79 s. Operations overlap phases; do not add both sets of timings.
+
+Static anchor verification rejected a 2.27e-13 source-pixel JSON/Rust round-trip
+difference. Commit `574132e` extends the existing tracking-key 1e-9 absolute tolerance
+to typed finite static motion values. Seven tracking and four panel-revision tests
+pass, including meaningful-change refusal. The failed native operation was inspected
+and reconciled; the retry used a new directory. The repair was pushed and fetched
+from main before execution resumed. No source cuts or framing decisions changed.
+
+Preparation remains the largest cost. Camera-region corrections, occluded-profile
+review, caption-width regrouping and missing handoff fields caused avoidable work.
+Next work should consolidate packet/fit preflight and reuse hash-bound source-camera
+calibration, while preserving source-word and actual-render checks.
+
+Visual inspection covered 141 rendered samples including all 123 caption cards and
+cut boundaries. Full decode, frame count and source verification passed. Loudness
+measured -17.1 LUFS and -1.8 dBTP. Automated audio review returned HTTP 402;
+listening and human editorial approval remain incomplete. Publication is unreviewed.
