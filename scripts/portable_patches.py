@@ -20,6 +20,9 @@ def private_references(text):
 def portable_distribution(text,relative):
  """Apply reviewed portable replacements after canonical paths are normalized."""
  changes=[]
+ if relative=='find-precedents/scripts/editorial_context.py':
+  from portable_snippets.team_reader_patch import patch
+  text=patch(text);changes.append({'patch':'dedicated-team-read-endpoint'})
  if relative=='caption-clips/scripts/premiere_caption_handoff.py':
   old="if card['text'] != segment['text'] or ''.join(run['text'] for run in card['expected_runs']) != card['text']:"
   new="if card['text'] != segment['text'].replace('\\n', '\\r') or ''.join(run['text'] for run in card['expected_runs']) != card['text']:"

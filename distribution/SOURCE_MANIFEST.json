@@ -2325,9 +2325,13 @@
       "path": "find-precedents/scripts/editorial_context.py",
       "source": "canonical-skills/find-precedents/scripts/editorial_context.py",
       "source_sha256": "6f9ea5474e2bf8af96121dce2a80a734317cbbe35535adb94ae9cca200174e59",
-      "distribution_sha256": "6f9ea5474e2bf8af96121dce2a80a734317cbbe35535adb94ae9cca200174e59",
-      "bytes": 15283,
-      "transforms": []
+      "distribution_sha256": "7d16c11a5582e3ce0779509303622b045fe8b9a9a2091818d79af64285e6eb49",
+      "bytes": 15789,
+      "transforms": [
+        {
+          "patch": "dedicated-team-read-endpoint"
+        }
+      ]
     },
     {
       "path": "find-precedents/scripts/find_precedents.py",

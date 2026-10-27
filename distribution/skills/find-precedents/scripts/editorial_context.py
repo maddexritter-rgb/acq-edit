@@ -147,10 +147,12 @@ def fetch_context(*, problem: str, fmt: str, project_prefix: str | None = None,
     endpoint, key, expected_project = configuration()
     if not endpoint or not key or not expected_project:
         raise BrainUnavailable("editorial brain configuration missing: URL, read key, or project ref")
-    if not endpoint.startswith("https://") or not endpoint.endswith("/functions/v1/editorial-search"):
+    from urllib.parse import urlsplit
+    url = urlsplit(endpoint)
+    if (url.scheme != "https" or url.hostname != expected_project + ".supabase.co"
+            or url.path not in {"/functions/v1/editorial-search", "/functions/v1/vibe-editorial-read"}
+            or url.port not in {None, 443} or url.username or url.password or url.query or url.fragment):
         raise BrainUnavailable("editorial brain function URL is invalid")
-    if expected_project not in endpoint.split("/")[2].split("."):
-        raise BrainUnavailable("function URL does not match configured Supabase project")
     if fmt not in FORMATS:
         raise BrainUnavailable(f"unsupported assembly format: {fmt}")
     overlays = reading_overlays or []
@@ -180,7 +182,13 @@ def fetch_context(*, problem: str, fmt: str, project_prefix: str | None = None,
         "Content-Type": "application/json",
     })
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
+        # Never forward the dedicated team credential through an HTTP redirect.
+        class NoRedirect(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self, req, fp, code, msg, headers, newurl):
+                return None
+        open_request = (urllib.request.build_opener(NoRedirect()).open
+                        if url.path.endswith("/vibe-editorial-read") else urllib.request.urlopen)
+        with open_request(request, timeout=timeout) as response:
             result = json.load(response)
     except (urllib.error.URLError, TimeoutError, ValueError) as exc:
         raise BrainUnavailable(f"Supabase editorial context request failed: {type(exc).__name__}") from exc

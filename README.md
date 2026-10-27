@@ -30,7 +30,7 @@ Rerunning `setup` keeps existing values when you press Enter. It offers the sele
 
 `doctor` returns a JSON report with `readiness.ready`, blocking repair steps and optional intake dependencies. It exits 1 when a required prerequisite is missing, including before setup. It checks local brain configuration without retrieving guidance or printing keys. A ready result does not verify agent login/credit, API key validity or native editing quality.
 
-Setup stores configuration and API keys under `~/.config/acq-edit`, outside the checkout. API key entry is hidden. Supply your own AssemblyAI and Gemini keys. Maddex supplies the restricted editorial-brain reader configuration through a separate private channel. No database service-role key belongs on a teammate's machine.
+Setup stores configuration and API keys under `~/.config/acq-edit`, outside the checkout. API key entry is hidden. Supply your own AssemblyAI and Gemini keys. The private team asset release supplies the restricted editorial-brain reader configuration automatically. No database service-role key belongs on a teammate's machine.
 
 ```sh
 node dist/cli.js project "Workshop short clips"
