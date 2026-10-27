@@ -3113,9 +3113,13 @@
       "path": "caption-clips/scripts/caption_profiles.py",
       "source": "canonical-skills/caption-clips/scripts/caption_profiles.py",
       "source_sha256": "34a97646bc66d3fac532f43ef9e016d6e667b6995f87bc85c33d095fa28b41b8",
-      "distribution_sha256": "34a97646bc66d3fac532f43ef9e016d6e667b6995f87bc85c33d095fa28b41b8",
-      "bytes": 26805,
-      "transforms": []
+      "distribution_sha256": "4b87b38a10c61ca9c9e4f781f70360ed3bb5ddf8f0fa2b4d873cad0a4149cba3",
+      "bytes": 26825,
+      "transforms": [
+        {
+          "patch": "caption-width-fonts-from-asset-bundle"
+        }
+      ]
     },
     {
       "path": "caption-clips/scripts/caption_qc.py",
@@ -3534,12 +3538,15 @@
       "path": "caption-clips/scripts/premiere_caption_handoff.py",
       "source": "canonical-skills/caption-clips/scripts/premiere_caption_handoff.py",
       "source_sha256": "a834e0924614da41780c0f17ddf7fff8723679f40eef65dfa4684a28266411b8",
-      "distribution_sha256": "f5d4c9e61f8656484e07d3e84684d0eb7992d701c4e45a847f5e6027fd096d42",
-      "bytes": 11856,
+      "distribution_sha256": "273ddb8aa0110089cc12af409cb8c5b124ed85d7c896e1a0758700a2da9bcfcf",
+      "bytes": 11876,
       "transforms": [
         {
           "patch": "joined-skill-root",
           "count": 1
+        },
+        {
+          "patch": "native-caption-line-break-equivalence"
         }
       ]
     },

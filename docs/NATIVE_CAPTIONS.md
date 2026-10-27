@@ -68,6 +68,33 @@ This uses the shared Python interpreter and does not start an editor. Output cre
 
 ## Native construction, inspection and revision
 
+### Premiere Pro
+
+Use the repository `caption-clips` native Graphics builder and guarded transfer.
+`assets/native-captions` supplies closed generated-Graphics donor graphs; the
+licensed font bundle is still required. `prepare_premiere_caption_template.py
+graft` adds those donors to an offline copy of the saved target project. The
+asset declares speaker-based or style-based donor selection. It never imports
+historical source footage or timelines.
+
+Build the reviewed manifest with `premiere_native_cards.py`, then bind its new
+caption lane to two fresh native read surfaces with
+`prepare_caption_transfer_structure.py`. Use `apply_native_captions.py` for the
+scoped import, native structure checks and saved-file text/style verification.
+Premiere paragraph returns are compared to shared line feeds without ignoring
+words or removing line breaks. Save, close, reopen and verify again before
+exporting through the Premiere adapter. Inspect every rendered caption state
+and entrance; `sample_render.py --caption-entrances` extracts entrance evidence.
+
+For comparisons using separate picture and mono dialogue, the bounded
+`prepare_picture_dialogue.py` source-preparation route preserves compressed
+picture packets and decoded audio. `prepare_native_variant.py` transports one
+frozen contiguous selection to that verified source. Neither helper chooses
+editorial content or substitutes another editor's render. Dense reviewed crop
+curves use `apply_premiere_crop_plan.py` through the framing owner's native API.
+These helpers currently support that bounded comparison workflow; they do not
+qualify every multicamera, audio-layout or revision scenario.
+
 ### FilmCraft
 
 FilmCraft places the wide shadow on V2, the tight shadow on V3 and the foreground on V4. Motion assets begin at V5. All three copies retain identical text, real faces, positions, intervals and animation. After creation, the adapter sets the reviewed text explicitly so FilmCraft's smart-quotes preference cannot rewrite an apostrophe. The source snapshot and global preferences are unchanged.

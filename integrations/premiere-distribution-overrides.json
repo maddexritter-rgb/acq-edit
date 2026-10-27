@@ -15,7 +15,7 @@
     {
       "path": "scripts/validate-assembly-import.py",
       "originalSourceSha256": "b592e307fdcbfb6abe23db3de27cd4733f44072a107f53e3959bb4dbf1f00281",
-      "distributionSha256": "b52b56364b8991c3f518c9d47392a95fc0b5e394e5ddfa3dd43925edde297bf2"
+      "distributionSha256": "bd0c129b82a39f35bb49e610d9237c0556e301bd3c866657a3ecd593cce7c157"
     },
     {
       "path": "scripts/validate-master-import.py",

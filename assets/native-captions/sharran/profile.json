@@ -1,0 +1,26 @@
+{
+  "schema": "acq-edit/premiere-donor-asset-v1",
+  "sourceSha256": "0aedb69b8a19b8564f7b8c5888c09f84653b6634abd088d9d13285d36402d1e9",
+  "graphSha256": "98ac06e13238e6585aa1671ccc1cde27810ad1f2ee5295a53b73e804982ed78d",
+  "donors": {
+    "semibold": {
+      "item_id": "251",
+      "runs": {
+        "base": 0
+      },
+      "italic": false,
+      "color": "FFFFFF"
+    },
+    "italic": {
+      "item_id": "737",
+      "runs": {
+        "base": 0
+      },
+      "italic": true,
+      "color": "FFFFFF"
+    }
+  },
+  "y_pct": 69,
+  "status": "native-render-and-human-review-required",
+  "donorMode": "style"
+}

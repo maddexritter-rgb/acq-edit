@@ -1,0 +1,75 @@
+{
+  "schema": "acq-edit/premiere-donor-asset-v1",
+  "sourceSha256": "0a691c96660e2764a35ac45c6f6308b397350938f7914d52075175d0729db41d",
+  "graphSha256": "a18b668e1e83e6ff607a52cebcf00df2ffca0916422afab615f78ace9c56c0e2",
+  "donors": {
+    "guest": {
+      "item_id": "518",
+      "runs": {
+        "base": {
+          "upright": 0,
+          "italic": 1
+        },
+        "strong": {
+          "upright": 2,
+          "italic": 3
+        },
+        "emphasis": {
+          "upright": 4,
+          "italic": 5
+        },
+        "payoff": {
+          "upright": 6,
+          "italic": 7
+        }
+      },
+      "faces": {
+        "base": "ProximaNova-Medium",
+        "base_italic": "ProximaNova-MediumIt",
+        "strong": "ProximaNova-Bold",
+        "strong_italic": "ProximaNova-BoldIt",
+        "emphasis": "ProximaNova-Extrabld",
+        "emphasis_italic": "ProximaNova-ExtrabldIt",
+        "payoff": "ProximaNova-Black",
+        "payoff_italic": "ProximaNova-BlackIt"
+      },
+      "color": "FED90F",
+      "italic_source_run_state": "per_run_face"
+    },
+    "host": {
+      "item_id": "471",
+      "runs": {
+        "base": {
+          "upright": 0,
+          "italic": 1
+        },
+        "strong": {
+          "upright": 2,
+          "italic": 3
+        },
+        "emphasis": {
+          "upright": 4,
+          "italic": 5
+        },
+        "payoff": {
+          "upright": 6,
+          "italic": 7
+        }
+      },
+      "faces": {
+        "base": "ProximaNova-Medium",
+        "base_italic": "ProximaNova-MediumIt",
+        "strong": "ProximaNova-Bold",
+        "strong_italic": "ProximaNova-BoldIt",
+        "emphasis": "ProximaNova-Extrabld",
+        "emphasis_italic": "ProximaNova-ExtrabldIt",
+        "payoff": "ProximaNova-Black",
+        "payoff_italic": "ProximaNova-BlackIt"
+      },
+      "color": "FFFFFF",
+      "italic_source_run_state": "per_run_face"
+    }
+  },
+  "y_pct": 50.0,
+  "status": "native-render-and-human-review-required"
+}
