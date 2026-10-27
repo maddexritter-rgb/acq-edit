@@ -20,6 +20,12 @@ def private_references(text):
 def portable_distribution(text,relative):
  """Apply reviewed portable replacements after canonical paths are normalized."""
  changes=[]
+ if relative=='caption-clips/scripts/caption_profiles.py':
+  for folder,name in [('clash-grotesk','ClashGrotesk-Variable.ttf'),('inter','Inter-Regular.otf'),('inter','Inter-SemiBold.otf'),('inter','Inter-Italic.otf')]:
+   old=f'SKILL / "fonts" / "{folder}" / "{name}"'
+   if text.count(old)!=1:raise ValueError('Caption width font location changed: '+name)
+   text=text.replace(old,f'Path("__ACQ_ASSETS__") / "fonts" / "{name}"')
+  changes.append({'patch':'caption-width-fonts-from-asset-bundle'})
  if relative=='horizontal-to-vertical/scripts/premiere_native_reframe.py':
   old='MODEL = HERE / "yunet.onnx"'
   if text.count(old)!=1:raise ValueError('Framing model location changed')

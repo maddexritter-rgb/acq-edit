@@ -45,9 +45,50 @@ def prepare(plan,words,decisions):
     if cursor!=len(groups):raise ValueError('Unconsumed caption groups')
     return {'schema':'acq-edit/caption-handoff-v1','owner':'caption-clips','projectId':plan['projectId'],'clipId':plan['clipId'],'cutsFingerprint':digest(plan['cuts']),'profile':decisions['profile'],'cards':cards},coverage
 
+def prepare_semantic(plan, words, decisions):
+    """Transport reviewed multiline/reveal decisions through their existing owner."""
+    handoff, coverage = prepare(plan, words, decisions)
+    sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'.local/skills/caption-clips/scripts'))
+    from caption_profiles import build_profile_manifest, validate_profile_manifest
+    profile=json.loads(Path(decisions['profile']['path']).read_text())
+    mapped=[]; reviewed=[]; cursor=0
+    for cut in plan['cuts']:
+        offset=(cut['audioRecordSample']-cut['audioInSample'])/plan['sampleRate']
+        for ident in cut['wordIds']:
+            word=copy.deepcopy(words[int(ident)])
+            word.update(start=word['start']+offset,end=word['end']+offset,source_indices=[int(ident)])
+            mapped.append(word)
+    for group in decisions['groups']:
+        count=group['words'][1]-group['words'][0]+1
+        reviewed.append({'first':cursor,'last':cursor+count-1,'lines':group['lines'],
+                         'reveal':group.get('reveal','full_card'),'quote':group.get('quote',False)})
+        cursor+=count
+    manifest=build_profile_manifest(mapped,profile,reviewed_plan=reviewed,
+        fps_num=plan['fps']['numerator'],fps_den=plan['fps']['denominator'],
+        picture_cut_frames=[c['recordFrame'] for c in plan['cuts'][1:]])
+    validate_profile_manifest(manifest)
+    fps=plan['fps']['numerator']/plan['fps']['denominator']; cards=[]
+    for source, semantic, item in zip(handoff['cards'],manifest['cards'],coverage):
+        states=[s for s in manifest['render_segments'] if s['semantic_card_id']==semantic['id']]
+        item['render_state_ids']=[]
+        for index,state in enumerate(states):
+            card=copy.deepcopy(source)
+            # Keep the existing frame-safe onset convention and speech release.
+            start=max(source['start_frame'], math.ceil(state['start_frame']))
+            stop=states[index+1]['start_frame']/fps if index+1<len(states) else source['speech_end']
+            if stop<=start/fps:raise ValueError('Reveal has no visible frame before its speech release')
+            card.update(id=source['id']+f'/state-{index+1}',text=state['text'],
+                        start_frame=start,speech_end=stop,
+                        elapsed_frames=state['animation_elapsed_frames'])
+            cards.append(card);item['render_state_ids'].append(card['id'])
+    handoff['cards']=cards
+    return handoff,coverage
+
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     for name in ('plan','words','decisions','output'):p.add_argument('--'+name,type=Path,required=True)
-    a=p.parse_args();raw=json.loads(a.words.read_text());h,c=prepare(json.loads(a.plan.read_text()),raw['words'],json.loads(a.decisions.read_text()));a.output.mkdir(parents=True,exist_ok=False)
+    a=p.parse_args();raw=json.loads(a.words.read_text());decisions=json.loads(a.decisions.read_text())
+    semantic=any('lines' in g for g in decisions['groups'])
+    h,c=(prepare_semantic if semantic else prepare)(json.loads(a.plan.read_text()),raw['words'],decisions);a.output.mkdir(parents=True,exist_ok=False)
     (a.output/'handoff.json').write_text(json.dumps(h,indent=2));(a.output/'coverage.json').write_text(json.dumps(c,indent=2));print(json.dumps({'cards':len(c),'status':'authored-decisions-mapped-awaiting-ink-measurement'}))
 if __name__=='__main__':main()

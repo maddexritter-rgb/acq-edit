@@ -10,10 +10,10 @@ from pathlib import Path
 SKILL = Path(__file__).resolve().parents[1]
 PROFILE_IDS = ("alex", "leila", "sharran")
 FONT_SOURCES = {
-    "ClashGroteskVariable-Regular": (SKILL / "fonts" / "clash-grotesk" / "ClashGrotesk-Variable.ttf", 0),
-    "Inter-Regular": (SKILL / "fonts" / "inter" / "Inter-Regular.otf", 0),
-    "Inter-SemiBold": (SKILL / "fonts" / "inter" / "Inter-SemiBold.otf", 0),
-    "Inter-Italic": (SKILL / "fonts" / "inter" / "Inter-Italic.otf", 0),
+    "ClashGroteskVariable-Regular": (Path("__ACQ_ASSETS__") / "fonts" / "ClashGrotesk-Variable.ttf", 0),
+    "Inter-Regular": (Path("__ACQ_ASSETS__") / "fonts" / "Inter-Regular.otf", 0),
+    "Inter-SemiBold": (Path("__ACQ_ASSETS__") / "fonts" / "Inter-SemiBold.otf", 0),
+    "Inter-Italic": (Path("__ACQ_ASSETS__") / "fonts" / "Inter-Italic.otf", 0),
 }
 
 

@@ -3113,9 +3113,13 @@
       "path": "caption-clips/scripts/caption_profiles.py",
       "source": "canonical-skills/caption-clips/scripts/caption_profiles.py",
       "source_sha256": "34a97646bc66d3fac532f43ef9e016d6e667b6995f87bc85c33d095fa28b41b8",
-      "distribution_sha256": "34a97646bc66d3fac532f43ef9e016d6e667b6995f87bc85c33d095fa28b41b8",
-      "bytes": 26805,
-      "transforms": []
+      "distribution_sha256": "4b87b38a10c61ca9c9e4f781f70360ed3bb5ddf8f0fa2b4d873cad0a4149cba3",
+      "bytes": 26825,
+      "transforms": [
+        {
+          "patch": "caption-width-fonts-from-asset-bundle"
+        }
+      ]
     },
     {
       "path": "caption-clips/scripts/caption_qc.py",
