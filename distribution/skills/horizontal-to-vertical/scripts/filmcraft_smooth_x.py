@@ -13,8 +13,55 @@ import sys
 
 import numpy as np
 from scipy.ndimage import gaussian_filter1d
+from scipy.signal import savgol_filter
 
 TICKS = 254016000000
+
+
+def smooth_x(values, sigma_frames=10):
+    """Filter one source-continuous run; callers split camera/layout/source cuts."""
+    raw = np.asarray(values, dtype=float)
+    if raw.ndim != 1 or not len(raw) or not np.isfinite(raw).all() or not np.isfinite(sigma_frames) or sigma_frames <= 0:
+        raise ValueError('Finite dense X observations and positive smoothing required')
+    window = min(7, len(raw) if len(raw) % 2 else len(raw)-1)
+    clean = savgol_filter(raw, window, 2, mode='interp') if window >= 3 else raw
+    return gaussian_filter1d(clean, sigma=sigma_frames, mode='nearest')
+
+
+def dense_subject_x(view, count, max_gap=6, fallbacks=()):
+    """Preserve raw detections; label every interpolated or authored frame."""
+    faces = view.get('denseFaces', [])
+    if len(faces) != count or view.get('denseFrameIndices') != list(range(count)):
+        raise ValueError('Every displayed source frame needs detector evidence')
+    xs = np.full(count, np.nan); origins = ['missing'] * count
+    for i, face in enumerate(faces):
+        if face is None:
+            continue
+        if len(face) != 5 or not all(type(v) in (int,float) and np.isfinite(v) for v in face) or not 0 < face[4] <= 1 or face[2] <= 0 or face[3] <= 0:
+            raise ValueError('Invalid detection; manual positions must remain separate fallbacks')
+        xs[i] = face[0]; origins[i] = 'detected'
+    for fallback in fallbacks:
+        start, end, x = fallback['startFrame'], fallback['endFrame'], fallback['x']
+        if type(start) != int or type(end) != int or not 0 <= start < end <= count or type(x) not in (int,float) or not np.isfinite(x):
+            raise ValueError('Invalid explicit tracking fallback')
+        evidence = fallback.get('evidence', [])
+        if not fallback.get('reason') or not evidence or any(digest(e['path']) != e['sha256'] for e in evidence):
+            raise ValueError('Tracking fallback needs pinned inspected source evidence and reason')
+        for i in range(start,end):
+            if origins[i] != 'missing':
+                raise ValueError('Fallback may replace only missing detections')
+            xs[i] = x; origins[i] = 'manual-fallback'
+    i = 0
+    while i < count:
+        if origins[i] != 'missing':
+            i += 1; continue
+        start = i
+        while i < count and origins[i] == 'missing':i += 1
+        if start == 0 or i == count or i-start > max_gap or origins[start-1] != 'detected' or origins[i] != 'detected':
+            raise ValueError(f'Unresolved detector gap [{start},{i}); inspect coverage or supply explicit fallback')
+        xs[start:i] = np.linspace(xs[start-1], xs[i], i-start+2)[1:-1]
+        origins[start:i] = ['interpolated'] * (i-start)
+    return xs, origins
 
 
 def digest(path):
@@ -40,7 +87,7 @@ def protected(value):
 
 
 def make_plan(project, inspection, tracking, anchor_y, scale, sigma_frames, single_run=False,
-              motion_mode='fixed'):
+              motion_mode='track'):
     assert motion_mode in ('fixed', 'track'), 'Choose fixed crops or explicit tracking'
     assert sigma_frames > 0 and scale > 0
     s = inspection['settings']
@@ -98,7 +145,7 @@ def make_plan(project, inspection, tracking, anchor_y, scale, sigma_frames, sing
                               'anchor': [round(float(x), 3), anchor_y], 'keys': []}
             continue
         raw = np.array([p[0] for i in run for p in tracks[i]['face']])
-        smooth = gaussian_filter1d(raw, sigma=sigma_frames, mode='nearest') * width
+        smooth = smooth_x(raw, sigma_frames) * width
         smooth = np.clip(smooth, hx, width - hx)
         cursor = 0
         for i in run:
@@ -168,8 +215,8 @@ def main():
     p.add_argument('--anchor-y', required=True, type=float, help='Measured locked source-space Y pixels')
     p.add_argument('--scale', required=True, type=float, help='Native Motion Scale percent')
     p.add_argument('--sigma-frames', default=10.0, type=float)
-    p.add_argument('--motion-mode', choices=('fixed', 'track'), default='fixed',
-                   help='Fixed crop per cut by default; track only real source movement')
+    p.add_argument('--motion-mode', choices=('fixed', 'track'), default='track',
+                   help='Dense native tracking by default; fixed requires a reviewed exception')
     p.add_argument('--single-camera-run', action='store_true',
                    help='Confirm compatible camera/framing; source-time cuts still reset tracking')
     p.add_argument('--apply', action='store_true')

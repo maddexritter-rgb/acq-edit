@@ -169,3 +169,23 @@ selected Anchor values/keys and Scale values to change. Captions, audio, other e
 source timing and shadow controls remain protected. It saves a new shadow checkpoint
 receipt for the owning helper's guarded native export. This checkpoint is not a generic
 review-room publication receipt and never implies visual or human approval.
+# Dense FilmCraft execution default
+
+The packaged horizontal-to-vertical owner defaults each visible subject, including
+both independent split panels, to YuNet analysis on every displayed source frame.
+`sample_composition.py` keeps dense observations separate from sparse review images;
+`prepare_composition.py` uses the owner's `dense_subject_x` and `smooth_x` functions.
+The native adapter writes and verifies one Linear Anchor-X key per displayed frame,
+in source-media time. Y, Position and Scale stay calibrated and locked. A deliberate
+fixed crop requires an explicit reviewed reason in both sampling and preparation.
+
+Raw detector failures remain null. Short bounded internal gaps may interpolate;
+long/edge gaps require separate, evidence-pinned manual fallback positions or a
+coverage repair. Tracking receipts record frame origins and smoothing parameters.
+Savitzky–Golay cleanup precedes Gaussian smoothing. Source-time/camera/layout cuts
+reset motion; review-sheet cadence must never drive the curve. Native key counts
+prove editability and coverage, not perceived smoothness or human approval.
+
+Changing this default does not revise an existing published clip. Use the normal
+protected-state framing revision and immutable publication path for existing work.
+

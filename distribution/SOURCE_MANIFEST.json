@@ -2466,8 +2466,8 @@
       "path": "horizontal-to-vertical/SKILL.md",
       "source": "canonical-skills/horizontal-to-vertical/SKILL.md",
       "source_sha256": "93b9ec3d5d0e4b027da78890100c6a961f2d1ac773ac628d2f69c75355ae5a5c",
-      "distribution_sha256": "35ad49323260569f38d7debb8329caaa256294057abf023039dae9eb6ecec96c",
-      "bytes": 18440,
+      "distribution_sha256": "cd26c4d82afbd41e71c0a89975c4b463c928fc4c8da2867c406668bdca93ec4c",
+      "bytes": 18607,
       "transforms": [
         {
           "from": "canonical-root",
@@ -2479,6 +2479,9 @@
         {
           "from": "repository-composition-repair",
           "to": "source-bound-subject-size-headroom-and-panel-balance"
+        },
+        {
+          "patch": "dense-native-tracking-defaults"
         }
       ]
     },
@@ -2494,8 +2497,8 @@
       "path": "horizontal-to-vertical/references/filmcraft-smooth-x.md",
       "source": "canonical-skills/horizontal-to-vertical/references/filmcraft-smooth-x.md",
       "source_sha256": "1787391278dd29e44191f1e48010d5e717849f2cfa4562c489683b847e7256a7",
-      "distribution_sha256": "2033df484dfd2fefeb2ec8a72cef244294c53125d030911f41baa2c5a995e1ca",
-      "bytes": 9039,
+      "distribution_sha256": "cd33eb4f06f5993d5f103e43d120f9d3edc4bb5a32bfefc47cbe30b926fe3b37",
+      "bytes": 9607,
       "transforms": [
         {
           "from": "canonical-root",
@@ -2510,6 +2513,9 @@
         {
           "from": "repository-composition-repair",
           "to": "source-bound-subject-size-headroom-and-panel-balance"
+        },
+        {
+          "patch": "dense-native-tracking-defaults"
         }
       ]
     },
@@ -2545,9 +2551,13 @@
       "path": "horizontal-to-vertical/scripts/filmcraft_smooth_x.py",
       "source": "canonical-skills/horizontal-to-vertical/scripts/filmcraft_smooth_x.py",
       "source_sha256": "d1786b0bb074620b6eb8c116cb558fbb450ecee7ace10bf2b029e605a567d6a7",
-      "distribution_sha256": "d1786b0bb074620b6eb8c116cb558fbb450ecee7ace10bf2b029e605a567d6a7",
-      "bytes": 10192,
-      "transforms": []
+      "distribution_sha256": "a0cb9059c5a45fdbbc629f8d1132d324c1f069913d7c4e9732cbd84848633609",
+      "bytes": 12938,
+      "transforms": [
+        {
+          "patch": "dense-native-tracking-defaults"
+        }
+      ]
     },
     {
       "path": "horizontal-to-vertical/scripts/guest_panel_render.py",

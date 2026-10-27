@@ -8,6 +8,13 @@ spec.loader.exec_module(sampling)
 
 
 class SamplingTest(unittest.TestCase):
+    def test_dense_detection_is_default_even_for_guest_panels(self):
+        self.assertTrue(sampling.tracking_enabled({'role':'guest'}))
+        self.assertTrue(sampling.tracking_enabled({'role':'host','tracking':True}))
+        with self.assertRaisesRegex(ValueError,'explicit reviewed exception'):
+            sampling.tracking_enabled({'tracking':False})
+        self.assertFalse(sampling.tracking_enabled({'tracking':False,'fixedCropReason':'Reviewed locked composition'}))
+
     def test_required_frames_and_max_gap(self):
         for count in (1, 2, 23, 24, 241, 1001):
             frames = sampling.sample_frames(count, 24000 / 1001)

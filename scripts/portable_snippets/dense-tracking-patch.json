@@ -1,0 +1,70 @@
+{
+  "horizontal-to-vertical/scripts/filmcraft_smooth_x.py": {
+    "beforeSha256": "d1786b0bb074620b6eb8c116cb558fbb450ecee7ace10bf2b029e605a567d6a7",
+    "afterSha256": "a0cb9059c5a45fdbbc629f8d1132d324c1f069913d7c4e9732cbd84848633609",
+    "changes": [
+      {
+        "start": 15,
+        "end": 15,
+        "replacement": "from scipy.signal import savgol_filter\n"
+      },
+      {
+        "start": 17,
+        "end": 17,
+        "replacement": "\n\ndef smooth_x(values, sigma_frames=10):\n    \"\"\"Filter one source-continuous run; callers split camera/layout/source cuts.\"\"\"\n    raw = np.asarray(values, dtype=float)\n    if raw.ndim != 1 or not len(raw) or not np.isfinite(raw).all() or not np.isfinite(sigma_frames) or sigma_frames <= 0:\n        raise ValueError('Finite dense X observations and positive smoothing required')\n    window = min(7, len(raw) if len(raw) % 2 else len(raw)-1)\n    clean = savgol_filter(raw, window, 2, mode='interp') if window >= 3 else raw\n    return gaussian_filter1d(clean, sigma=sigma_frames, mode='nearest')\n\n\ndef dense_subject_x(view, count, max_gap=6, fallbacks=()):\n    \"\"\"Preserve raw detections; label every interpolated or authored frame.\"\"\"\n    faces = view.get('denseFaces', [])\n    if len(faces) != count or view.get('denseFrameIndices') != list(range(count)):\n        raise ValueError('Every displayed source frame needs detector evidence')\n    xs = np.full(count, np.nan); origins = ['missing'] * count\n    for i, face in enumerate(faces):\n        if face is None:\n            continue\n        if len(face) != 5 or not all(type(v) in (int,float) and np.isfinite(v) for v in face) or not 0 < face[4] <= 1 or face[2] <= 0 or face[3] <= 0:\n            raise ValueError('Invalid detection; manual positions must remain separate fallbacks')\n        xs[i] = face[0]; origins[i] = 'detected'\n    for fallback in fallbacks:\n        start, end, x = fallback['startFrame'], fallback['endFrame'], fallback['x']\n        if type(start) != int or type(end) != int or not 0 <= start < end <= count or type(x) not in (int,float) or not np.isfinite(x):\n            raise ValueError('Invalid explicit tracking fallback')\n        evidence = fallback.get('evidence', [])\n        if not fallback.get('reason') or not evidence or any(digest(e['path']) != e['sha256'] for e in evidence):\n            raise ValueError('Tracking fallback needs pinned inspected source evidence and reason')\n        for i in range(start,end):\n            if origins[i] != 'missing':\n                raise ValueError('Fallback may replace only missing detections')\n            xs[i] = x; origins[i] = 'manual-fallback'\n    i = 0\n    while i < count:\n        if origins[i] != 'missing':\n            i += 1; continue\n        start = i\n        while i < count and origins[i] == 'missing':i += 1\n        if start == 0 or i == count or i-start > max_gap or origins[start-1] != 'detected' or origins[i] != 'detected':\n            raise ValueError(f'Unresolved detector gap [{start},{i}); inspect coverage or supply explicit fallback')\n        xs[start:i] = np.linspace(xs[start-1], xs[i], i-start+2)[1:-1]\n        origins[start:i] = ['interpolated'] * (i-start)\n    return xs, origins\n"
+      },
+      {
+        "start": 42,
+        "end": 43,
+        "replacement": "              motion_mode='track'):\n"
+      },
+      {
+        "start": 100,
+        "end": 101,
+        "replacement": "        smooth = smooth_x(raw, sigma_frames) * width\n"
+      },
+      {
+        "start": 170,
+        "end": 172,
+        "replacement": "    p.add_argument('--motion-mode', choices=('fixed', 'track'), default='track',\n                   help='Dense native tracking by default; fixed requires a reviewed exception')\n"
+      }
+    ]
+  },
+  "horizontal-to-vertical/references/filmcraft-smooth-x.md": {
+    "beforeSha256": "2033df484dfd2fefeb2ec8a72cef244294c53125d030911f41baa2c5a995e1ca",
+    "afterSha256": "cd33eb4f06f5993d5f103e43d120f9d3edc4bb5a32bfefc47cbe30b926fe3b37",
+    "changes": [
+      {
+        "start": 9,
+        "end": 15,
+        "replacement": "Default every visible subject, including each independent split panel, to **dense\nsource-local tracking**: YuNet attempts every displayed source frame, the owning\nskill smooths the X curve, and the native adapter writes one Linear Anchor-X key\nper displayed frame. Y, Position and Scale remain calibrated and locked. Review\ncontact sheets may be sparse; their cadence never determines detection or keys.\nAn explicitly reviewed fixed crop remains supported with a recorded reason.\nDo not invent an entrance pan or follow audience faces. Preserve approved framing.\n"
+      },
+      {
+        "start": 59,
+        "end": 59,
+        "replacement": "The composition route uses `dense_subject_x` and `smooth_x` from this skill's\n`filmcraft_smooth_x.py`. Preserve raw null detections, ordered dense frame indices,\nand frame-level origins. Interpolate only bounded internal gaps of at most six\nframes between detected endpoints. Edge or longer gaps need explicit source-evidence\npins and a reason; store their manual X positions separately. Zero-confidence\nfabricated detections are rejected. Record detector model and smoothing parameters.\n\n"
+      },
+      {
+        "start": 73,
+        "end": 75,
+        "replacement": "visible full-frame picture track. It defaults to `--motion-mode track`; use\n`--motion-mode fixed` only for an explicitly reviewed exception. Resolve panels/coverage first; use\n"
+      },
+      {
+        "start": 90,
+        "end": 91,
+        "replacement": "  --anchor-y <measured-source-y> --scale <chosen-percent> --motion-mode track\n"
+      }
+    ]
+  },
+  "horizontal-to-vertical/SKILL.md": {
+    "beforeSha256": "35ad49323260569f38d7debb8329caaa256294057abf023039dae9eb6ecec96c",
+    "afterSha256": "cd26c4d82afbd41e71c0a89975c4b463c928fc4c8da2867c406668bdca93ec4c",
+    "changes": [
+      {
+        "start": 26,
+        "end": 27,
+        "replacement": "  Default every visible subject, including both split panels, to dense YuNet analysis\n  and one native Linear Anchor-X key per displayed frame. Fixed crops require an\n  explicit reviewed exception; review-sheet sampling never supplies a tracking curve.\n"
+      }
+    ]
+  }
+}

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Batch source-bound composition evidence. Does not approve or choose crops.
 
-One decode per view, selected at the composition profile's cadence, instead of
-one seek per image or running a detector on every unused frame. Camera choices,
+One dense detector pass per visible view; sparse images are review evidence only.
+Camera choices,
 sync, ROI and final complete-head calibration remain owning-skill decisions.
 """
 import argparse
@@ -25,6 +25,14 @@ def sample_frames(count, fps, gap=.51):
     return sorted(set(range(0, count, step)) | {0, count // 2, count - 1})
 
 
+def tracking_enabled(view):
+    if view.get('tracking') is False:
+        if not view.get('fixedCropReason'):
+            raise ValueError('Fixed crop requires an explicit reviewed exception')
+        return False
+    return True
+
+
 def collect(plan, views, output, workers=1):
     import cv2
     import numpy as np
@@ -40,13 +48,14 @@ def collect(plan, views, output, workers=1):
         source = sources[view['sourceId']]
         start = view['inFrame']
         evidence_frames = sample_frames(cut['frames'], fps)
-        indices = list(range(cut['frames'])) if view.get('tracking') else evidence_frames
+        tracking = tracking_enabled(view)
+        indices = list(range(cut['frames'])) if tracking else evidence_frames
         detector, dw, dh = detector_for(view['sourceWidth'], view['sourceHeight'])
         terms = [f'eq(n\\,{n})' for n in indices]
         while len(terms)>1:
             terms=[f'({terms[i]}+{terms[i+1]})' if i+1<len(terms) else terms[i] for i in range(0,len(terms),2)]
         select=terms[0]
-        filters = f'scale={dw}:{dh}' if view.get('tracking') else f'select={select},scale={dw}:{dh}'
+        filters = f'scale={dw}:{dh}' if tracking else f'select={select},scale={dw}:{dh}'
         cmd = ['ffmpeg', '-v', 'error', '-threads', '2', '-ss', f'{start/fps:.9f}',
                '-i', source['path'], '-an', '-vf', filters,
                '-frames:v', str(len(indices)), '-fps_mode', 'passthrough',
@@ -66,7 +75,7 @@ def collect(plan, views, output, workers=1):
                 sx, sy = view['sourceWidth'] / dw, view['sourceHeight'] / dh
                 measured = None if face is None else [float(face[0])*sx, float(face[1])*sy,
                             float(face[2])*sx, float(face[3])*sy, float(face[4])]
-                if view.get('tracking'):
+                if tracking:
                     dense.append(measured)
                 if n in evidence_frames:
                     path = output / f'{view["cutId"]}-{view["role"]}-{n:04d}.jpg'
@@ -83,9 +92,11 @@ def collect(plan, views, output, workers=1):
                 proc.wait()
             proc.stdout.close()
             proc.stderr.close()
-        print(f'{view["cutId"]}/{view["role"]}: {len(samples)} source samples', flush=True)
-        return {**view, 'sourceRange': {'sourceId': source['id'], 'sha256': source['sha256'],
-                'inFrame': start, 'frames': cut['frames']}, 'samples': samples, 'denseFaces': dense}
+        print(f'{view["cutId"]}/{view["role"]}: {len(dense)} detected-frame attempts, {len(samples)} review images', flush=True)
+        return {**view, 'tracking': tracking, 'sourceRange': {'sourceId': source['id'], 'sha256': source['sha256'],
+                'inFrame': start, 'frames': cut['frames']}, 'samples': samples, 'denseFaces': dense,
+                'denseFrameIndices': indices if tracking else [],
+                'missingDetectionFrames': [i for i,face in enumerate(dense) if face is None]}
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
         rows = list(pool.map(one, views))

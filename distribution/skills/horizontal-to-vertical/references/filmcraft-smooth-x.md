@@ -7,12 +7,13 @@ The Premiere route remains unchanged.
 
 ## Choose movement before writing keys
 
-Default stable dialogue shots to a **fixed crop per existing source cut**. Measure
-an intended-subject X from that cut's valid observations; use a source-safe median
-when it keeps the subject comfortably framed throughout. Static crops have no Anchor,
-Position or Scale animation. Do not key an entrance pan merely because a new cut starts.
-If real travel cannot fit that crop, use source-local tracking or return unusable
-coverage to Assembly Design. Preserve an explicitly approved authored move.
+Default every visible subject, including each independent split panel, to **dense
+source-local tracking**: YuNet attempts every displayed source frame, the owning
+skill smooths the X curve, and the native adapter writes one Linear Anchor-X key
+per displayed frame. Y, Position and Scale remain calibrated and locked. Review
+contact sheets may be sparse; their cadence never determines detection or keys.
+An explicitly reviewed fixed crop remains supported with a recorded reason.
+Do not invent an entrance pan or follow audience faces. Preserve approved framing.
 
 Keep the measured Y and chosen Scale consistent across compatible shots. A paper-plan
 beat or caption boundary does not justify recalibrating Y/Scale or restarting a zoom.
@@ -57,6 +58,13 @@ with the tracking artifact. Check cached source identity and exact coverage. Sho
 detector gaps may be interpolated; long gaps or no detections require an explicit,
 visually checked fallback or coverage repair, never a success label.
 
+The composition route uses `dense_subject_x` and `smooth_x` from this skill's
+`filmcraft_smooth_x.py`. Preserve raw null detections, ordered dense frame indices,
+and frame-level origins. Interpolate only bounded internal gaps of at most six
+frames between detected endpoints. Edge or longer gaps need explicit source-evidence
+pins and a reason; store their manual X positions separately. Zero-confidence
+fabricated detections are rejected. Record detector model and smoothing parameters.
+
 For justified tracking, clean source-local observations with a short Savitzky–Golay
 filter (up to7 frames, odd, order2), then Gaussian-smooth each source-continuous run.
 Sigma10 frames at24000/1001 fps is a starting point, not proof of good motion. Write one
@@ -71,8 +79,8 @@ rather than silently increasing zoom. Absolute calibration values are footage-sp
 ## Existing native writer
 
 `scripts/filmcraft_smooth_x.py` supports a square-pixel, unit-speed, centered, single
-visible full-frame picture track. It defaults to `--motion-mode fixed`; use
-`--motion-mode track` only for a needed movement. Resolve panels/coverage first; use
+visible full-frame picture track. It defaults to `--motion-mode track`; use
+`--motion-mode fixed` only for an explicitly reviewed exception. Resolve panels/coverage first; use
 an explicit project-pinned panel adapter for multiple source geometries/calibrations.
 Do not flatten panels or silently substitute cameras to bypass this limitation.
 
@@ -88,7 +96,7 @@ python3 __ACQ_SKILLS__/horizontal-to-vertical/scripts/filmcraft_smooth_x.py \
   --inspection /project/10_WORK/sequence-inspect.json \
   --tracking /project/10_WORK/dense-face-track.json \
   --plan /project/10_WORK/framing-plan.json \
-  --anchor-y <measured-source-y> --scale <chosen-percent> --motion-mode fixed
+  --anchor-y <measured-source-y> --scale <chosen-percent> --motion-mode track
 ```
 
 Add `--apply --binary <pinned-cli> --session <new-directory> --output <new.fcproj>`

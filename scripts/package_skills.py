@@ -2,7 +2,7 @@
 """Export canonical procedures without touching their live source. Never copy account configuration."""
 import argparse,ast,hashlib,json,re
 from pathlib import Path
-from portable_patches import portable_text,portable_distribution,private_references
+from portable_patches import portable_text,portable_distribution,private_references,dense_tracking_patch
 OWNERS='edit assembly-design long-form-ingest find-precedents source-intel footage-fetch horizontal-to-vertical caption-clips slop-detector music render watch clip-review-room revision-planner transcript-edit clip-review-tracker audit-script audit-audio audit-captions audit-visual mozi-sf-audit scorecard-audit book-doodle b-roll-injector broll-cutaway cinematic vertical-livestream-card promo saas-animation-video ad-edit listicle-short live-clip testimonial-edit source-library alex premiere-to-resolve editorial-brain-ingest'.split()
 EXT={'.md','.py','.js','.mjs','.cjs','.ts','.tsx','.jsx','.json','.sh','.css','.html','.toml','.yaml','.yml','.txt','.svg'}
 SKIP={'node_modules','.git','__pycache__','.venv','venv','training','corpus','dataset','deliveries','outputs','results','runtime','.cache','artifacts','evidence','fixtures','logs'}
@@ -55,6 +55,7 @@ def main():
     if old not in text and new not in text:raise ValueError('Removed headline route needs reconciliation: '+str(rel))
     text=text.replace(old,new)
    if str(rel) in routes:transform.append({'patch':'remove-text-hook-route'})
+   text,patches=dense_tracking_patch(text,str(rel));transform.extend(patches)
    target=out/rel;target.parent.mkdir(parents=True,exist_ok=True);target.write_text(text)
    manifest.append({'path':str(rel),'source':'canonical-skills/'+str(rel),'source_sha256':source_hash,'distribution_sha256':hashlib.sha256(text.encode()).hexdigest(),'bytes':len(text.encode()),'transforms':transform})
  additions={'caption-clips/scripts/native_graphics/native_text_fill.py':'native_text_fill.py','horizontal-to-vertical/scripts/filmcraft_split_shadow.py':'filmcraft_split_shadow.py','horizontal-to-vertical/references/split-shadow-default.md':'split-shadow-default.md'}

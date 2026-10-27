@@ -15,7 +15,7 @@ def write(p,x):p.write_text(json.dumps(x,indent=2))
 def prepare(plan,obs,decisions,out):
  from PIL import Image,ImageDraw
  import numpy as np
- from scipy.ndimage import gaussian_filter1d
+ from filmcraft_smooth_x import dense_subject_x,smooth_x
  out.mkdir(parents=True,exist_ok=False);spec=copy.deepcopy(plan);cuts={c['id']:c for c in spec['cuts']};views={};entries=[];layouts={};shots={};pictures=[]
  for view in obs['items']:
   key=view['cutId']+':'+view['role'];d=decisions['views'][key];cut=cuts[view['cutId']];mode=d['layout'];panel=mode=='split';rect={'x':0,'y':0 if d.get('position','top')=='top' else spec['height']//2,'width':spec['width'],'height':spec['height']//2 if panel else spec['height']}
@@ -27,10 +27,12 @@ def prepare(plan,obs,decisions,out):
   if cw*rect['height']!=h*rect['width']:raise ValueError('Crop height must preserve exact integer aspect')
   x=round(d.get('cropX',float(np.median([(a+c)/2-cw/2 for a,b,c,z in heads]))));y=round(d.get('cropY',float(np.median([b-h*d['headroom'] for a,b,c,z in heads]))));sw,sh=view['sourceWidth'],view['sourceHeight'];x=max(0,min(sw-cw,x));y=max(0,min(sh-h,y))
   crop={'mode':'fixed-crop','sourceWidth':sw,'sourceHeight':sh,'x':x,'y':y,'width':cw,'height':h}
-  if d.get('tracking'):
-   dense=view.get('denseFaces',[])
-   if len(dense)!=cut['frames'] or any(f is None for f in dense):raise ValueError('Dense subject curve required: '+key)
-   curve=gaussian_filter1d(np.array([f[0]+(off[0]+off[2])/2-cw/2 for f in dense]),sigma=d.get('smoothFrames',8),mode='nearest');xs=np.clip(curve,0,sw-cw).tolist();crop.update(mode='tracked-crop',x=xs[0],xByFrame=xs,sourceRange=view['sourceRange'])
+  if d.get('tracking',True):
+   dense,origins=dense_subject_x(view,cut['frames'],fallbacks=d.get('trackingFallbacks',[]))
+   curve=smooth_x(dense+(off[0]+off[2])/2-cw/2,d.get('smoothFrames',10));xs=np.clip(curve,0,sw-cw).tolist();crop.update(mode='tracked-crop',x=xs[0],xByFrame=xs,sourceRange=view['sourceRange'])
+   write(out/(view['cutId']+'-'+view['role']+'-tracking.json'),{'sourceRange':view['sourceRange'],'detectorModelSha256':obs['detectorModelSha256'],'rawFaces':view['denseFaces'],'frameOrigins':origins,'fallbacks':d.get('trackingFallbacks',[]),'smoothing':{'savgolWindowMax':7,'savgolOrder':2,'gaussianSigmaFrames':d.get('smoothFrames',10)},'xByFrame':xs,'y':y})
+  elif not d.get('fixedCropReason'):
+   raise ValueError('Fixed crop requires an explicit reviewed exception: '+key)
   views[key]=(view,crop,rect)
   entry={'cutId':cut['id'],**({'panelId':view['role']}if panel else {}),'sourceRange':view['sourceRange'],'headBoundsMethod':'visually-calibrated-envelope','visualInspection':'source-frames-reviewed','samples':[{'frame':s['frame'],'head':head,'evidence':s['evidence']}for s,head in zip(samples,heads)]};entries.append(entry)
   if panel:

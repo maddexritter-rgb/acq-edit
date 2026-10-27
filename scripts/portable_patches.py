@@ -4,6 +4,16 @@ from pathlib import Path
 
 OVERRIDES = {'footage-fetch/SKILL.md', 'footage-fetch/scripts/gdrive_pull.sh', 'edit/scripts/cut_by_phrase.py', 'live-clip/scripts/live_ingest.py'}
 
+def dense_tracking_patch(text, relative):
+ patch=json.loads((Path(__file__).with_name('portable_snippets')/'dense-tracking-patch.json').read_text()).get(relative)
+ if not patch:return text,[]
+ if hashlib.sha256(text.encode()).hexdigest()!=patch['beforeSha256']:raise ValueError('Dense tracking patch needs upstream reconciliation: '+relative)
+ lines=text.splitlines(keepends=True)
+ for change in reversed(patch['changes']):lines[change['start']:change['end']]=[change['replacement']]
+ text=''.join(lines)
+ if hashlib.sha256(text.encode()).hexdigest()!=patch['afterSha256']:raise ValueError('Dense tracking patch output mismatch')
+ return text,[{'patch':'dense-native-tracking-defaults'}]
+
 def private_references(text):
  return re.findall(r'__ACQ_(?:LEGACY_HOME|EXTERNAL_VOLUME)__|\$(?:HOME|\{HOME\})/(?:Downloads/cluade|\.(?:agents|claude)/skills)',text)
 
