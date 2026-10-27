@@ -50,9 +50,15 @@ export async function executeNative(store:Store,config:Config,projectId:string,a
   let value:unknown;
   try{value=JSON.parse(result)}catch{throw new Error('Native command returned invalid JSON; inspect the retained result journal')}
   invariant(value!==null&&typeof value==='object'&&!Array.isArray(value),'Native command must return a JSON object; inspect the retained result journal');
+  const prepared=value as Record<string,unknown>;
+  if(prepared.status==='validation-failed'){
+   invariant(['compile','captions','reference'].includes(action)&&prepared.schema==='acq-edit/preparation-failure-v1'&&prepared.nativeEditorStarted===false&&prepared.action===action&&prepared.projectId===projectId&&prepared.backend===project.backend&&prepared.packetSha256===operation.packetSha256,'Unverified preparation failure; inspect native outcome');
+   await record(store,id,{state:'validation_failed',ownerPid:null,error:String(prepared.error)});
+   throw new Error('Preparation validation failed: '+String(prepared.error));
+  }
   await record(store,id,{state:'succeeded',ownerPid:null});
   return value as Record<string,unknown>;
- }catch(e){await record(store,id,{state:'reconciliation_required',ownerPid:null,error:(e as Error).message});throw new Error(`Native operation ${id} requires reconciliation: ${(e as Error).message}`)}
+ }catch(e){if(store.nativeOperation(id).state==='validation_failed')throw e;await record(store,id,{state:'reconciliation_required',ownerPid:null,error:(e as Error).message});throw new Error(`Native operation ${id} requires reconciliation: ${(e as Error).message}`)}
 }
 async function reconcileNotDispatched(operation:NativeOperation,evidencePath:string,evidenceSha256:string){
  invariant(operation.dispatchPhase==='not-started'&&operation.childPid===null&&!operation.childPending&&!operation.resultPath&&!operation.resultSha256,'No durable proof that this native command was never dispatched; inspect its native outcome');

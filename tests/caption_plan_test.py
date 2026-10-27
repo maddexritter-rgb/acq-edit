@@ -53,6 +53,18 @@ class CaptionPlanTests(unittest.TestCase):
             caption_plan.validate_native_fonts(client,[card])
         card['style']['italicStyle']='Bold It';caption_plan.validate_native_fonts(client,[card])
 
+    def test_adjacent_speech_rounding_noise_is_not_overlap(self):
+        import math
+        boundary=self.handoff['cards'][1]['start_frame']/25
+        self.handoff['cards'][0]['speech_end']=math.nextafter(boundary,math.inf)
+        derived,_=self.derive()
+        self.assertEqual(derived['cards'][0]['speech_end'],boundary)
+
+    def test_real_subframe_overlap_still_fails(self):
+        self.handoff['cards'][0]['speech_end']=self.handoff['cards'][1]['start_frame']/25 + .000001
+        with self.assertRaisesRegex(RuntimeError,'Overlapping spoken'):
+            self.derive()
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)

@@ -366,3 +366,32 @@ room with revision processing active. `serve --no-worker` is explicitly **Review
 save, but revision buttons and API submission are disabled. A successful provider read check
 is authentication evidence only. Gemini HTTP 402 means billing/credit is needed, not successful
 analysis; do not mark audio/video inspection complete without an actual generation result.
+
+## Teammate regression repairs — preview.12
+
+Before engine onboarding, run `acq-edit media-check`. If neither FFmpeg tool nor an
+FFmpeg formula is installed, run `acq-edit media-check --install-missing`. This uses
+the existing Homebrew/Workbrew command. A present but broken/unlinked third-party
+installation is preserved and reported for repair; do not uninstall it or trust a tap
+automatically. If Homebrew requests tap trust, explain the exact tap and use its normal
+user/admin decision. No `--ignore-dependencies` workaround or second Homebrew is needed.
+The Brewfile and formula deliberately leave FFmpeg provisioning to this check.
+The installer also executes both media binaries before expensive setup, on resume,
+and the shared installer checks again after dependency changes.
+
+The browser key form opens only when keys are missing. Both editor installations reuse
+the shared credential store. Use `--reenter-keys` on engine onboarding or the explicit
+`credentials` command to replace keys. Presence does not prove valid keys or available
+credit; keep `onboard verify` and provider-generation status distinct.
+
+After an explicit local-only choice, pass `--defer-delivery` to engine onboarding.
+This records `editing-configured-delivery-deferred`, skips the delivery forms and permits
+local editing. It never claims full onboarding or upload readiness. Cancellation is not
+this choice and is never silently converted to deferral. Resume accounts/routes with
+`delivery credentials`, `delivery login`, the monday owner's destination steps, and
+`onboard delivery`. Re-running engine onboarding without the flag resumes delivery.
+
+For Claude projects complete [CLAUDE_SETUP.md](CLAUDE_SETUP.md) before the first headless
+job. `doctor` now includes CLI authentication/version checks, while `agent-check PROJECT_ID
+--smoke` verifies basic project commands and writes. Help is available before installation
+with `acq-edit --help`; use `help-runtime` for the installed runtime's full CLI inventory.

@@ -42,47 +42,34 @@ class AsrUnavailable(RuntimeError):
 
 
 def api_key(name: str, config_path: str | None = None) -> str | None:
-    k = os.environ.get(name)
-    if k:
-        return k
-    paths = [Path.home() / ".zshrc"]
-    if config_path:
-        paths.append(Path.home() / config_path)
-    for p in paths:
+    """Toolkit credentials only; no personal shell/profile or backup-key fallback."""
+    import json
+    root = Path(os.environ.get('ACQ_EDIT_CREDENTIALS_HOME') or os.environ.get('ACQ_EDIT_HOME') or Path.home()/'.config/acq-edit')
+    file = root/'credentials.json'
+    if file.exists() or file.is_symlink():
+        if file.is_symlink() or file.stat().st_uid != os.getuid() or file.stat().st_mode & 0o077:
+            raise AsrUnavailable('Toolkit credentials require private ownership and mode 0600')
         try:
-            if p.exists():
-                if p.name == "api_key":
-                    return p.read_text().strip() or None
-                m = re.search(rf'{re.escape(name)}=["\']?([^"\'\s]+)', p.read_text())
-                if m:
-                    return m.group(1)
-        except Exception:
-            pass
-    return None
+            saved = json.loads(file.read_text())
+            if not isinstance(saved, dict): raise ValueError()
+        except (ValueError, OSError):
+            raise AsrUnavailable('Toolkit credentials are unreadable; reopen private key entry') from None
+        value = saved.get(name)
+        if isinstance(value, str) and value.strip(): return value.strip()
+    return os.environ.get(name) or None
 
 
 def groq_key() -> str | None:
-    return api_key("GROQ_API_KEY", ".config/groq/api_key")
+    return api_key('GROQ_API_KEY')
 
 
 def assemblyai_key() -> str | None:
-    # A saved key rotation must supersede stale environment inherited by a running agent.
-    saved = Path.home() / ".config/assemblyai/api_key"
-    if saved.is_file():
-        key = saved.read_text().strip()
-        if key:
-            return key
-    return api_key("ASSEMBLYAI_API_KEY", ".config/assemblyai/api_key")
+    return api_key('ASSEMBLYAI_API_KEY')
 
 
 def assemblyai_keys() -> list[str]:
-    """Primary key, then ~/.config/assemblyai/backup_keys (one per line, # comments)."""
-    keys = [assemblyai_key()]
-    backups = Path.home() / ".config/assemblyai/backup_keys"
-    if backups.is_file():
-        keys += [l.strip() for l in backups.read_text().splitlines()
-                 if l.strip() and not l.strip().startswith("#")]
-    return list(dict.fromkeys(k for k in keys if k))
+    key = assemblyai_key()
+    return [key] if key else []
 
 
 _LAST_AAI_ERROR = ""
@@ -198,7 +185,7 @@ def _assemblyai(wav: str, key: str, prompt: str | None,
         global _LAST_AAI_ERROR
         body = getattr(getattr(e, "response", None), "text", "") or ""
         _LAST_AAI_ERROR = f"{type(e).__name__}: {e} {body[:200]}"
-        print(f"[asr] assemblyai failed ({_LAST_AAI_ERROR}) — falling back", flush=True)
+        print("[asr] AssemblyAI could not complete transcription. No success or listening evidence is available.", flush=True)
         return None
 
 
@@ -233,7 +220,7 @@ def _cache_path(clip_path: str, profile: str) -> Path:
 
 
 def transcribe(clip_path: str, use_cache: bool = True, *, profile: str = "audit",
-               prompt: str | None = None, keyterms: list[str] | None = None) -> dict:
+               prompt: str | None = None, keyterms: list[str] | None = None, allow_fallback: bool = False) -> dict:
     """Transcribe with word timestamps. Raises AsrUnavailable when no engine works.
 
     CACHED by (path, size, mtime): the step-9 audit fan-out runs audit-audio,
@@ -244,12 +231,14 @@ def transcribe(clip_path: str, use_cache: bool = True, *, profile: str = "audit"
     """
     if profile not in {"audit", "editorial_ingest"}:
         raise ValueError(f"unknown ASR profile: {profile}")
-    cp = _cache_path(clip_path, profile) if use_cache else None
+    cp = _cache_path(clip_path, profile + ("-fallback" if allow_fallback else "-strict")) if use_cache else None
     if cp and cp.exists():
         try:
             import json
             res = json.loads(cp.read_text())
             print(f"[asr] cache HIT ({res.get('engine')}, {len(res.get('words', []))} words)", flush=True)
+            if profile == "editorial_ingest" and not allow_fallback and res.get("engine") != "assemblyai":
+                raise ValueError("Cache belongs to another provider")
             return res
         except Exception:
             pass                                     # corrupt cache -> re-transcribe
@@ -264,6 +253,8 @@ def transcribe(clip_path: str, use_cache: bool = True, *, profile: str = "audit"
                 if res is not None or not _AAI_ACCOUNT_ERROR.search(_LAST_AAI_ERROR):
                     break
                 print(f"[asr] assemblyai key #{n + 1} refused by account; trying next key", flush=True)
+        if profile == "editorial_ingest" and res is None and not allow_fallback:
+            raise AsrUnavailable("AssemblyAI unavailable; verify the toolkit key, credit and connection. No alternate provider was used. Preserve any provider job before retrying.")
         key = groq_key()
         if res is None and key:
             res = _groq(wav, key)

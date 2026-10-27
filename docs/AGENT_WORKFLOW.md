@@ -136,3 +136,29 @@ keep the original run clock through actual review playback. A prepared replay do
 not count as a new-moment end-to-end test. Resolve speech boundaries before spending
 work on dependent framing or captions. These helpers do not replace editorial,
 source-performance, caption-style or complete-head decisions.
+
+## Team test execution repairs
+
+Before the first Claude worker in a new project, follow [CLAUDE_SETUP.md](CLAUDE_SETUP.md).
+Register the clip UUID first; every selection, compiled design and native template must
+use that same ID. Preserve `source_words_sha256` and all compiled artifact hashes.
+Brain `problem` is 3–240 characters: use a concise editorial question; keep the full brief
+in the project. Invalid requests are not brain outages and do not reserve a guidance folder.
+
+For new transcription use the packaged `_shared/asr.py` owner with
+`profile='editorial_ingest', allow_fallback=False`. Caption-clips `scripts/transcribe.py`
+now uses that same AssemblyAI owner by default. Optional `--provider whisper` is explicit
+and requires its optional dependency in toolkit Python. Never silently install/use another
+provider or read personal shell files for keys. Prefer existing verified source-word evidence
+when captioning an already-transcribed cut; avoid paying to transcribe it again.
+
+For source frames use `helper scripts/source_sheet.py --media SOURCE --output NEW_DIRECTORY
+--start SECONDS --end SECONDS --step SECONDS`. It creates timestamped sheets with Pillow;
+FFmpeg drawtext is not required. It does not prove listening, face tracking or human approval.
+
+A native operation with `state=validation_failed` is a recorded preparation refusal: its
+shared compiler returned a packet-bound failure before any editor adapter was instantiated.
+Inspect its error, keep the attempt and write corrected inputs to new paths. It needs no
+native reconciliation. Other failures keep the existing reconciliation rules; never infer
+that an editor did nothing merely from an error message. Genuine caption overlaps still fail;
+only a few floating-point ULPs at an identical boundary are normalized.

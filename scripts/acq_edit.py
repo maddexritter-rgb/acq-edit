@@ -67,6 +67,11 @@ def main():
     args = sys.argv[1:]
     if args == ['version']:
         print(json.loads((PACKAGE / 'release.json').read_text())['version']); return
+    if args in ([], ['help'], ['--help'], ['-h']):
+        print('ACQ Edit: onboard guide | onboard filmcraft|premiere codex|claude [--non-interactive] [--defer-delivery] | version')
+        print('Before setup: media-check [--install-missing]. After setup: --engine filmcraft|premiere doctor | agent-check PROJECT_ID [--smoke] | helper OWNER/scripts/HELPER.py ARGS | project TITLE | build PROJECT_ID REQUEST | help-runtime')
+        return
+    if args == ['help-runtime']: args = ['help']
     base = Path(os.environ.get('ACQ_EDIT_HOME',str(Path.home()/'.config/acq-edit')))
     registry_path=base/'engines.json'
     registry=engine_registry(base)
@@ -93,6 +98,8 @@ def main():
     else:
         root = user_runtime()
         installing=False
+    if args and args[0]=='media-check':
+        os.execv(sys.executable,[sys.executable,str(root/'scripts/media_prerequisites.py'),*args[1:]])
     if args and args[0]=='helper':
         from runtime_environment import execution_environment
         os.environ.update(execution_environment())

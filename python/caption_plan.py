@@ -75,7 +75,12 @@ def derive(project, spec, reference):
         require(type(style.get('syntheticQuoteItalic', False)) == bool, 'Explicit synthetic italic policy required')
         prior = start
     for previous, following in zip(cards, cards[1:]):
-        require(previous['speech_end'] <= following['start_frame'] / fps, 'Overlapping spoken cards need an explicit supported multivoice layout')
+        boundary = following['start_frame'] / fps
+        # Only collapse representation noise (a few ULPs), never a real subframe overlap.
+        release = previous['speech_end']
+        if release > boundary and release - boundary <= 4 * max(math.ulp(release), math.ulp(boundary)):
+            previous['speech_end'] = boundary
+        require(previous['speech_end'] <= boundary, 'Overlapping spoken cards need an explicit supported multivoice layout')
     for omission in handoff.get('omissions', []):
         require(type(omission.get('start')) in (int, float) and type(omission.get('end')) in (int, float)
                 and 0 <= omission['start'] < omission['end'] <= duration / fps, 'Invalid caption omission clock')

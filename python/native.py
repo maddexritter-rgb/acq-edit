@@ -33,15 +33,23 @@ def execute(action,backend,config_path,project_path=None,packet_path=None):
     lock=Path(project['root'])/'10_WORK/native.lock'
     with lock.open('a') as stream:
         fcntl.flock(stream,fcntl.LOCK_EX|fcntl.LOCK_NB)
-        if action=='compile':
-            from assembly_plan import compile_plan
-            return compile_plan(project,packet)
-        if action=='captions':
-            from caption_plan import prepare_plan
-            return prepare_plan(project,packet)
-        if action=='reference':
-            from reference_style import prepare_plan
-            return prepare_plan(project,packet)
+        if action in ('compile', 'captions', 'reference'):
+            # These branches only prepare artifacts; they never instantiate an editor adapter.
+            try:
+                if action == 'compile':
+                    from assembly_plan import compile_plan as prepare
+                elif action == 'captions':
+                    from caption_plan import prepare_plan as prepare
+                else:
+                    from reference_style import prepare_plan as prepare
+                return prepare(project, packet)
+            except Exception as error:
+                from common import sha
+                return {'schema': 'acq-edit/preparation-failure-v1', 'status': 'validation-failed',
+                        'action': action, 'projectId': project['id'], 'backend': backend,
+                        'packetSha256': sha(inside(project['root'], packet_path)),
+                        'nativeEditorStarted': False, 'error': str(error),
+                        'repair': 'Correct the input in a new artifact; preserve this attempt and retry preparation.'}
         adapter=importlib.import_module(backend).Adapter(config)
         require(callable(getattr(adapter,action,None)),f'{backend} does not support native {action}; no other engine was selected')
         return getattr(adapter,action)(project,packet)

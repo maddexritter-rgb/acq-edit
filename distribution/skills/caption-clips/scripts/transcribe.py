@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Transcribe each detected clip with faster-whisper at word-level granularity.
+"""Transcribe each detected clip with AssemblyAI word-level granularity.
 
-Reads boundaries.json from split_clips.py, runs faster-whisper ONCE on the full
+Reads boundaries.json from split_clips.py, runs the selected provider ONCE on the full
 source audio, then slices word-level hits into per-clip JSON files with
 timestamps rebased to the clip's own timeline (clip-relative, starting at 0).
 """
@@ -12,14 +12,13 @@ import json
 import sys
 from pathlib import Path
 
-try:
-    from faster_whisper import WhisperModel
-except ImportError:
-    print("faster-whisper not installed. Run: pip install faster-whisper", file=sys.stderr)
-    sys.exit(2)
 
 
 def transcribe_full(video: Path, model_size: str, device: str, compute_type: str):
+    try:
+        from faster_whisper import WhisperModel
+    except ImportError:
+        raise RuntimeError("Whisper is optional and is not installed. Use the default AssemblyAI route or explicitly install Whisper in toolkit Python.") from None
     model = WhisperModel(model_size, device=device, compute_type=compute_type)
     segments, info = model.transcribe(
         str(video),
@@ -66,6 +65,7 @@ def main() -> int:
     ap.add_argument("boundaries", type=Path, help="boundaries.json from split_clips.py")
     ap.add_argument("--out", type=Path, default=Path("transcripts"),
                     help="Output directory for per-clip transcripts")
+    ap.add_argument("--provider", choices=["assemblyai", "whisper"], default="assemblyai")
     ap.add_argument("--model", default="large-v3",
                     help="Whisper model size (tiny/base/small/medium/large-v2/large-v3)")
     ap.add_argument("--device", default="auto",
@@ -98,9 +98,14 @@ def main() -> int:
     if compute_type == "auto":
         compute_type = "float16" if device == "cuda" else "int8"
 
-    print(f"Loading {args.model} on {device} ({compute_type})…")
-    words, info = transcribe_full(args.input, args.model, device, compute_type)
-    print(f"Transcribed {len(words)} words ({info.language}, {info.duration:.1f}s).")
+    if args.provider == 'assemblyai':
+        sys.path.insert(0, str(Path(__file__).resolve().parents[2]/'_shared'))
+        from asr import transcribe
+        result = transcribe(str(args.input), profile='editorial_ingest', allow_fallback=False)
+        words = [{**w, 'prob': w.get('confidence') or 0.0} for w in result['words']]
+    else:
+        words, info = transcribe_full(args.input, args.model, device, compute_type)
+    print(f"Transcribed {len(words)} words with {args.provider}.")
 
     args.out.mkdir(parents=True, exist_ok=True)
     for clip in clips:

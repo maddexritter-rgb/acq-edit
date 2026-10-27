@@ -2,12 +2,17 @@
 // Protocol simulator only. Never an editorial or native editing proof.
 import {createInterface} from 'node:readline';
 import {writeFileSync} from 'node:fs';
+if(process.argv.includes('--version')){console.log('2.1.312 fixture');process.exit(0)}
 const scenario=process.env.SCENARIO;
 const emit=x=>process.stdout.write(JSON.stringify(x)+'\n');
 if(process.env.PID_FILE)writeFileSync(process.env.PID_FILE,String(process.pid));
 if(scenario==='hang'){process.on('SIGTERM',()=>{});setInterval(()=>{},1000)}
 else if(scenario?.startsWith('claude')){
  emit({type:'system',session_id:'claude-session'});
+ if(['claude-background','claude-late-error'].includes(scenario)){
+  emit({type:'result',subtype:'success',is_error:false,session_id:'claude-session',result:'Rendering'});
+  setTimeout(()=>{emit({type:'background-finished'});emit({type:'result',subtype:'success',is_error:scenario==='claude-late-error',session_id:'claude-session',result:scenario==='claude-late-error'?'late failure':'Done'})},80);
+ }
  if(scenario==='claude-success')emit({type:'result',subtype:'success',is_error:false,session_id:'claude-session',result:'Done'});
  if(scenario==='claude-credit')emit({type:'result',subtype:'success',is_error:true,session_id:'claude-session',result:'Credit balance is too low'});
  if(scenario==='claude-error')emit({type:'result',subtype:'error_during_execution',is_error:true,session_id:'claude-session',errors:['Fixture failure']});

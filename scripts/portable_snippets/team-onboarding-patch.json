@@ -1,0 +1,94 @@
+{
+  "_shared/asr.py": {
+    "beforeSha256": "b04607d58497a47f402fa80e1d4faafefc44b9f8023bae5a650bbd01dc908f27",
+    "afterSha256": "9fb11550ad3dd6dc566fe5176ca91bb13b161dd0ae9d22f6baabf4317d35915b",
+    "changes": [
+      {
+        "start": 44,
+        "end": 51,
+        "replacement": "    \"\"\"Toolkit credentials only; no personal shell/profile or backup-key fallback.\"\"\"\n    import json\n    root = Path(os.environ.get('ACQ_EDIT_CREDENTIALS_HOME') or os.environ.get('ACQ_EDIT_HOME') or Path.home()/'.config/acq-edit')\n    file = root/'credentials.json'\n    if file.exists() or file.is_symlink():\n        if file.is_symlink() or file.stat().st_uid != os.getuid() or file.stat().st_mode & 0o077:\n            raise AsrUnavailable('Toolkit credentials require private ownership and mode 0600')\n"
+      },
+      {
+        "start": 52,
+        "end": 61,
+        "replacement": "            saved = json.loads(file.read_text())\n            if not isinstance(saved, dict): raise ValueError()\n        except (ValueError, OSError):\n            raise AsrUnavailable('Toolkit credentials are unreadable; reopen private key entry') from None\n        value = saved.get(name)\n        if isinstance(value, str) and value.strip(): return value.strip()\n    return os.environ.get(name) or None\n"
+      },
+      {
+        "start": 64,
+        "end": 65,
+        "replacement": "    return api_key('GROQ_API_KEY')\n"
+      },
+      {
+        "start": 68,
+        "end": 75,
+        "replacement": "    return api_key('ASSEMBLYAI_API_KEY')\n"
+      },
+      {
+        "start": 78,
+        "end": 85,
+        "replacement": "    key = assemblyai_key()\n    return [key] if key else []\n"
+      },
+      {
+        "start": 200,
+        "end": 201,
+        "replacement": "        print(\"[asr] AssemblyAI could not complete transcription. No success or listening evidence is available.\", flush=True)\n"
+      },
+      {
+        "start": 235,
+        "end": 236,
+        "replacement": "               prompt: str | None = None, keyterms: list[str] | None = None, allow_fallback: bool = False) -> dict:\n"
+      },
+      {
+        "start": 246,
+        "end": 247,
+        "replacement": "    cp = _cache_path(clip_path, profile + (\"-fallback\" if allow_fallback else \"-strict\")) if use_cache else None\n"
+      },
+      {
+        "start": 252,
+        "end": 252,
+        "replacement": "            if profile == \"editorial_ingest\" and not allow_fallback and res.get(\"engine\") != \"assemblyai\":\n                raise ValueError(\"Cache belongs to another provider\")\n"
+      },
+      {
+        "start": 266,
+        "end": 266,
+        "replacement": "        if profile == \"editorial_ingest\" and res is None and not allow_fallback:\n            raise AsrUnavailable(\"AssemblyAI unavailable; verify the toolkit key, credit and connection. No alternate provider was used. Preserve any provider job before retrying.\")\n"
+      }
+    ]
+  },
+  "caption-clips/scripts/transcribe.py": {
+    "beforeSha256": "730e8c006aec03e1a6522648db4852e9c9e59c88eba069d4e977bedbfcece8a5",
+    "afterSha256": "84c3d5ac95be0675144e6804e29edf6d9aa9a5ecccc7a91c9b0bfc66a9b64f00",
+    "changes": [
+      {
+        "start": 1,
+        "end": 2,
+        "replacement": "\"\"\"Transcribe each detected clip with AssemblyAI word-level granularity.\n"
+      },
+      {
+        "start": 3,
+        "end": 4,
+        "replacement": "Reads boundaries.json from split_clips.py, runs the selected provider ONCE on the full\n"
+      },
+      {
+        "start": 14,
+        "end": 19,
+        "replacement": ""
+      },
+      {
+        "start": 22,
+        "end": 22,
+        "replacement": "    try:\n        from faster_whisper import WhisperModel\n    except ImportError:\n        raise RuntimeError(\"Whisper is optional and is not installed. Use the default AssemblyAI route or explicitly install Whisper in toolkit Python.\") from None\n"
+      },
+      {
+        "start": 68,
+        "end": 68,
+        "replacement": "    ap.add_argument(\"--provider\", choices=[\"assemblyai\", \"whisper\"], default=\"assemblyai\")\n"
+      },
+      {
+        "start": 100,
+        "end": 103,
+        "replacement": "    if args.provider == 'assemblyai':\n        sys.path.insert(0, str(Path(__file__).resolve().parents[2]/'_shared'))\n        from asr import transcribe\n        result = transcribe(str(args.input), profile='editorial_ingest', allow_fallback=False)\n        words = [{**w, 'prob': w.get('confidence') or 0.0} for w in result['words']]\n    else:\n        words, info = transcribe_full(args.input, args.model, device, compute_type)\n    print(f\"Transcribed {len(words)} words with {args.provider}.\")\n"
+      }
+    ]
+  }
+}

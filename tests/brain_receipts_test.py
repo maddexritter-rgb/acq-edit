@@ -86,7 +86,7 @@ class BrainReceiptTests(unittest.TestCase):
   request=self.request('test');request['output']=str(self.root.parent/'escape')
   with self.assertRaisesRegex(RuntimeError,'outside'):brain.fetch(self.project,self.config,request)
   request=self.request('test');request['publish']=True
-  with self.assertRaisesRegex(RuntimeError,'only retrieves'):brain.fetch(self.project,self.config,request)
+  with self.assertRaisesRegex(brain.InvalidBrainRequest,'only retrieves'):brain.fetch(self.project,self.config,request)
  def test_render_receipt_keeps_original_guidance_after_a_new_retrieval(self):
   import common
   first=self.fetch('first');self.revision=2;self.fetch('second');work=self.root/'10_WORK'

@@ -19,7 +19,7 @@ export type NativeAction='compile'|'captions'|'hooks'|'reference'|'inspect'|'ope
 export interface NativeOperation {
  id:string;projectId:string;jobId:string|null;backend:Backend;action:NativeAction;
  packetPath:string;packetSha256:string;directory:string;
- state:'running'|'succeeded'|'reconciliation_required'|'reconciled';
+ state:'running'|'succeeded'|'validation_failed'|'reconciliation_required'|'reconciled';
  ownerPid:number|null;childPid:number|null;childPending:boolean;
  // Absent on older journals. Never infer not-started from absent or cleared PIDs.
  dispatchPhase?:'not-started'|'launching'|'spawned'|'returned';

@@ -227,6 +227,15 @@ FONT = str(Path(FONT).expanduser().resolve())
 ImageFont.truetype(FONT, 12)  # validate before rendering or creating output'''
   if old not in text:raise ValueError('Ad renderer font-default source changed')
   text=text.replace(old,replacement);changes.append({'patch':'explicit-render-font'})
+ patch_file=Path(__file__).with_name('portable_snippets')/'team-onboarding-patch.json'
+ patch=json.loads(patch_file.read_text()).get(relative)
+ if patch:
+  if hashlib.sha256(text.encode()).hexdigest()!=patch['beforeSha256']:raise ValueError('Team onboarding patch needs upstream reconciliation: '+relative)
+  lines=text.splitlines(keepends=True)
+  for change in reversed(patch['changes']):lines[change['start']:change['end']]=[change['replacement']]
+  text=''.join(lines)
+  if hashlib.sha256(text.encode()).hexdigest()!=patch['afterSha256']:raise ValueError('Team onboarding patch output mismatch')
+  changes.append({'patch':'team-onboarding-provider-routing'})
  return text,changes
 DESCRIPTIONS={
  'footage-fetch':'Import local footage, YouTube videos or authenticated Google Drive files and folders into verified project-owned sources. Use for footage intake, download queues, checksum verification and interrupted-transfer recovery.',
