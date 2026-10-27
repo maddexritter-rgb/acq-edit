@@ -1,4 +1,6 @@
 import hashlib
+import io
+import urllib.error
 import importlib.util
 import json
 import os
@@ -13,7 +15,7 @@ from unittest.mock import patch
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
-from onboard import extract, install_fonts, install_brain, verify_connections
+from onboard import extract, install_fonts, install_brain, verify_connections, assets, download_assets
 from acq_edit import user_runtime
 
 def manifest(root):
@@ -48,6 +50,34 @@ class Onboarding(unittest.TestCase):
             for name in ['AGENTS.md','CLAUDE.md','docs/ONBOARDING.md']:
                 self.assertEqual((runtime/name).read_bytes(),(package/name).read_bytes())
             self.assertFalse((home/'.config/acq-edit').exists())
+
+    def test_public_asset_install_works_without_github_auth_and_keeps_hash_verification(self):
+        for corrupt in (False,True):
+            with self.subTest(corrupt=corrupt),tempfile.TemporaryDirectory() as d:
+                root=Path(d);bundle=root/'build/test';bundle.mkdir(parents=True)
+                (bundle/'profile.json').write_text('{}');manifest(bundle)
+                stream=io.BytesIO()
+                with tarfile.open(fileobj=stream,mode='w:gz') as archive:archive.add(bundle,arcname='test')
+                payload=stream.getvalue()
+                release={'repository':'example/edit','assets':{'version':'test','tag':'test','archive':'test.tar.gz','sha256':hashlib.sha256(payload).hexdigest(),'manifestSha256':hashlib.sha256((bundle/'asset-bundle.json').read_bytes()).hexdigest()}}
+                with patch('onboard.Path.home',return_value=root/'home'),patch('onboard.urllib.request.urlopen',return_value=io.BytesIO(b'corrupted' if corrupt else payload)) as request,patch('onboard.execute') as execute,patch('onboard.shutil.which',return_value=None):
+                    if corrupt:
+                        with self.assertRaisesRegex(ValueError,'archive checksum'):assets(release)
+                        self.assertFalse((root/'home/Library/Application Support/ACQ Edit/assets/test').exists())
+                    else:
+                        installed=assets(release);self.assertEqual((installed/'profile.json').read_text(),'{}')
+                        self.assertEqual(assets(release),installed);self.assertEqual(request.call_count,1)
+                    execute.assert_not_called()
+                    self.assertFalse(request.call_args.args[0].has_header('Authorization'))
+
+    def test_private_asset_fallback_is_limited_to_access_errors(self):
+        with tempfile.TemporaryDirectory() as d:
+            release={'repository':'example/edit','assets':{'tag':'test','archive':'test.tar.gz'}}
+            with patch('onboard.urllib.request.urlopen',side_effect=urllib.error.HTTPError('https://github.com',404,'Not found',{},None)),patch('onboard.shutil.which',return_value='/bin/gh'),patch('onboard.execute') as execute:
+                self.assertEqual(download_assets(release,Path(d)),Path(d)/'test.tar.gz');execute.assert_called_once()
+            with patch('onboard.urllib.request.urlopen',side_effect=urllib.error.HTTPError('https://github.com',500,'Server error',{},None)),patch('onboard.execute') as execute:
+                with self.assertRaisesRegex(ValueError,'Release download unavailable'):download_assets(release,Path(d))
+                execute.assert_not_called()
 
     def test_runtime_keeps_existing_changes_and_rejects_different_package(self):
         with tempfile.TemporaryDirectory() as d:

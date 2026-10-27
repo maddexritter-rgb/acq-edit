@@ -6,6 +6,8 @@ Opening text headlines were removed from the current toolkit on 2026-10-26. Any 
 
 Implemented:
 
+- 2026-10-27: at the owner’s explicit request, source, Homebrew tap and existing releases are public. Preview.4 uses anonymous, hash-verified asset downloads and a standard public Homebrew URL; onboarding no longer requires GitHub login. Personal model-provider credentials remain local. Earlier notes describing private release packaging are historical.
+
 - 2026-10-27: preview.3 adds a shared conversational onboarding contract, root Claude Code discovery and a dependency-free `onboard guide` handoff for installed packages. Agents provide one next step and provider link at a time, resume non-secret progress, direct keys to private prompts and help troubleshoot through the first requested clip. Automated checks do not certify the conversational experience or new-Mac acceptance.
 
 - 2026-10-27: preview.2 fixes review-room save recovery, empty-project state and media-stream failure handling. Failed saves retain notes and can be retried; lost responses are reconciled without overwriting conflicting feedback. Empty or not-yet-rendered clips clear old media and disable feedback. Media read failures and abandoned playback close only their stream. Nine regression tests cover these scenarios; this does not qualify clean-Mac or live-editor acceptance.
