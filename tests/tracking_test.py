@@ -40,6 +40,14 @@ class TrackingTests(unittest.TestCase):
   def verify(value):
    file=self.root/'native.json';file.write_text(json.dumps(value));verify_filmcraft_framing(file,self.spec,ft)
   verify(data)
+  for param,axis in [('anchor','x'),('position','y'),('scale',None)]:
+   rounded_static=copy.deepcopy(data)
+   value=rounded_static['project']['items']['1']['kind']['Sequence']['video_tracks'][0]['items'][0]['effects'][0]['params'][param]['value']
+   target=value['Vec2'] if axis else value;field=axis or 'Float'
+   target[field]+=1e-13
+   verify(rounded_static)
+   target[field]+=1e-4
+   with self.assertRaisesRegex(RuntimeError,'Native framing value differs'):verify(rounded_static)
   rounded=copy.deepcopy(data)
   point=rounded['project']['items']['1']['kind']['Sequence']['video_tracks'][0]['items'][0]['effects'][0]['params']['anchor']['keyframes'][1]['value']['Vec2']
   point['x']+=1e-13

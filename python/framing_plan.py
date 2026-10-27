@@ -105,7 +105,12 @@ def verify_filmcraft_framing_data(data,spec,frame_ticks,sequence_id=None):
   shot=shots[cut['id']];m=next(e['params'] for e in item['effects'] if e['effect']=='motion')
   for key,value in filmcraft_motion(spec,shot).items():
    actual=m[key]['value'];expected={'Vec2':dict(zip(['x','y'],value))} if isinstance(value,list) else {'Float':value}
-   require(actual==expected,'Native framing value differs: '+key)
+   # Static coordinates cross the same JSON/Rust boundary as tracking keys.
+   # Preserve shape and types; allow only sub-nanopixel round-trip noise.
+   def equal(a,b):
+    if isinstance(b,dict):return isinstance(a,dict) and set(a)==set(b) and all(equal(a[k],b[k]) for k in b)
+    return type(a) in (int,float) and math.isfinite(a) and math.isclose(a,b,rel_tol=0,abs_tol=1e-9)
+   require(equal(actual,expected),'Native framing value differs: '+key)
    require(key=='anchor' or not m[key].get('keyframes'),'Unexpected animated framing: '+key)
   keys=m['anchor'].get('keyframes',[])
   if shot['mode']=='fixed-crop':require(not keys,'Fixed crop gained tracking');continue
