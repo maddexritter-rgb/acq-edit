@@ -23,10 +23,34 @@ brew install maddexritter-rgb/acq/acq-edit
 acq-edit version
 ```
 
-Sign into a GitHub account with access to both private repositories (`acq-edit` and
-`homebrew-acq`). Release downloads use that GitHub authentication. If Workbrew reports
-an organization policy restriction, ask the admin to allow the tap; don't work around it.
-For centrally deployed installs, admins follow [packaging](../packaging/README.md).
+For ordinary Homebrew, sign into a GitHub account with access to both private repositories
+(`acq-edit` and `homebrew-acq`). Release downloads use that GitHub authentication.
+
+**Workbrew private-package authentication:** Workbrew runs installations as its service user.
+The editor's `gh auth login` does not by itself authenticate that service user. An admin must
+connect/allow the private tap and configure its read-only release-download credential as
+described in [packaging](../packaging/README.md). This applies to interactive Workbrew installs
+too, not just fleet deployment. [Workbrew's authentication guide](https://workbrew.com/docs/authenticate-private-formula-artifacts).
+
+If that private tap has not been provisioned, use the supported user-checkout installation:
+Workbrew installs the standard dependencies, while your own GitHub login downloads the private
+source and assets. This does not need a shared credential in Workbrew:
+
+```sh
+brew install gh git
+gh auth login
+gh auth setup-git
+gh repo clone maddexritter-rgb/acq-edit
+cd acq-edit
+brew bundle --file=Brewfile
+export PATH="$(brew --prefix node@24)/bin:$(brew --prefix python@3.11)/bin:$PATH"
+python3.11 scripts/onboard.py filmcraft codex
+```
+
+Use `premiere` / `claude` instead when those are the selected tools. In this source flow, run
+`node dist/cli.js serve` for the review room and `python3.11 scripts/onboard.py status` to resume
+setup. The agent can run these from the checkout; no global launcher is required. Never bypass
+company restrictions: if a policy blocks any required dependency or source access, ask the admin.
 
 For a source checkout instead, run `brew bundle --file=Brewfile`, add Homebrew's `node@24`
 `bin` directory to PATH if Node is not found, then `python3.11 scripts/onboard.py filmcraft codex`.

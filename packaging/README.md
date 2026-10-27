@@ -6,8 +6,8 @@ The formula installs shared tools but does not open editors, install user fonts,
 team assets, collect credentials or configure a particular user during package installation.
 `acq-edit onboard` performs those steps in the signed-in user's account.
 
-The tap authenticates release downloads using GitHub's API. Individual installs can use
-`gh auth login`; Workbrew-managed unattended deployment needs the admin's secret
+The tap authenticates release downloads using GitHub's API. Ordinary Homebrew installs can use
+`gh auth login`; all Workbrew-managed package installs (including interactive ones) need the admin's secret
 `HOMEBREW_GITHUB_API_TOKEN` with read-only Contents access to the release repository.
 Private tap discovery additionally requires the Workbrew GitHub integration to have access
 to the tap. Account/organization policies may require administrator provisioning.
