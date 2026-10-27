@@ -1,3 +1,19 @@
+## Required delivery onboarding — preview.8
+
+Full onboarding now ends in delivery-pending until the agent guides Frame browser sign-in,
+Monday token connection, editor initials and destinations, then runs `onboard delivery`.
+The shared local password form also handles delivery credentials; no file-edit fallback.
+The monday owner checks both identities and every configured brand/format route, including
+Frame folder/project and Monday board/groups/link/status columns, before recording read-verified.
+`delivery status` reports missing/stale setup without exposing keys. Checks expire after one day
+or configuration changes. Explicit local-only deferral is recorded rather than silently skipped.
+Setup does not upload or create items; verified reads do not prove write access.
+
+Validation: 13 delivery checkpoint/credential tests, 11 credential-form tests and 10
+onboarding tests pass, along with distribution checks. A real browser smoke saved synthetic
+delivery values into an isolated fixture and exited successfully. New-Mac provider login and an explicitly requested real upload remain
+user acceptance steps; no live accounts were connected or clips uploaded during development.
+
 ## Agent skill discovery — preview.7
 
 Onboarding registers all 38 packaged owners in the chosen agent's project skill folder.

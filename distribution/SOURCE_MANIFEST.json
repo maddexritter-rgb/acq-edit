@@ -6293,12 +6293,16 @@
       "path": "monday/references/onboarding.md",
       "source": "github:maddexritter-rgb/vibe-editing@a342d7173d49b6be43e477a0041aad6014fbf377/plugins/vibe-editing/skills/monday/references/onboarding.md",
       "source_sha256": "3ef2bcacd3486711fa2d80d5fe2a4c44e53283df7c9624b85a3d3a57a6db139d",
-      "distribution_sha256": "3ef2bcacd3486711fa2d80d5fe2a4c44e53283df7c9624b85a3d3a57a6db139d",
-      "bytes": 3556,
+      "distribution_sha256": "23fb46dbc5dd7e27c4ae83df42b3435cac64c7d7ae2fcdeed153855f098eacbf",
+      "bytes": 4018,
       "transforms": [
         {
           "from": "vibe-editing user configuration",
           "to": "acq-edit user configuration"
+        },
+        {
+          "patch": "required-delivery-onboarding-local-form",
+          "revision": "0.2.0-preview.8"
         }
       ]
     },
@@ -6319,12 +6323,16 @@
       "path": "monday/scripts/connect.py",
       "source": "github:maddexritter-rgb/vibe-editing@a342d7173d49b6be43e477a0041aad6014fbf377/plugins/vibe-editing/skills/monday/scripts/connect.py",
       "source_sha256": "d7ba592e59b2dc2140cc5c626cd4c7b5af02696b1855b65f70724f324c3cc11b",
-      "distribution_sha256": "d7ba592e59b2dc2140cc5c626cd4c7b5af02696b1855b65f70724f324c3cc11b",
-      "bytes": 1758,
+      "distribution_sha256": "f74fa57d8c98f559ddd80d9be327b222ead8a55696f2f69f78992a8484be6cc0",
+      "bytes": 8149,
       "transforms": [
         {
           "from": "vibe-editing user configuration",
           "to": "acq-edit user configuration"
+        },
+        {
+          "patch": "required-delivery-onboarding-local-form",
+          "revision": "0.2.0-preview.8"
         }
       ]
     },

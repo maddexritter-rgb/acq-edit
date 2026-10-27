@@ -3,6 +3,8 @@
 import argparse
 import fcntl
 import getpass
+import html
+import re
 import json
 import os
 from pathlib import Path
@@ -54,8 +56,8 @@ PAGE = '''<!doctype html><html lang="en"><meta charset="utf-8">
 <title>Connect ACQ Edit</title>
 <style nonce="NONCE">body{background:#111318;color:#f5f5f5;font:17px system-ui;margin:0;padding:36px 20px}main{max-width:480px;margin:5vh auto;background:#1c2028;padding:32px;border-radius:20px}h1{font-size:30px}p{color:#bac3d0;line-height:1.5}label{display:block;margin:24px 0 8px;font-weight:650}input{box-sizing:border-box;width:100%;padding:14px;border:1px solid #626d80;border-radius:8px;background:#111318;color:white;font:inherit}a{color:#a6c5ff}button{padding:13px 20px;border:0;border-radius:8px;font:inherit;cursor:pointer;margin:24px 8px 0 0;background:#bdd4ff;color:#101827}button.secondary{background:#343b49;color:white}small{display:block;margin-top:8px;color:#bac3d0}#status{min-height:48px}</style>
 <main><h1>Connect your editing tools</h1><p>Paste your two keys below. They stay on this Mac and are not sent to your chat. No files to edit.</p>
-<form id="form"><label for="assembly">AssemblyAI key</label><input id="assembly" type="password" autocomplete="off" spellcheck="false" maxlength="4096"><small>Finds spoken words and their timing. <a href="https://www.assemblyai.com/dashboard" target="_blank" rel="noreferrer">Get your key ↗</a></small>
-<label for="gemini">Gemini key</label><input id="gemini" type="password" autocomplete="off" spellcheck="false" maxlength="4096"><small>Helps inspect video and audio. <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">Get your key ↗</a></small>
+<form id="form"><label for="assembly">AssemblyAI key</label><input id="assembly" name="ASSEMBLYAI_API_KEY" type="password" autocomplete="off" spellcheck="false" maxlength="4096"><small>Finds spoken words and their timing. <a href="https://www.assemblyai.com/dashboard" target="_blank" rel="noreferrer">Get your key ↗</a></small>
+<label for="gemini">Gemini key</label><input id="gemini" name="GEMINI_API_KEY" type="password" autocomplete="off" spellcheck="false" maxlength="4096"><small>Helps inspect video and audio. <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">Get your key ↗</a></small>
 <p>Already connected? Leave a field blank to keep its saved key.</p><button id="save">Save keys</button><button class="secondary" type="button" id="cancel">Cancel</button></form><p id="status" role="status" aria-live="polite"></p></main>
 <script nonce="NONCE">
 const token=location.hash.slice(1);history.replaceState(null,'','/');
@@ -63,7 +65,7 @@ const form=document.getElementById('form'),status=document.getElementById('statu
 async function submit(action){
  const buttons=[...document.querySelectorAll('button')];buttons.forEach(b=>b.disabled=true);
  try{
-  const values=action==='save'?{ASSEMBLYAI_API_KEY:document.getElementById('assembly').value,GEMINI_API_KEY:document.getElementById('gemini').value}:{};
+  const values=action==='save'?Object.fromEntries([...form.querySelectorAll('input')].map(input=>[input.name,input.value])):{};
   const response=await fetch('/'+action,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify(values)});
   const result=await response.json();status.textContent=result.message;
   if(response.ok){form.reset();form.hidden=true;}else{buttons.forEach(b=>b.disabled=false);}
@@ -75,7 +77,18 @@ if(!token){status.textContent='Ask your agent to reopen key setup to get a fresh
 </script></html>'''
 
 
-def make_server(root):
+def form_page(title, introduction, fields):
+    """Reuse one secret-entry UI for editing and delivery; field definitions are toolkit-owned."""
+    markup = ''.join(f'<label for="{html.escape(key)}">{html.escape(label)}</label>'
+                     f'<input id="{html.escape(key)}" name="{html.escape(key)}" type="password" autocomplete="off" spellcheck="false" maxlength="4096">'
+                     f'<small>{html.escape(help_text)} <a href="{html.escape(url, quote=True)}" target="_blank" rel="noreferrer">Open account page ↗</a></small>'
+                     for key, label, help_text, url in fields)
+    page = PAGE.replace('Connect your editing tools', html.escape(title)).replace(
+        'Paste your two keys below. They stay on this Mac and are not sent to your chat. No files to edit.', html.escape(introduction))
+    return re.sub(r'(?<=<form id="form">).*?(?=<p>Already connected)', lambda _: markup, page, flags=re.S)
+
+
+def make_server(root, page=PAGE, saver=save_keys):
     token = secrets.token_urlsafe(32)
     nonce = secrets.token_urlsafe(24)
 
@@ -102,7 +115,7 @@ def make_server(root):
         def do_GET(self):
             if self.headers.get('Host') != self.server.address or self.path != '/':
                 self.reply(404, 'Not found.'); return
-            self.reply(200, PAGE.replace('NONCE', nonce), html=True)
+            self.reply(200, page.replace('NONCE', nonce), html=True)
 
         def do_POST(self):
             if (self.headers.get('Host') != self.server.address
@@ -122,9 +135,9 @@ def make_server(root):
                 self.server.result = 'cancelled'
                 self.reply(200, 'Setup cancelled. Your saved keys are unchanged.'); return
             try:
-                save_keys(root, values)
+                saver(root, values)
             except ValueError:
-                self.reply(400, 'Check both fields: paste only each key. Blank keeps an existing key.'); return
+                self.reply(400, 'Check the fields: paste each requested value. Blank keeps an existing value.'); return
             except OSError:
                 self.reply(500, 'Could not save locally. Ask your agent to check local file access.'); return
             self.server.result = 'saved'
@@ -135,6 +148,24 @@ def make_server(root):
     server.result = None
     server.timeout = 1
     return server, 'http://' + server.address + '/#' + token
+
+
+def run_browser(root, page=PAGE, saver=save_keys, no_open=False):
+    server, url = make_server(root, page, saver)
+    print('Paste your keys into the local setup form, then click Save keys:\n' + url, flush=True)
+    try:
+        if not no_open:
+            try:
+                webbrowser.open(url)
+            except Exception:
+                print('Open the setup link above in your browser.', flush=True)
+        deadline = time.monotonic() + 900
+        while server.result is None and time.monotonic() < deadline:
+            server.handle_request()
+        if server.result != 'saved':
+            raise ValueError('Key setup cancelled or expired. Rerun credentials to continue.')
+    finally:
+        server.server_close()
 
 
 def main():
@@ -148,21 +179,7 @@ def main():
             raise ValueError('Use the default browser form when no interactive terminal is available.')
         save_keys(args.home, {key: getpass.getpass(key + ' (blank keeps current): ') for key in KEYS})
     else:
-        server, url = make_server(args.home)
-        print('Paste your keys into the local setup form, then click Save keys:\n' + url, flush=True)
-        try:
-            if not args.no_open:
-                try:
-                    webbrowser.open(url)
-                except Exception:
-                    print('Open the setup link above in your browser.', flush=True)
-            deadline = time.monotonic() + 900
-            while server.result is None and time.monotonic() < deadline:
-                server.handle_request()
-            if server.result != 'saved':
-                raise ValueError('Key setup cancelled or expired. Rerun credentials to continue.')
-        finally:
-            server.server_close()
+        run_browser(args.home, no_open=args.no_open)
     print('Keys saved locally with mode 0600. Values were not printed.')
 
 
