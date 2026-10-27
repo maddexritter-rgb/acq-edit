@@ -8,9 +8,9 @@ Open this repo in Codex or Claude Code and say:
 After a Homebrew/Workbrew installation, run `acq-edit onboard guide` to find the installed
 folder and a ready-to-paste request for your agent. Open that folder in Codex or Claude Code.
 
-The agent does the setup; you sign in and enter your own keys in private terminal prompts.
+The agent does the setup; you sign in and paste your keys into a small local setup page. No configuration files to open.
 There is no separate Anthropic or OpenAI API key requirement. Use your signed-in Codex or
-Claude Code account. Never paste API keys into the chat.
+Claude Code account. The setup page keeps key values out of chat history.
 
 ## Agent onboarding contract
 
@@ -33,7 +33,7 @@ it does not download a separate conversational model.
 - Answer questions directly, then return to the current step. If the user gets stuck, ask what
   they see or for the non-secret error text. Never ask for a screenshot containing a key.
 - Run available setup commands yourself when authorized. Let the user handle sign-in, billing,
-  terms acceptance and hidden credential entry. Do not ask a nontechnical user to edit JSON.
+  terms acceptance and pasting keys into the local setup page. Do not ask a nontechnical user to edit JSON.
 - After each check, say what worked and what is next. Be specific: “The transcription connection
   works. Next we'll connect video analysis.” Avoid saying “everything is ready” before testing it.
 - Keep setup progress across interruptions. Read `onboard status`, saved configuration and
@@ -49,12 +49,13 @@ it does not download a separate conversational model.
 
 First confirm the chosen engine and project storage, then follow the installation steps below.
 Use FilmCraft or Premiere for this pilot; Resolve is paused. Once prerequisites are ready,
-run onboarding in a terminal the user can interact with. Before its credential prompts, explain:
+run onboarding yourself. Its credentials step opens a local browser form and waits for Save.
+Use a background tool session so the user can fill it while you remain available. Explain:
 
 1. **AssemblyAI — transcription and word timing.**
    Say: “First we'll connect transcription so the editor can find and cut exact spoken words.
    Open the [AssemblyAI dashboard](https://www.assemblyai.com/dashboard), sign in or create an
-   account, and find your API key. Let me know when you have it—don't paste it into this chat.”
+   account, and find your API key. I'll open a little setup page where you can paste it.”
    Help them locate the key using the [official quickstart](https://www.assemblyai.com/docs/pre-recorded-audio/getting-started/transcribe-an-audio-file)
    if the dashboard differs. Explain that usage is billed by the provider; do not promise free
    usage or choose a paid plan for them.
@@ -65,13 +66,21 @@ run onboarding in a terminal the user can interact with. Before its credential p
    question.” Use Google's [key setup guide](https://ai.google.dev/gemini-api/docs/api-key)
    for current project/key instructions. Do not ask for a service-account JSON file or admin key.
 3. **Private entry and verification.**
-   Say exactly where to paste each key: the matching hidden terminal prompt in the installer,
-   or `acq-edit credentials` if setup already ran (`node dist/cli.js credentials` in a checkout).
-   Explain that typed/pasted characters are hidden and that Enter submits; blank preserves an
-   existing key. If your tool cannot offer a user-interactive terminal, give them that single
-   command to run locally and wait for “done.” Never collect secrets through chat, tool arguments,
-   shell history or a feedback form. If a key was accidentally pasted into chat, don't repeat it;
-   guide the user to replace it at the provider and enter the replacement privately.
+   Run `acq-edit credentials` yourself (`node dist/cli.js credentials` in a built checkout).
+   Say: “I've opened a small setup page. Paste the keys into their labeled boxes and click
+   **Save keys**. I'll take care of the rest.” The installer also opens this page automatically.
+   Keep the command running in a background tool session while the user fills the form.
+   If the browser did not open, show the printed localhost link as a clickable link, or open it
+   in the app browser. `--no-open` prints the link without launching the system browser.
+   Never ask them to open a credential file, edit JSON, or run a command just to enter keys.
+   Blank fields preserve saved keys. Cancel or expiry preserves previous credentials. After
+   Save, the page closes its local server and the command reports only success, never values.
+   A regular chat question box is not a secret-input field. Use the local password form as the
+   default, including when someone asks for a little question box. Do not read, screenshot or
+   inspect populated password fields. Do not copy keys into tool arguments, logs or chat replies.
+   If a user already pasted a key in chat, don't repeat it; explain that chat is not private key
+   storage and guide them to the local form. Optional `credentials --terminal` is only for users
+   who explicitly prefer an interactive terminal; never use it as the nontechnical fallback.
    Then run `onboard verify` and `doctor`, interpret their results in plain language, and fix the
    specific failed step. A read check is not proof of billing balance or model-generation access.
 4. **Already included.**
@@ -85,8 +94,9 @@ run onboarding in a terminal the user can interact with. Before its credential p
    do not invent a second connection or delivery workflow.
 
 The installer currently collects both editing keys together. You can explain both account steps
-first, then bring the user to the two hidden prompts. Do not leave a prompt waiting for an answer
-that only the agent can supply, and do not claim a key was entered before checking the result.
+first, then open the form. Do not claim a key was entered before the command reports success.
+If dependencies are still being installed, the agent can open the same form directly with
+`python3 scripts/credentials.py "${ACQ_EDIT_HOME:-$HOME/.config/acq-edit}"` from this repo.
 
 ### Help with common questions and failures
 
@@ -219,7 +229,8 @@ closes or changes an unrelated project. Upgrading a panel needs an explicit coor
 
 ## 3. Connect editing services
 
-The installer prompts privately for these two personal keys. Blank keeps an existing key.
+The installer opens a local page with password fields for these two personal keys.
+Paste and click **Save keys**; blank keeps an existing key. The page expires after 15 minutes.
 
 | Connection | Purpose | Where to get it |
 | --- | --- | --- |
