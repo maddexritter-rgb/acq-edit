@@ -41,3 +41,14 @@ Maintainers can issue a new private music-only bundle with
 The grant requires `scope: private-team-music`, `authorizedBy`, `date`, and `statement`.
 The resulting `MUSIC_RIGHTS.json` binds that authorization to exact file hashes.
 Keep these private asset manifests in the release bundle, outside Git history.
+
+## New-Mac preview bundle
+
+The onboarding release pins `team-assets-2026.10.27.2` by archive and manifest SHA-256.
+It contains the approved music catalog plus 12 caption fonts, all three caption profiles,
+owner installation authorization/notices, and the dedicated team read-only gateway reader.
+No personal provider or delivery keys are included. The bundle is a private release asset,
+not tracked source. `scripts/build_team_bundle.py` records the exact inputs and authorization;
+it never uploads anything. `acq-edit onboard` downloads, verifies, safely extracts and installs it.
+Commercial fonts retain their provider licensing requirements; owner-requested installation
+packaging does not grant third-party redistribution rights. Old bundles remain immutable.

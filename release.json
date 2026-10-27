@@ -1,0 +1,11 @@
+{
+  "version": "0.2.0-preview.1",
+  "repository": "maddexritter-rgb/acq-edit",
+  "assets": {
+    "version": "team-assets-2026.10.27.2",
+    "tag": "team-assets-2026.10.27.2",
+    "archive": "team-assets-2026.10.27.2.tar.gz",
+    "sha256": "23caf25b5228af6978d18c8bbe92b798e91863cd0739b8485a827a89f85ac0a7",
+    "manifestSha256": "ac02365003120b600381a6b4b0cc7dc8bf6a9b7880917e92a4aa59547c9d8f3e"
+  }
+}

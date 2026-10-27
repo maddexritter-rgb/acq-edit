@@ -94,8 +94,8 @@ def check_configuration(config):
             url = urlsplit(endpoint)
             require(key.strip() and project.strip(), 'missing')
             require(url.scheme == 'https' and url.hostname and
-                    project in url.hostname.split('.') and
-                    url.path == '/functions/v1/editorial-search' and
+                    url.hostname == project + '.supabase.co' and
+                    url.path in {'/functions/v1/editorial-search', '/functions/v1/vibe-editorial-read'} and url.port in {None,443} and
                     not url.username and not url.password and not url.query and not url.fragment, 'invalid')
     except Exception:
         # Parse/filesystem exceptions can contain private configuration contents.
