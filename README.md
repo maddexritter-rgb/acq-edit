@@ -2,7 +2,7 @@
 
 Edits use source-word storytelling, body captions, framing, music and requested graphics. Opening text headlines are not included.
 
-A private, Mac-based editing toolkit for Codex and Claude Code. Give your agent footage and a brief. Review the resulting clips in a local browser, add timecoded feedback, and apply revisions without managing a timeline yourself.
+A Mac-based editing toolkit for Codex and Claude Code. Give your agent footage and a brief. Review the resulting clips in a local browser, add timecoded feedback, and apply revisions without managing a timeline yourself.
 
 **New-Mac preview.** FilmCraft and Premiere have produced real native caption proofs; clean-Mac installation and full team acceptance still require the new-machine test. Resolve work is paused. See [evidence and remaining work](docs/STATUS.md).
 
@@ -19,15 +19,12 @@ Use the [guided new-Mac onboarding](docs/ONBOARDING.md) for Homebrew or Workbrew
 assets, personal credentials, editor setup and optional Frame/Monday delivery.
 
 ```sh
-brew install gh
-gh auth login
-gh auth setup-git
 brew tap maddexritter-rgb/acq https://github.com/maddexritter-rgb/homebrew-acq.git
 brew install maddexritter-rgb/acq/acq-edit
 acq-edit onboard guide  # Open the shown folder in your agent and ask for setup
 ```
 
-Use Workbrew's existing `brew` command when installed. Private repository access is required.
+Use Workbrew's existing `brew` command when installed. No GitHub account is required for the public repository or release downloads.
 No Anthropic/OpenAI API key or separate editorial-brain signup is required. The installer
 fetches the versioned team assets and asks privately for AssemblyAI and Gemini keys.
 
@@ -37,7 +34,7 @@ Rerunning `setup` keeps existing values when you press Enter. It offers the sele
 
 `doctor` returns a JSON report with `readiness.ready`, blocking repair steps and optional intake dependencies. It exits 1 when a required prerequisite is missing, including before setup. It checks local brain configuration without retrieving guidance or printing keys. A ready result does not verify agent login/credit, API key validity or native editing quality.
 
-Setup stores configuration and API keys under `~/.config/acq-edit`, outside the checkout. API key entry is hidden. Supply your own AssemblyAI and Gemini keys. The private team asset release supplies the restricted editorial-brain reader configuration automatically. No database service-role key belongs on a teammate's machine.
+Setup stores configuration and API keys under `~/.config/acq-edit`, outside the checkout. API key entry is hidden. Supply your own AssemblyAI and Gemini keys. The team asset release supplies the restricted editorial-brain reader configuration automatically. No database service-role key belongs on a teammate's machine.
 
 ```sh
 node dist/cli.js project "Workshop short clips"

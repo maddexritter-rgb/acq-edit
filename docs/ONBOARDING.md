@@ -76,7 +76,7 @@ run onboarding in a terminal the user can interact with. Before its credential p
    specific failed step. A read check is not proof of billing balance or model-generation access.
 4. **Already included.**
    Tell the user that the fonts, caption profiles, approved music and restricted editorial-brain
-   connection come through the private team bundle. They do not need a Supabase account or a
+   connection come through the team bundle. They do not need a Supabase account or a
    separate OpenAI/Anthropic API key for the signed-in agent. Verify installation instead of
    asking them to rebuild styles or copy files from someone else's computer.
 5. **Optional connections, after the essentials.**
@@ -92,7 +92,7 @@ that only the agent can supply, and do not claim a key was entered before checki
 
 | User's situation | What to do next |
 | --- | --- |
-| “I only have Workbrew installed.” | Use its existing `brew`. Try the documented path; explain any actual private-tap error. Do not demand a workspace ID. If the private tap is not provisioned, offer the supported user-checkout route below or identify the exact admin action. |
+| “I only have Workbrew installed.” | Use its existing `brew`. The public tap does not need a GitHub account or private-package token. Do not demand a workspace ID. If company policy blocks a dependency or tap, identify that exact admin action. |
 | “What do I pay for?” | Explain that editor licensing, the signed-in agent and transcription/video-analysis usage may have separate costs. Check current official pricing if asked; never promise a fixed price or approve charges. |
 | Key rejected / 401 or 403 | Confirm which service failed, guide them back to its key/account page, then rerun private entry and the read check. Inspect account/project permissions if indicated; never print the stored key. |
 | Rate limit / 429 / credit error | Explain which provider is limiting usage. Help inspect its usage/billing page or retry guidance; do not repeatedly submit paid jobs or silently switch providers. |
@@ -117,49 +117,39 @@ and clearly mark the first-clip test as pending.
 ## 1. Install through Homebrew or Workbrew
 
 If Workbrew is already installed, use its existing `brew` command. Do not install another
-Homebrew or bypass the managed command. Your admin may need to allow the private tap.
+Homebrew or bypass the managed command. The code, tap and release assets are public; no GitHub
+account, `gh auth login` or private-package token is required. Company package policies still apply.
 
 ```sh
-brew install gh
-gh auth login
-gh auth setup-git
 brew tap maddexritter-rgb/acq https://github.com/maddexritter-rgb/homebrew-acq.git
 brew install maddexritter-rgb/acq/acq-edit
 acq-edit version
+acq-edit onboard guide
 ```
 
-For ordinary Homebrew, sign into a GitHub account with access to both private repositories
-(`acq-edit` and `homebrew-acq`). Release downloads use that GitHub authentication.
+Open the installed folder shown by `guide` in Codex or Claude Code and say “Help me get set up.”
+The agent then follows this guide and handles the commands while you sign in to the editing
+services and enter your own API keys privately.
 
-**Workbrew private-package authentication:** Workbrew runs installations as its service user.
-The editor's `gh auth login` does not by itself authenticate that service user. An admin must
-connect/allow the private tap and configure its read-only release-download credential as
-described in [packaging](../packaging/README.md). This applies to interactive Workbrew installs
-too, not just fleet deployment. [Workbrew's authentication guide](https://workbrew.com/docs/authenticate-private-formula-artifacts).
-
-If that private tap has not been provisioned, use the supported user-checkout installation:
-Workbrew installs the standard dependencies, while your own GitHub login downloads the private
-source and assets. This does not need a shared credential in Workbrew:
+For a source checkout, use public Git (or Download ZIP on the GitHub page):
 
 ```sh
-brew install gh git
-gh auth login
-gh auth setup-git
-gh repo clone maddexritter-rgb/acq-edit
+brew install git
+git clone https://github.com/maddexritter-rgb/acq-edit.git
 cd acq-edit
 brew bundle --file=Brewfile
 export PATH="$(brew --prefix node@24)/bin:$(brew --prefix python@3.11)/bin:$PATH"
-python3.11 scripts/onboard.py filmcraft codex
+python3.11 scripts/onboard.py guide
 ```
 
-Use `premiere` / `claude` instead when those are the selected tools. In this source flow, run
-`node dist/cli.js serve` for the review room and `python3.11 scripts/onboard.py status` to resume
-setup. The agent can run these from the checkout; no global launcher is required. Never bypass
-company restrictions: if a policy blocks any required dependency or source access, ask the admin.
+Open that checkout in your agent. Direct setup is `python3.11 scripts/onboard.py filmcraft codex`
+(use `premiere` / `claude` when selected). In a checkout, use `node dist/cli.js` instead of
+`acq-edit` for service commands after setup, and `python3.11 scripts/onboard.py status` for progress.
+Never bypass company restrictions; explain any blocked dependency to the user and their admin.
 
-For a source checkout instead, run `brew bundle --file=Brewfile`, add Homebrew's `node@24`
-`bin` directory to PATH if Node is not found, then `python3.11 scripts/onboard.py filmcraft codex`.
-The source installation uses `node dist/cli.js` in place of `acq-edit` for service commands.
+If the owner makes releases private later, new downloads will require authorized access.
+The asset downloader retains a `gh` fallback for that situation. Already downloaded copies are
+not revoked by a visibility change. Public availability does not grant additional third-party licenses.
 
 ## 2. Choose one engine and agent
 
@@ -178,7 +168,7 @@ headless runtime locally; if requested by preflight, run `brew install rust` and
 `xcode-select --install`, then repeat onboarding. This first build can take longer than an edit.
 Premiere must be installed and licensed separately; this release targets the tested 26.3 host.
 
-Onboarding downloads the hash-pinned private bundle: 112 approved music files and indexes,
+Onboarding downloads the hash-pinned team bundle: 112 approved music files and indexes,
 caption profiles for Alex/Leila/Sharran, the supplied caption fonts and dedicated read-only
 editorial-brain access. One unavailable music catalog item remains excluded. Fonts are installed
 in `~/Library/Fonts/ACQEdit`, with conflicts refused. Commercial fonts require the user's

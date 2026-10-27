@@ -13,6 +13,7 @@ import tempfile
 import time
 import urllib.request
 import urllib.error
+from urllib.parse import quote
 from asset_bundle import verify, digest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -40,6 +41,22 @@ def extract(archive, target):
         target.mkdir(parents=True)
         tf.extractall(target, filter='data')
 
+def download_assets(release, staging):
+    """Public releases need no GitHub account. Preserve authenticated access if made private later."""
+    spec=release['assets'];archive=staging/spec['archive']
+    url=f"https://github.com/{release['repository']}/releases/download/{quote(spec['tag'],safe='')}/{quote(spec['archive'],safe='')}"
+    request=urllib.request.Request(url,headers={'User-Agent':'ACQ-Edit-onboarding'})
+    try:
+        response=urllib.request.urlopen(request,timeout=60)
+    except urllib.error.HTTPError as e:
+        if e.code not in (401,403,404) or not shutil.which('gh'):
+            raise ValueError('Release download unavailable. Check repository access and connection; no GitHub login is needed for public releases.') from e
+        execute(['gh','release','download',spec['tag'],'--repo',release['repository'],'--pattern',spec['archive'],'--dir',staging])
+    else:
+        with response,archive.open('xb') as stream:
+            shutil.copyfileobj(response,stream)
+    return archive
+
 def assets(release):
     spec = release['assets']
     parent = Path.home()/'Library/Application Support/ACQ Edit/assets'
@@ -52,8 +69,7 @@ def assets(release):
         return dest
     parent.mkdir(parents=True, exist_ok=True)
     staging = Path(tempfile.mkdtemp(prefix=spec['version']+'.download-', dir=parent))
-    execute(['gh','release','download',spec['tag'],'--repo',release['repository'],'--pattern',spec['archive'],'--dir',staging])
-    archive = staging/spec['archive']
+    archive = download_assets(release, staging)
     if digest(archive) != spec['sha256']: raise ValueError('Asset archive checksum mismatch')
     expanded = staging/'expanded'
     extract(archive, expanded)
@@ -152,7 +168,7 @@ def main():
     if a.action=='verify': sys.exit(0 if verify_connections() else 1)
     if a.action=='premiere-panel': panel_install(); return
     if sys.platform!='darwin': raise ValueError('This release requires macOS')
-    for command in ['node','npm','python3.11','ffmpeg','ffprobe','fc-scan','gh',a.agent]:
+    for command in ['node','npm','python3.11','ffmpeg','ffprobe','fc-scan',a.agent]:
         if not shutil.which(command): raise ValueError('Missing '+command+'; see docs/ONBOARDING.md')
     ROOT.joinpath('.local').mkdir(exist_ok=True)
     lock=ROOT/'.local/onboarding.lock'
