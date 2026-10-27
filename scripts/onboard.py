@@ -133,9 +133,18 @@ def verify_connections():
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action',choices=['filmcraft','premiere','status','verify','premiere-panel'])
+    parser.add_argument('action',nargs='?',default='guide',choices=['guide','filmcraft','premiere','status','verify','premiere-panel'])
     parser.add_argument('agent',nargs='?',choices=['codex','claude'],default='codex')
     a=parser.parse_args()
+    if a.action=='guide':
+        print('Your personal setup guide runs in Codex or Claude Code.')
+        print('Open this installed folder in your agent:')
+        print(ROOT)
+        print('Then say: Help me get set up. Read AGENTS.md and docs/ONBOARDING.md, '
+              'walk me through one step at a time, and resume any existing progress.')
+        print('Your agent will explain the account links and help with questions. '
+              'Enter API keys only in the hidden local terminal prompts, not in chat.')
+        return
     if a.action=='status':
         state=ROOT/'.local/onboarding.json'
         print(state.read_text() if state.exists() else '{"status":"not-started"}')

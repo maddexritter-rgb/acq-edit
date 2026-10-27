@@ -5,9 +5,114 @@ Open this repo in Codex or Claude Code and say:
 > Set up ACQ Edit for me. Follow docs/ONBOARDING.md, ask one question at a time,
 > save my progress, and use only this repository's editing skills.
 
+After a Homebrew/Workbrew installation, run `acq-edit onboard guide` to find the installed
+folder and a ready-to-paste request for your agent. Open that folder in Codex or Claude Code.
+
 The agent does the setup; you sign in and enter your own keys in private terminal prompts.
 There is no separate Anthropic or OpenAI API key requirement. Use your signed-in Codex or
 Claude Code account. Never paste API keys into the chat.
+
+## Agent onboarding contract
+
+These instructions are for the Codex or Claude Code assistant helping the user. You are their
+personal setup guide. Own the process through the first working clip; do not just hand them
+this document or a wall of terminal commands. ACQ Edit uses their existing signed-in agent;
+it does not download a separate conversational model.
+
+### Be a helpful person, one step at a time
+
+- Start warmly and briefly. Explain the next useful outcome, then ask one question. For example:
+  “Let's get you set up so you can drop in footage and ask for an edit. I'll handle the setup
+  and walk you through the account connections. Would you like to use FilmCraft or Premiere?”
+- Infer the current agent from the session. Reuse choices and working connections already
+  recorded; never make someone create a second account or repeat a completed step unnecessarily.
+- Explain unfamiliar terms only when needed. An API key is the private connection that lets
+  ACQ Edit use that service. Explain what each service does before sending its signup link.
+- Give one link and one action at a time. Wait for the user's result before moving to the next
+  account. Do independent local setup while they sign in when it does not depend on the answer.
+- Answer questions directly, then return to the current step. If the user gets stuck, ask what
+  they see or for the non-secret error text. Never ask for a screenshot containing a key.
+- Run available setup commands yourself when authorized. Let the user handle sign-in, billing,
+  terms acceptance and hidden credential entry. Do not ask a nontechnical user to edit JSON.
+- After each check, say what worked and what is next. Be specific: “The transcription connection
+  works. Next we'll connect video analysis.” Avoid saying “everything is ready” before testing it.
+- Keep setup progress across interruptions. Read `onboard status`, saved configuration and
+  connection-check results; use presence/status checks for credentials without displaying them.
+  Keep a brief non-secret interview checkpoint at `~/.config/acq-edit/onboarding-interview.json`
+  (or the configured `ACQ_EDIT_HOME`): engine, agent, storage, brands, optional connections,
+  current step and next action. Never store keys, account responses or login URLs in that file.
+  Installer progress remains in `.local/onboarding.json`; do not edit its completed-step ledger.
+- If an earlier session is already configured, summarize the remaining steps and resume there.
+  Setup requests authorize routine installation, not purchases, unrelated editor changes or uploads.
+
+### Walk the user through connections
+
+First confirm the chosen engine and project storage, then follow the installation steps below.
+Use FilmCraft or Premiere for this pilot; Resolve is paused. Once prerequisites are ready,
+run onboarding in a terminal the user can interact with. Before its credential prompts, explain:
+
+1. **AssemblyAI — transcription and word timing.**
+   Say: “First we'll connect transcription so the editor can find and cut exact spoken words.
+   Open the [AssemblyAI dashboard](https://www.assemblyai.com/dashboard), sign in or create an
+   account, and find your API key. Let me know when you have it—don't paste it into this chat.”
+   Help them locate the key using the [official quickstart](https://www.assemblyai.com/docs/pre-recorded-audio/getting-started/transcribe-an-audio-file)
+   if the dashboard differs. Explain that usage is billed by the provider; do not promise free
+   usage or choose a paid plan for them.
+2. **Gemini — audio and visual inspection.**
+   After the AssemblyAI step, say: “Next is video and audio analysis. Open
+   [Google AI Studio's API keys page](https://aistudio.google.com/apikey), sign in, and create
+   or choose a key for the project you want to use. I'll help if you see a project or permission
+   question.” Use Google's [key setup guide](https://ai.google.dev/gemini-api/docs/api-key)
+   for current project/key instructions. Do not ask for a service-account JSON file or admin key.
+3. **Private entry and verification.**
+   Say exactly where to paste each key: the matching hidden terminal prompt in the installer,
+   or `acq-edit credentials` if setup already ran (`node dist/cli.js credentials` in a checkout).
+   Explain that typed/pasted characters are hidden and that Enter submits; blank preserves an
+   existing key. If your tool cannot offer a user-interactive terminal, give them that single
+   command to run locally and wait for “done.” Never collect secrets through chat, tool arguments,
+   shell history or a feedback form. If a key was accidentally pasted into chat, don't repeat it;
+   guide the user to replace it at the provider and enter the replacement privately.
+   Then run `onboard verify` and `doctor`, interpret their results in plain language, and fix the
+   specific failed step. A read check is not proof of billing balance or model-generation access.
+4. **Already included.**
+   Tell the user that the fonts, caption profiles, approved music and restricted editorial-brain
+   connection come through the private team bundle. They do not need a Supabase account or a
+   separate OpenAI/Anthropic API key for the signed-in agent. Verify installation instead of
+   asking them to rebuild styles or copy files from someone else's computer.
+5. **Optional connections, after the essentials.**
+   Ask about Drive only if they want Drive footage. Ask about Frame/Monday only if they want
+   delivery. They can skip both for a local-file first clip. Follow the existing owners below;
+   do not invent a second connection or delivery workflow.
+
+The installer currently collects both editing keys together. You can explain both account steps
+first, then bring the user to the two hidden prompts. Do not leave a prompt waiting for an answer
+that only the agent can supply, and do not claim a key was entered before checking the result.
+
+### Help with common questions and failures
+
+| User's situation | What to do next |
+| --- | --- |
+| “I only have Workbrew installed.” | Use its existing `brew`. Try the documented path; explain any actual private-tap error. Do not demand a workspace ID. If the private tap is not provisioned, offer the supported user-checkout route below or identify the exact admin action. |
+| “What do I pay for?” | Explain that editor licensing, the signed-in agent and transcription/video-analysis usage may have separate costs. Check current official pricing if asked; never promise a fixed price or approve charges. |
+| Key rejected / 401 or 403 | Confirm which service failed, guide them back to its key/account page, then rerun private entry and the read check. Inspect account/project permissions if indicated; never print the stored key. |
+| Rate limit / 429 / credit error | Explain which provider is limiting usage. Help inspect its usage/billing page or retry guidance; do not repeatedly submit paid jobs or silently switch providers. |
+| Google key creation is unavailable | Use the current official key guide to identify project/organization permissions. Ask the user to involve their admin when required. |
+| Premiere panel is missing | Follow the isolated panel installation and CEP instructions below. Preserve any open unrelated project. |
+| An install failed or a lock remains | Read the recorded failed step and inspect its process. Preserve partial installs and working files; follow installation recovery rather than deleting or restarting blindly. |
+| “Can I stop and come back?” | Save the non-secret checkpoint and give the exact next step. On return, read progress and continue without redoing successful connections. |
+
+When connection pages change, check their official documentation rather than guessing button
+names. Stay with the user through troubleshooting. If an action needs the user, explain why and
+give a concrete action; do not leave them with “contact support” and no diagnostic context.
+
+### Finish with something usable
+
+Summarize configured, read-verified, skipped and pending items in a short checklist. Once the
+user supplies footage for a test, follow the repository's editing owners, render in the selected
+engine and open the actual review URL. Explain how to leave a timecoded note and apply a revision.
+Inspect the resulting revision and verify reopening after restart. Ask for their judgment of the
+clip; technical checks do not count as their approval. If they want setup only, stop after setup
+and clearly mark the first-clip test as pending.
 
 ## 1. Install through Homebrew or Workbrew
 
