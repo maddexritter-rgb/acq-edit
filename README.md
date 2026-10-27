@@ -4,25 +4,25 @@ Edits use source-word storytelling, body captions, framing, music and requested 
 
 A private, Mac-based editing toolkit for Codex and Claude Code. Give your agent footage and a brief. Review the resulting clips in a local browser, add timecoded feedback, and apply revisions without managing a timeline yourself.
 
-**Development build — not released for the team pilot.** FilmCraft and Resolve have passed isolated native construction/render fixtures. Premiere's packaged integration builds and its installed host responds, but the new toolkit has not completed a Premiere render fixture. Real speech, multicamera, clean-machine setup, and full agent-driven revision acceptance remain open. See [current evidence and remaining work](docs/STATUS.md).
+**New-Mac preview.** FilmCraft and Premiere have produced real native caption proofs; clean-Mac installation and full team acceptance still require the new-machine test. Resolve work is paused. See [evidence and remaining work](docs/STATUS.md).
 
 ## Start here
 
-Requirements: macOS, Node.js 24+, Python 3.11, FFmpeg/ffprobe, and an authenticated Codex or Claude Code CLI. Install only the editor you choose. Resolve requires Studio 21.1; Premiere requires a supported Agent Lab host profile. FilmCraft runs headlessly.
-
-Building FilmCraft locally also requires Git, Rust/Cargo 1.95+ and Xcode Command Line Tools. Run `python3 scripts/install_engine.py filmcraft --check` to check them before installation.
+Use the [guided new-Mac onboarding](docs/ONBOARDING.md) for Homebrew or Workbrew, bundled
+assets, personal credentials, editor setup and optional Frame/Monday delivery.
 
 ```sh
-git clone git@github.com:maddexritter-rgb/acq-edit.git
-cd acq-edit
-npm ci
-npm run build
-bash scripts/install_shared.sh
-python3 scripts/install_engine.py filmcraft  # or premiere / resolve
-node dist/cli.js setup
-node dist/cli.js credentials
-node dist/cli.js doctor
+brew install gh
+gh auth login
+gh auth setup-git
+brew tap maddexritter-rgb/acq https://github.com/maddexritter-rgb/homebrew-acq.git
+brew install maddexritter-rgb/acq/acq-edit
+acq-edit onboard filmcraft codex  # or premiere / claude
 ```
+
+Use Workbrew's existing `brew` command when installed. Private repository access is required.
+No Anthropic/OpenAI API key or separate editorial-brain signup is required. The installer
+fetches the versioned team assets and asks privately for AssemblyAI and Gemini keys.
 
 See [installation verification and recovery](docs/INSTALLATION.md) for selected-engine prerequisite checks, repeat installs and retained partial installations.
 

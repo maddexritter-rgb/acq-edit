@@ -36,9 +36,9 @@ python3 .local/skills/edit/scripts/premiere_agent.py --profile .local/premiere-p
 
 Before mutation, use the canonical exact-project scope command with explicit inputs, write root, owner and stages. Verify the open project and coordinate the exclusive lease. Stage runners remain the owners of native assembly, reframe, Graphics captions, music and exact-range export. `python/premiere.py` executes only scoped stage packets; it cannot widen privileges or switch projects.
 
-The native `render` action now accepts a guarded save plus typed exact-range export, checks restored marks and unchanged native state, verifies the actual rendered file and emits the shared publication receipt. See `PREMIERE_RENDER.md` for the packet and current full-clip sequence contract. Adapter failure-boundary tests pass; live toolkit export qualification remains pending.
+The native `render` action now accepts a guarded save plus typed exact-range export, checks restored marks and unchanged native state, verifies the actual rendered file and emits the shared publication receipt. See `PREMIERE_RENDER.md` for the packet and current full-clip sequence contract. Adapter failure-boundary tests pass; real native exports are recorded in STATUS.md; new-host acceptance remains separate.
 
-A live production project was open during development. Read-only connectivity was checked; no toolkit mutation was submitted to it. A dedicated new-toolkit Premiere native fixture remains required.
+A live production project was open during development. Read-only connectivity was checked; no toolkit mutation was submitted to it. Subsequent dedicated real-footage and caption proof renders have succeeded; see STATUS.md and the new-Mac acceptance checklist.
 
 ## DaVinci Resolve Studio
 
@@ -61,3 +61,7 @@ The selected native project name is `ACQ_<project-id>`. The adapter refuses anot
 ## Agent integrations
 
 Codex uses the documented app-server protocol. Claude uses headless stream output and exact session resume. This build does not bypass interactive approvals. Configure permitted toolkit commands in each agent before unattended jobs. A request needing interactive permission is preserved with its exact job and log for reconciliation.
+
+## Premiere unsigned CEP setup
+
+The panel manifest declares CSXS 9 as its minimum; the tested Premiere 26.3 host uses the CSXS 12 debug preference. If the prepared panel is hidden, the user can enable development extensions with `defaults write com.adobe.CSXS.12 PlayerDebugMode -string 1`, then restart Premiere and open Window → Extensions → ACQ Edit Agent. This changes the user’s unsigned-extension setting; explain it before applying it. Do not change production panels or close unsaved projects.

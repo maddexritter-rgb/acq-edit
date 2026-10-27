@@ -1,0 +1,194 @@
+#!/usr/bin/env python3
+"""Resumable per-user setup. No editor mutation or external delivery during setup."""
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tarfile
+import tempfile
+import time
+import urllib.request
+import urllib.error
+from asset_bundle import verify, digest
+
+ROOT = Path(__file__).resolve().parents[1]
+HOME = Path(os.environ.get('ACQ_EDIT_HOME', str(Path.home()/'.config/acq-edit')))
+
+def save(path, data):
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    fd, temporary = tempfile.mkstemp(dir=path.parent)
+    with os.fdopen(fd, 'w') as stream:
+        json.dump(data, stream, indent=2); stream.write('\n')
+    os.replace(temporary, path)
+
+def execute(args, **kwargs):
+    print('Step: '+str(args[0])+' '+str(args[1] if len(args)>1 else ''), flush=True)
+    subprocess.run([str(x) for x in args], check=True, cwd=ROOT, **kwargs)
+
+def extract(archive, target):
+    target = Path(target)
+    if target.exists(): raise ValueError('Extraction destination already exists; preserved')
+    with tarfile.open(archive, 'r:gz') as tf:
+        for entry in tf.getmembers():
+            name = Path(entry.name)
+            if name.is_absolute() or '..' in name.parts or not (entry.isfile() or entry.isdir()):
+                raise ValueError('Unsafe release archive member')
+        target.mkdir(parents=True)
+        tf.extractall(target, filter='data')
+
+def assets(release):
+    spec = release['assets']
+    parent = Path.home()/'Library/Application Support/ACQ Edit/assets'
+    dest = parent/spec['version']
+    if dest.is_symlink(): raise ValueError('Symlink asset destination refused')
+    if dest.exists():
+        verify(dest)
+        if digest(dest/'asset-bundle.json') != spec['manifestSha256']:
+            raise ValueError('Installed asset version differs; preserved')
+        return dest
+    parent.mkdir(parents=True, exist_ok=True)
+    staging = Path(tempfile.mkdtemp(prefix=spec['version']+'.download-', dir=parent))
+    execute(['gh','release','download',spec['tag'],'--repo',release['repository'],'--pattern',spec['archive'],'--dir',staging])
+    archive = staging/spec['archive']
+    if digest(archive) != spec['sha256']: raise ValueError('Asset archive checksum mismatch')
+    expanded = staging/'expanded'
+    extract(archive, expanded)
+    source = expanded/spec['version']; verify(source)
+    if digest(source/'asset-bundle.json') != spec['manifestSha256']:
+        raise ValueError('Asset manifest checksum mismatch')
+    source.rename(dest)
+    return dest
+
+def install_fonts(bundle, target=None):
+    manifest = json.loads((bundle/'asset-bundle.json').read_text())
+    target = Path(target or Path.home()/'Library/Fonts/ACQEdit')
+    if target.is_symlink(): raise ValueError('Font destination is a symlink; preserved')
+    wanted = [(bundle/name, target/Path(name).name, sha) for name,sha in manifest['files'].items()
+              if name.startswith('fonts/') and Path(name).suffix.lower() in {'.otf','.ttf'}]
+    if not wanted: raise ValueError('Release has no fonts')
+    # Validate the whole batch before writing; preserve different installed fonts.
+    for source,dest,sha in wanted:
+        if digest(source)!=sha or dest.is_symlink() or (dest.exists() and digest(dest)!=sha):
+            raise ValueError('Font conflict or checksum mismatch: '+dest.name)
+    target.mkdir(parents=True, exist_ok=True)
+    for source,dest,sha in wanted:
+        if not dest.exists():
+            with dest.open('xb') as out, source.open('rb') as src: shutil.copyfileobj(src,out)
+        if digest(dest)!=sha: raise ValueError('Font copy failed verification')
+    return len(wanted)
+
+def install_brain(bundle):
+    source = bundle/'team/editorial-brain.json'
+    value = json.loads(source.read_text())
+    # This is the dedicated team gateway reader, never a personal/admin token.
+    context = {'function_url':value['function_url'], 'project_ref':value['project_ref']}
+    folder = HOME/'team-brain'; folder.mkdir(parents=True, exist_ok=True, mode=0o700)
+    token = folder/'read_token'; config = folder/'context.json'
+    for path in (token,config):
+        if path.is_symlink(): raise ValueError('Brain configuration symlink refused')
+    if token.exists() or config.exists():
+        if not token.is_file() or not config.is_file(): raise ValueError('Incomplete existing brain config; preserved')
+        if json.loads(config.read_text())!=context or token.read_text().strip()!=value['token']:
+            raise ValueError('Existing brain config differs; explicit credential rotation required')
+        if token.stat().st_mode & 0o077: raise ValueError('Brain token needs mode 0600')
+    else:
+        save(config,context)
+        with os.fdopen(os.open(token,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600),'w') as out: out.write(value['token']+'\n')
+    return folder
+
+def panel_install():
+    source = ROOT/'.local/premiere-agent/lab/packages/ACQEditAgentCEP'
+    if not (source/'CSXS/manifest.xml').is_file(): raise ValueError('Run Premiere onboarding first')
+    target = Path.home()/'Library/Application Support/Adobe/CEP/extensions/ACQEditAgentCEP'
+    if target.exists() or target.is_symlink():
+        old = {p.relative_to(target).as_posix():digest(p) for p in target.rglob('*') if p.is_file()}
+        new = {p.relative_to(source).as_posix():digest(p) for p in source.rglob('*') if p.is_file()}
+        if target.is_symlink() or old != new: raise ValueError('Existing Adobe panel differs; preserved. Coordinate its upgrade before replacing it.')
+    else:
+        target.parent.mkdir(parents=True, exist_ok=True); shutil.copytree(source,target)
+    print('Panel installed. Open Window > Extensions > ACQ Edit Agent in Premiere, then run acq-edit doctor.')
+    print('If unsigned CEP is disabled, follow docs/ENGINES.md for the host debug setting.')
+
+def verify_connections():
+    saved = json.loads((HOME/'credentials.json').read_text()) if (HOME/'credentials.json').exists() else {}
+    endpoints = {'ASSEMBLYAI_API_KEY':('https://api.assemblyai.com/v2/transcript?limit=1','authorization'),
+                 'GEMINI_API_KEY':('https://generativelanguage.googleapis.com/v1beta/models','x-goog-api-key')}
+    results=[]
+    for name,(url,header) in endpoints.items():
+        token = os.environ.get(name) or saved.get(name)
+        if not token: results.append({'service':name,'status':'missing'}); continue
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url,headers={header:token}),timeout=30) as response:
+                response.read(1024)  # Never display account/transcript data.
+            results.append({'service':name,'status':'read-verified'})
+        except urllib.error.HTTPError as e: results.append({'service':name,'status':'failed','http':e.code})
+        except (OSError,urllib.error.URLError): results.append({'service':name,'status':'unreachable'})
+    save(HOME/'connection-check.json',{'results':results,'qualification':'Read access only; not billing balance, model generation or an editing test'})
+    print(json.dumps(results,indent=2))
+    return all(x['status']=='read-verified' for x in results)
+
+def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('action',choices=['filmcraft','premiere','status','verify','premiere-panel'])
+    parser.add_argument('agent',nargs='?',choices=['codex','claude'],default='codex')
+    a=parser.parse_args()
+    if a.action=='status':
+        state=ROOT/'.local/onboarding.json'
+        print(state.read_text() if state.exists() else '{"status":"not-started"}')
+        print('Read docs/ONBOARDING.md for the interview and optional Frame/Monday setup.'); return
+    if a.action=='verify': sys.exit(0 if verify_connections() else 1)
+    if a.action=='premiere-panel': panel_install(); return
+    if sys.platform!='darwin': raise ValueError('This release requires macOS')
+    for command in ['node','npm','python3.11','ffmpeg','ffprobe','fc-scan','gh',a.agent]:
+        if not shutil.which(command): raise ValueError('Missing '+command+'; see docs/ONBOARDING.md')
+    ROOT.joinpath('.local').mkdir(exist_ok=True)
+    lock=ROOT/'.local/onboarding.lock'
+    fd=os.open(lock,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
+    with os.fdopen(fd,'w') as f: json.dump({'pid':os.getpid()},f)
+    try:
+        state_file=ROOT/'.local/onboarding.json'
+        state=json.loads(state_file.read_text()) if state_file.exists() else {'backend':a.action,'agent':a.agent,'steps':{}}
+        if state['backend']!=a.action: raise ValueError('This runtime is already configured for another backend; preserve it and use a separate installation')
+        state['agent']=a.agent
+        def stage(name,work):
+            state['currentStep']=name; state['status']='running';save(state_file,state)
+            started=time.monotonic()
+            try:
+                result=work();state['steps'][name]='completed'
+            except Exception:
+                state['steps'][name]='failed';state['status']='failed';raise
+            finally:
+                state.setdefault('timings',{}).setdefault(name,[]).append(round(time.monotonic()-started,3));save(state_file,state)
+            return result
+        release=json.loads((ROOT/'release.json').read_text())
+        bundle=stage('assets',lambda:assets(release))
+        stage('fonts',lambda:install_fonts(bundle))
+        brain=stage('brain',lambda:install_brain(bundle))
+        if not (ROOT/'dist/cli.js').exists():
+            stage('service',lambda:(execute(['npm','ci','--ignore-scripts']),execute(['npm','run','build'])))
+        if not (ROOT/'.local/venv/bin/python').exists() or state['steps'].get('shared')!='completed':
+            stage('shared',lambda:execute(['bash','scripts/install_shared.sh']))
+        else: stage('shared-check',lambda:execute([ROOT/'.local/venv/bin/python','python/check_framing_dependencies.py']))
+        if state['steps'].get('engine')!='completed':
+            if a.action=='filmcraft' and not shutil.which('cargo'):
+                raise ValueError('FilmCraft needs Rust: run brew install rust and xcode-select --install, then resume this command')
+            stage('engine',lambda:execute(['python3.11','scripts/install_engine.py',a.action,'--assets',bundle]))
+        else: stage('skills-check',lambda:execute(['python3.11','scripts/materialize.py','--verify']))
+        env={**os.environ,'ACQ_EDIT_TEAM_BRAIN_DIR':str(brain)}
+        stage('configuration',lambda:execute(['node','dist/cli.js','setup',a.action,a.agent],env=env))
+        stage('credentials',lambda:execute(['node','dist/cli.js','credentials']))
+        state['status']='configured';save(state_file,state)
+        if a.action=='premiere':
+            print('Next: acq-edit onboard premiere-panel; open the ACQ Edit Agent panel in Premiere.')
+        print('Next: acq-edit onboard verify; acq-edit doctor. Then make one real clip. No upload is performed by onboarding.')
+        execute(['node','dist/cli.js','doctor'])
+    finally: lock.unlink()
+
+if __name__=='__main__':
+    try: main()
+    except (ValueError,OSError,KeyError,subprocess.CalledProcessError) as e:
+        print('Onboarding stopped: '+str(e),file=sys.stderr);sys.exit(1)

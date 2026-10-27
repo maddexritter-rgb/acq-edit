@@ -1,7 +1,7 @@
 {
   "schema": "acq-edit/skill-dependencies-v1",
-  "manifestSha256": "23cfb168cdb703455c625bdb682ee6f8a996164246e43ce2c2870708ddac5adf",
-  "policySha256": "fb9f0da2c3535c7a29cf5ae8af08ae4cd391e1c53e8ec690aca8ddb2175c630b",
+  "manifestSha256": "8cb9691ecd2d54b704a955e57915b6ded0e228f3a308cf417d155f01d22906e3",
+  "policySha256": "8cecf5349d543d1747aa43011f60f10ce3b2449018ae658f43c98e3f4d3beaa9",
   "owners": [
     "edit",
     "assembly-design",
@@ -39,7 +39,8 @@
     "source-library",
     "alex",
     "premiere-to-resolve",
-    "editorial-brain-ingest"
+    "editorial-brain-ingest",
+    "monday"
   ],
   "edges": [
     {
@@ -392,8 +393,7 @@
         55
       ],
       "sourceSha256": "d5489f159cf9791522cb07f05c9be458522e736e03eb5ea77dcdc7a5e752139f",
-      "status": "external-opt-in",
-      "reason": "Frame.io/Monday delivery requires a separately installed integration and explicit batch authorization; it is outside local clip creation and review."
+      "status": "packaged"
     },
     {
       "source": "edit/references/podcast_mining.md",
@@ -513,8 +513,7 @@
         67
       ],
       "sourceSha256": "479db34b07d13ec91f2939bb05ab1059191694daf4195a6e447dbb1c12525806",
-      "status": "external-opt-in",
-      "reason": "The referenced delivery batch is an explicitly authorized external service workflow, not a local editing dependency."
+      "status": "packaged"
     },
     {
       "source": "edit/references/scoped-brand-policy.md",

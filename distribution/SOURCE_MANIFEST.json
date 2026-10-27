@@ -37,7 +37,8 @@
     "source-library",
     "alex",
     "premiere-to-resolve",
-    "editorial-brain-ingest"
+    "editorial-brain-ingest",
+    "monday"
   ],
   "files": [
     {
@@ -6257,6 +6258,149 @@
       ],
       "distribution_sha256": "12b28b4db36e85ed9637b718f175fcfc707d769e580022fe7403c6b4ff562740",
       "bytes": 4637
+    },
+    {
+      "path": "monday/SKILL.md",
+      "source": "github:maddexritter-rgb/vibe-editing@a342d7173d49b6be43e477a0041aad6014fbf377/plugins/vibe-editing/skills/monday/SKILL.md",
+      "source_sha256": "27af9c87f0e0188541528f8631b65e4a2f030830c6d055c983b0df1ce8b88310",
+      "distribution_sha256": "c196c799411cea5536e4037b0bf342519c49f280f7f994d113c3d7799679f249",
+      "bytes": 3490,
+      "transforms": [
+        {
+          "from": "vibe-editing user configuration",
+          "to": "acq-edit user configuration"
+        }
+      ]
+    },
+    {
+      "path": "monday/references/configuration.md",
+      "source": "github:maddexritter-rgb/vibe-editing@a342d7173d49b6be43e477a0041aad6014fbf377/plugins/vibe-editing/skills/monday/references/configuration.md",
+      "source_sha256": "350806309f965a3c8b7d0be06c97a39d77f1ba826b2f085e7842aaf38a4d1219",
+      "distribution_sha256": "6bc7b4c9fdbd08c7a71ad12a04d783b9c743c7acfda0bd8eb046d21870dd79e8",
+      "bytes": 4678,
+      "transforms": [
+        {
+          "from": "vibe-editing user configuration",
+          "to": "acq-edit user configuration"
+        }
+      ]
+    },
+    {
+      "path": "monday/references/onboarding.md",
+      "source": "github:maddexritter-rgb/vibe-editing@a342d7173d49b6be43e477a0041aad6014fbf377/plugins/vibe-editing/skills/monday/references/onboarding.md",
+      "source_sha256": "3ef2bcacd3486711fa2d80d5fe2a4c44e53283df7c9624b85a3d3a57a6db139d",
+      "distribution_sha256": "3ef2bcacd3486711fa2d80d5fe2a4c44e53283df7c9624b85a3d3a57a6db139d",
+      "bytes": 3556,
+      "transforms": [
+        {
+          "from": "vibe-editing user configuration",
+          "to": "acq-edit user configuration"
+        }
+      ]
+    },
+    {
+      "path": "monday/references/revisions.md",
+      "source": "github:maddexritter-rgb/vibe-editing@a342d7173d49b6be43e477a0041aad6014fbf377/plugins/vibe-editing/skills/monday/references/revisions.md",
+      "source_sha256": "57d58dc46c0545f4cb1098b390633772a7bf3a05154f7040a95b828dd88f51f9",
+      "distribution_sha256": "57d58dc46c0545f4cb1098b390633772a7bf3a05154f7040a95b828dd88f51f9",
+      "bytes": 1923,
+      "transforms": [
+        {
+          "from": "vibe-editing user configuration",
+          "to": "acq-edit user configuration"
+        }
+      ]
+    },
+    {
+      "path": "monday/scripts/connect.py",
+      "source": "github:maddexritter-rgb/vibe-editing@a342d7173d49b6be43e477a0041aad6014fbf377/plugins/vibe-editing/skills/monday/scripts/connect.py",
+      "source_sha256": "d7ba592e59b2dc2140cc5c626cd4c7b5af02696b1855b65f70724f324c3cc11b",
+      "distribution_sha256": "d7ba592e59b2dc2140cc5c626cd4c7b5af02696b1855b65f70724f324c3cc11b",
+      "bytes": 1758,
+      "transforms": [
+        {
+          "from": "vibe-editing user configuration",
+          "to": "acq-edit user configuration"
+        }
+      ]
+    },
+    {
+      "path": "monday/scripts/deliver.py",
+      "source": "github:maddexritter-rgb/vibe-editing@a342d7173d49b6be43e477a0041aad6014fbf377/plugins/vibe-editing/skills/monday/scripts/deliver.py",
+      "source_sha256": "30e2db658ca391abe8ff91729ba1175bd6384a9fd951811c1bd352283e1a1c7f",
+      "distribution_sha256": "30e2db658ca391abe8ff91729ba1175bd6384a9fd951811c1bd352283e1a1c7f",
+      "bytes": 15284,
+      "transforms": [
+        {
+          "from": "vibe-editing user configuration",
+          "to": "acq-edit user configuration"
+        }
+      ]
+    },
+    {
+      "path": "monday/scripts/delivery_ledger.py",
+      "source": "github:maddexritter-rgb/vibe-editing@a342d7173d49b6be43e477a0041aad6014fbf377/plugins/vibe-editing/skills/monday/scripts/delivery_ledger.py",
+      "source_sha256": "c8edb32027de8bc789ec2fd9df9834051a88a2ca6f5285429146d86274559efb",
+      "distribution_sha256": "c8edb32027de8bc789ec2fd9df9834051a88a2ca6f5285429146d86274559efb",
+      "bytes": 2146,
+      "transforms": [
+        {
+          "from": "vibe-editing user configuration",
+          "to": "acq-edit user configuration"
+        }
+      ]
+    },
+    {
+      "path": "monday/scripts/frameio_client.py",
+      "source": "github:maddexritter-rgb/vibe-editing@a342d7173d49b6be43e477a0041aad6014fbf377/plugins/vibe-editing/skills/monday/scripts/frameio_client.py",
+      "source_sha256": "3320efa75ae52c1f35d8f7e6c5b6a41627e0d529657361c18c5332a72f76bf7c",
+      "distribution_sha256": "693a942202a166eb63ae1e32c8f6288e924c8b9bbadab6068c2be183e389f412",
+      "bytes": 4841,
+      "transforms": [
+        {
+          "from": "vibe-editing user configuration",
+          "to": "acq-edit user configuration"
+        }
+      ]
+    },
+    {
+      "path": "monday/scripts/monday_client.py",
+      "source": "github:maddexritter-rgb/vibe-editing@a342d7173d49b6be43e477a0041aad6014fbf377/plugins/vibe-editing/skills/monday/scripts/monday_client.py",
+      "source_sha256": "13fc29176d9acc49398a6afa80c6560344e6029e3b143b2e7272b4b6db9dacf2",
+      "distribution_sha256": "65b1f28c99898dd96faceec7de4e602b458f6bce3149e35ac3801b25b13297d7",
+      "bytes": 3123,
+      "transforms": [
+        {
+          "from": "vibe-editing user configuration",
+          "to": "acq-edit user configuration"
+        }
+      ]
+    },
+    {
+      "path": "monday/scripts/setup_frameio_oauth.py",
+      "source": "github:maddexritter-rgb/vibe-editing@a342d7173d49b6be43e477a0041aad6014fbf377/plugins/vibe-editing/skills/monday/scripts/setup_frameio_oauth.py",
+      "source_sha256": "0213037dff2e8990620d8f209d541efa2c1b59a66f3f024a39d2c922ebf8f8f8",
+      "distribution_sha256": "f0d958bba77eb5b42ff396f9697b19cd894d0ae9f66b0aa57033841c56d5a828",
+      "bytes": 5930,
+      "transforms": [
+        {
+          "from": "vibe-editing user configuration",
+          "to": "acq-edit user configuration"
+        }
+      ]
+    },
+    {
+      "path": "monday/scripts/test_delivery.py",
+      "source": "github:maddexritter-rgb/vibe-editing@a342d7173d49b6be43e477a0041aad6014fbf377/plugins/vibe-editing/skills/monday/scripts/test_delivery.py",
+      "source_sha256": "294d3a37ea80712595ad7594ed5b5b889d44d7e3b91077015789ffc87b058ed0",
+      "distribution_sha256": "294d3a37ea80712595ad7594ed5b5b889d44d7e3b91077015789ffc87b058ed0",
+      "bytes": 11593,
+      "transforms": [
+        {
+          "from": "vibe-editing user configuration",
+          "to": "acq-edit user configuration"
+        }
+      ]
     }
   ]
 }

@@ -43,7 +43,7 @@ export async function collectSetup(snapshot:SetupSnapshot,args:string[],question
  if(engine==='filmcraft')c.filmcraft=absolute(await ask('FilmCraft CLI executable',previous?.filmcraft||path.join(root,'.local/filmcraft/target/release/filmcraft-cli')),userHome);
  if(engine==='premiere')c.premiereProfile=absolute(await ask('Toolkit Premiere Agent profile',previous?.premiereProfile||path.join(root,'.local/premiere-profile.json')),userHome);
  if(engine==='resolve')c.resolvePython=absolute(await ask('Resolve Python executable',previous?.resolvePython||'/Applications/DaVinci Resolve/DaVinci Resolve.app/Contents/Applications/ResolvePython'),userHome);
- const brain=await ask('Editorial brain configuration directory (blank keeps current; - leaves unconfigured)',previous?.brainConfig);
+ const brain=await ask('Editorial brain configuration directory (blank keeps current; - leaves unconfigured)',previous?.brainConfig||process.env.ACQ_EDIT_TEAM_BRAIN_DIR);
  if(brain&&brain!=='-')c.brainConfig=absolute(brain,userHome);else delete c.brainConfig;
  invariant(Number.isInteger(c.port)&&c.port>0&&c.port<=65535,'Existing port is invalid; repair the configuration before saving.');
  return c;

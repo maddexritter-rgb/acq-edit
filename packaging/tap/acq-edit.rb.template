@@ -1,0 +1,43 @@
+require_relative "../lib/acq_private_release"
+
+class AcqEdit < Formula
+  desc "Agent-driven native editing and local clip review"
+  homepage "https://github.com/maddexritter-rgb/acq-edit"
+  version "@VERSION@"
+  url "https://github.com/maddexritter-rgb/acq-edit/releases/download/v@VERSION@/acq-edit-@VERSION@.tar.gz", using: AcqPrivateRelease
+  sha256 "@SHA256@"
+  license :cannot_represent
+
+  depends_on :macos
+  depends_on "node@24"
+  depends_on "python@3.11"
+  depends_on "ffmpeg"
+  depends_on "fontconfig"
+  depends_on "gh"
+  depends_on "git"
+  depends_on "rclone"
+  depends_on "yt-dlp"
+
+  def install
+    libexec.install Dir["*", ".[^.]*"]
+    (bin/"acq-edit").write <<~SH
+      #!/bin/bash
+      export PATH="#{Formula["node@24"].opt_bin}:#{Formula["python@3.11"].opt_bin}:$PATH"
+      exec "#{Formula["python@3.11"].opt_bin}/python3.11" "#{libexec}/scripts/acq_edit.py" "$@"
+    SH
+  end
+
+  def caveats
+    <<~EOS
+      Run as your own user: acq-edit onboard filmcraft codex
+      Alternatives: premiere / claude. Sign into your selected agent first.
+      FilmCraft also needs Rust and Xcode Command Line Tools.
+      Private team assets require your GitHub login.
+      Settings, native runtimes and projects live outside Homebrew's Cellar.
+    EOS
+  end
+
+  test do
+    assert_equal version.to_s, shell_output("#{bin}/acq-edit version").strip
+  end
+end
