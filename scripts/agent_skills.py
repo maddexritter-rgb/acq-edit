@@ -13,7 +13,7 @@ from materialize import materialize, verify, RECEIPT
 
 ROOT = Path(__file__).resolve().parents[1]
 AGENTS = {'codex': '.agents', 'claude': '.claude'}
-PUBLIC_SKILLS = ('edit', 'assembly-design', 'horizontal-to-vertical', 'caption-clips', 'music', 'monday')
+PUBLIC_SKILLS = tuple(json.loads((ROOT/'scripts/public-skills.json').read_text()))
 
 
 def catalog(root):

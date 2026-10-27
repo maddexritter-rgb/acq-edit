@@ -5,7 +5,7 @@ from pathlib import Path
 import sys
 
 
-def verify(config, toolkit):
+def verify_profile(config, toolkit):
     toolkit = Path(toolkit).absolute()
     local = toolkit / '.local'
     runtime = local / 'premiere-agent'
@@ -29,6 +29,23 @@ def verify(config, toolkit):
     }
     if profile != expected or not Path(node).is_absolute() or not Path(node).is_file():
         raise RuntimeError('Premiere profile differs from the isolated installation; preserve it and use a fresh installation')
+    panel = json.loads((runtime / 'lab/panel-preparation.json').read_text())
+    settings = json.loads((runtime / 'lab/runtime/config.json').read_text())
+    if (panel.get('runtime') != str(runtime / 'lab/runtime')
+            or panel.get('mailbox') != str(runtime / 'lab/runtime/mailbox')
+            or panel.get('cepId') != 'com.acqedit.premiere.bridge'
+            or panel.get('uxpId') != 'com.acqedit.premiere.uxp'
+            or type(settings.get('port')) is not int or not 1024 <= settings['port'] <= 65535
+            or settings['port'] == 17877 or panel.get('port') != settings['port']):
+        raise RuntimeError('Premiere panel isolation configuration differs; preserved')
+    return profile
+
+
+def verify(config, toolkit):
+    toolkit = Path(toolkit).absolute()
+    local = toolkit / '.local'
+    runtime = local / 'premiere-agent'
+    profile = verify_profile(config, toolkit)
     sys.path.insert(0, str(toolkit / 'scripts'))
     from materialize import verify as verify_skills
     from prepare_premiere_runtime import compiled_hashes, verify_helpers, REQUIRED_TOOLS
@@ -46,14 +63,6 @@ def verify(config, toolkit):
         raise RuntimeError('Premiere runtime differs from its installation receipt; preserved')
     # Never expose tokens or scope contents in doctor output.
     panel = json.loads((runtime / 'lab/panel-preparation.json').read_text())
-    settings = json.loads((runtime / 'lab/runtime/config.json').read_text())
-    if (panel.get('runtime') != str(runtime / 'lab/runtime')
-            or panel.get('mailbox') != str(runtime / 'lab/runtime/mailbox')
-            or panel.get('cepId') != 'com.acqedit.premiere.bridge'
-            or panel.get('uxpId') != 'com.acqedit.premiere.uxp'
-            or type(settings.get('port')) is not int or not 1024 <= settings['port'] <= 65535
-            or settings['port'] == 17877 or panel.get('port') != settings['port']):
-        raise RuntimeError('Premiere panel isolation configuration differs; preserved')
     packages = runtime / 'lab/packages'
     hashes = {}
     for name in ('ACQEditAgentCEP', 'ACQEditAgentUXP'):
@@ -68,5 +77,5 @@ def verify(config, toolkit):
     if not hashes or hashes != panel.get('packageHashes'):
         raise RuntimeError('Prepared Premiere panel changed; preserved')
     return {'verified': True, 'skillFiles': skills['verifiedFiles'], 'helperFiles': len(helpers),
-            'compiledFiles': len(receipt['compiledHashes']), 'panelFiles': len(hashes), 'port': settings['port'],
+            'compiledFiles': len(receipt['compiledHashes']), 'panelFiles': len(hashes), 'port': panel['port'],
             'hostQualified': False}

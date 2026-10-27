@@ -60,6 +60,22 @@ def portable_distribution(text,relative):
     return key
 '''+text[end:]
   changes.append({'patch':'toolkit-gemini-listener-credentials'})
+ if relative=='_shared/premiere_bridge.py':
+  guard_path=Path(__file__).with_name('portable_snippets')/'premiere_profile_guard.py'
+  guard=guard_path.read_text()
+  if '_verified_toolkit_profile' in text:raise ValueError('Premiere profile guard already present; reconcile upstream')
+  text=text.replace('import selectors','import selectors\nimport sys')
+  text=text.replace('@dataclass',guard+'@dataclass',1)
+  start=text.index("        path = path or os.environ.get('PREMIERE_AGENT_PROFILE')")
+  end=text.index("        if data.pop('schema'",start)
+  text=text[:start]+"        data = _verified_toolkit_profile(path=path)\n"+text[end:]
+  constructor='    def __init__(self, profile: Profile, timeout=30.0):\n'
+  if text.count(constructor)!=1:raise ValueError('Premiere transport constructor changed')
+  text=text.replace(constructor,constructor+'        _verified_toolkit_profile(profile)\n',1)
+  changes.append({'patch':'acq-edit-agent-only-profile-and-transport','snippetSha256':hashlib.sha256(guard.encode()).hexdigest()})
+ if relative=='edit/scripts/premiere_agent.py':
+  text=text.replace("'panel':'Premiere Agent Lab'","'panel':'ACQ Edit Agent'")
+  changes.append({'patch':'acq-edit-agent-panel-name'})
  if relative in ('_shared/premiere_bridge.py','edit/scripts/premiere_agent.py'):
   old="'lab_import_prepared_caption_sequence'"
   if text.count(old)!=1:raise ValueError('Graphic asset scope insertion changed')

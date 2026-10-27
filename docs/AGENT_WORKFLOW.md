@@ -23,6 +23,17 @@ Every new split screen uses the framing owner’s [default seam-shadow contract]
 
 ## Native execution routing
 
+**Premiere connector lock:** ACQ Edit Agent MCP is the only authorized Premiere transport.
+Use the selected toolkit's native adapter or verified repository helper and its exact
+`.local/premiere-profile.json`. Do not call ambient/global `mcp__premiere_pro` tools, another
+Premiere MCP, older MCP Bridge or production panels, or `~/.config/premiere-agent/default.json`.
+A familiar tool name or an already installed bridge does not establish identity. The internal
+protocol name `premiere-agent-lab` alone is insufficient; the toolkit verifies the exact command,
+runtime path, profile, panel IDs and installation receipts. Missing tools mean repair the ACQ
+Edit Agent setup and open its panel, then rerun doctor. Never fall back, repoint a legacy bridge,
+or uninstall another integration to make the test pass. This rule overrides legacy host recipes.
+
+
 This contract supplies the execution routes for the portable skill distribution, including when a stage skill is invoked directly. Read `project.json` before native access. Its backend stays fixed for the project. Canonical skill text below the runtime routing note remains the source of editorial, analysis and design procedures; its legacy host commands apply only when that host is the selected backend and the toolkit route supports them. A reference to an active weekly Premiere project, a default production bridge, or a FilmCraft helper never selects an editor for this project.
 
 | Work | Owning skill | Toolkit execution reference |
