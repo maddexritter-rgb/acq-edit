@@ -5,6 +5,7 @@ from pathlib import Path
 from common import *
 from premiere_plan import verify_source_cuts
 from premiere_installation import verify as verify_installation
+from premiere_compatibility import report as compatibility_report, installed as installed_versions
 from premiere_session import inspect_result, open_project, reconcile_project
 Profile=PremiereBridge=execute_operation=None
 class Adapter:
@@ -26,13 +27,14 @@ class Adapter:
    matches=isinstance(version,str) and re.match(r'^'+re.escape(self.profile.host_version)+r'(?:\D|$)',version) is not None
    return {'backend':'premiere','ready':connected and matches,'installation':self.installation,
            'connected':connected,'hostVersion':version,'expectedHostVersion':self.profile.host_version,
+           'compatibility':compatibility_report(version),'installedVersions':installed_versions(),
            'versionMatches':matches,'profileMode':self.profile.mode,'hostQualified':False,
            'projectLifecycle':'guarded create/reopen from an empty workspace; native host qualification pending',
            'repair':None if connected and matches else 'Open the isolated ACQ Edit Agent panel in the supported Premiere version; do not select the production connector'}
   except Exception as error:
    return {'backend':'premiere','ready':False,'installation':self.installation,'connected':None,
            'hostQualified':False,'profileMode':self.profile.mode,'connectionError':str(error)[:1000],
-           'repair':'Open the isolated ACQ Edit Agent panel in Premiere 26.3.0, then rerun doctor. No production connector fallback was attempted'}
+           'repair':'Open the isolated ACQ Edit Agent panel in the qualified host version reported by the compatibility registry, then rerun doctor. No production connector fallback was attempted'}
   finally:client.close()
  def inspect(self,project,packet):
   native=inside(project['root'],packet['nativeProject']);before_hash=sha(native)
@@ -85,6 +87,9 @@ class Adapter:
   return {'receipts':receipts,'savedNativeSha256':saved_hash,'status':'inspect-native-state-before-publishing'}
  build=execute
  revise=execute
+ def complete(self,project,packet):
+  from premiere_completion import complete
+  return complete(self,project,packet,PremiereBridge)
  def render(self,project,packet):
   p=plan(project,packet);native=inside(project['root'],packet['nativeProject'])
   require(native.is_file(),'Saved native Premiere project required')

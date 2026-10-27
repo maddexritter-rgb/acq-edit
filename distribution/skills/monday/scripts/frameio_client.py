@@ -7,7 +7,7 @@ from delivery_ledger import atomic_json
 _RETRY_STATUS = {429, 500, 502, 503, 504}
 _MAX_RETRIES = 5
 
-CFG_DIR = pathlib.Path(os.environ.get("ACQ_EDIT_HOME", str(pathlib.Path.home() / ".config/acq-edit"))) / "delivery/frameio"
+CFG_DIR = pathlib.Path(os.environ.get("ACQ_EDIT_CREDENTIALS_HOME", os.environ.get("ACQ_EDIT_HOME", str(pathlib.Path.home() / ".config/acq-edit")))) / "delivery/frameio"
 CRED = CFG_DIR / "credentials.json"
 TOKEN = CFG_DIR / "token.json"
 IMS_TOKEN_URL = "https://ims-na1.adobelogin.com/ims/token/v3"

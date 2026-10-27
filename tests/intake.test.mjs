@@ -78,7 +78,7 @@ test('Drive checksum failures never register sources; existing download can be r
 });
 test('YouTube ignores user config and refuses a downloader path outside its staging folder',async t=>{
  const f=await fixture(t);const tools={...f.tools,execute:async(command,args)=>{
-  assert.equal(command,'yt-dlp');assert(args.includes('--ignore-config'));const manifest=args[args.indexOf('--print-to-file')+2];await writeFile(manifest,f.file+'\n');return '';
+  assert.equal(command,path.resolve('.local/venv/bin/yt-dlp'));assert(args.includes('--ignore-config'));const manifest=args[args.indexOf('--print-to-file')+2];await writeFile(manifest,f.file+'\n');return '';
  }};
  await assert.rejects(importUrl(f.store,'p','https://youtu.be/HOfdboHvshg','youtube','drive',tools),/outside project/);assert.equal(f.store.sources('p').length,0);
 });
@@ -88,7 +88,7 @@ async function youtubeFixture(f,{metadata={},probe}={}){
  const tools={...f.tools,execute:async(command,args)=>{
   calls.push({command,args});
   if(command==='ffprobe'){if(probe)await probe(infoPath);return JSON.stringify({streams:[{codec_type:'video'}]})}
-  assert.equal(command,'yt-dlp');assert(args.includes('--write-info-json'));assert(args.includes('--no-write-playlist-metafiles'));
+  assert.equal(command,path.resolve('.local/venv/bin/yt-dlp'));assert.equal(args[args.indexOf('--js-runtimes')+1],'node:'+process.execPath);assert(args.includes('--write-info-json'));assert(args.includes('--no-write-playlist-metafiles'));
   const template=args[args.indexOf('-o')+1],candidate=template.replace('%(ext)s','mkv');infoPath=path.join(path.dirname(candidate),'source.info.json');
   await copyFile(f.file,candidate);await writeFile(infoPath,JSON.stringify(info));await writeFile(args[args.indexOf('--print-to-file')+2],candidate+'\n');return '';
  }};
@@ -139,13 +139,13 @@ test('YouTube interrupted verification recovers pinned bytes and metadata withou
  const i=f.store.intakes('p').at(-1),original=await readFile(y.infoPath);fail=false;
  await writeFile(y.infoPath,JSON.stringify({...y.info,title:'mutated'}));await assert.rejects(recoverIntake(f.store,i.id,y.tools),/metadata changed/);
  await writeFile(y.infoPath,original);const source=await recoverIntake(f.store,i.id,y.tools);
- assert.equal(y.calls.filter(c=>c.command==='yt-dlp').length,1);assert.equal(f.store.sources('p').length,1);assert.equal(source.sha256,i.expectedSha256);
+ assert.equal(y.calls.filter(c=>c.command===path.resolve('.local/venv/bin/yt-dlp')).length,1);assert.equal(f.store.sources('p').length,1);assert.equal(source.sha256,i.expectedSha256);
 });
 test('YouTube missing or symlinked metadata fails without registering a source',async t=>{
  const f=await fixture(t);
  for(const link of [false,true]){
   const tools={...f.tools,execute:async(command,args)=>{
-   assert.equal(command,'yt-dlp');const candidate=args[args.indexOf('-o')+1].replace('%(ext)s','mkv');await copyFile(f.file,candidate);
+   assert.equal(command,path.resolve('.local/venv/bin/yt-dlp'));const candidate=args[args.indexOf('-o')+1].replace('%(ext)s','mkv');await copyFile(f.file,candidate);
    if(link)await symlink(f.file,path.join(path.dirname(candidate),'source.info.json'));
    await writeFile(args[args.indexOf('--print-to-file')+2],candidate+'\n');return '';
   }};

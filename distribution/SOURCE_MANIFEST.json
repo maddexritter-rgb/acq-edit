@@ -6374,12 +6374,16 @@
       "path": "monday/scripts/frameio_client.py",
       "source": "github:maddexritter-rgb/vibe-editing@a342d7173d49b6be43e477a0041aad6014fbf377/plugins/vibe-editing/skills/monday/scripts/frameio_client.py",
       "source_sha256": "3320efa75ae52c1f35d8f7e6c5b6a41627e0d529657361c18c5332a72f76bf7c",
-      "distribution_sha256": "693a942202a166eb63ae1e32c8f6288e924c8b9bbadab6068c2be183e389f412",
-      "bytes": 4841,
+      "distribution_sha256": "f59bd95383f1e5669ea82be88ae7c812e85cb0080f744280234b6cb88991892b",
+      "bytes": 4886,
       "transforms": [
         {
           "from": "vibe-editing user configuration",
           "to": "acq-edit user configuration"
+        },
+        {
+          "from": "per-engine delivery credentials",
+          "to": "shared ACQ_EDIT_CREDENTIALS_HOME with legacy fallback"
         }
       ]
     },
@@ -6387,12 +6391,16 @@
       "path": "monday/scripts/monday_client.py",
       "source": "github:maddexritter-rgb/vibe-editing@a342d7173d49b6be43e477a0041aad6014fbf377/plugins/vibe-editing/skills/monday/scripts/monday_client.py",
       "source_sha256": "13fc29176d9acc49398a6afa80c6560344e6029e3b143b2e7272b4b6db9dacf2",
-      "distribution_sha256": "65b1f28c99898dd96faceec7de4e602b458f6bce3149e35ac3801b25b13297d7",
-      "bytes": 3123,
+      "distribution_sha256": "ad5baa64b2cb15585a979448ee3ffe1df86f7b4db0685b854166dda1e70ebcd5",
+      "bytes": 3168,
       "transforms": [
         {
           "from": "vibe-editing user configuration",
           "to": "acq-edit user configuration"
+        },
+        {
+          "from": "per-engine delivery credentials",
+          "to": "shared ACQ_EDIT_CREDENTIALS_HOME with legacy fallback"
         }
       ]
     },
@@ -6400,12 +6408,16 @@
       "path": "monday/scripts/setup_frameio_oauth.py",
       "source": "github:maddexritter-rgb/vibe-editing@a342d7173d49b6be43e477a0041aad6014fbf377/plugins/vibe-editing/skills/monday/scripts/setup_frameio_oauth.py",
       "source_sha256": "0213037dff2e8990620d8f209d541efa2c1b59a66f3f024a39d2c922ebf8f8f8",
-      "distribution_sha256": "f0d958bba77eb5b42ff396f9697b19cd894d0ae9f66b0aa57033841c56d5a828",
-      "bytes": 5930,
+      "distribution_sha256": "83365cf6bb3460db8e5f8a6a797019bba026f1b21c633aea60524019f427baab",
+      "bytes": 5975,
       "transforms": [
         {
           "from": "vibe-editing user configuration",
           "to": "acq-edit user configuration"
+        },
+        {
+          "from": "per-engine delivery credentials",
+          "to": "shared ACQ_EDIT_CREDENTIALS_HOME with legacy fallback"
         }
       ]
     },

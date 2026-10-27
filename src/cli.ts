@@ -1,6 +1,7 @@
 #!/usr/bin/env node
+import {prepareHandoff,importHandoff} from './handoff.js';
 import {doctor} from './doctor.js';
-import {readSetup,collectSetup,saveSetup} from './setup.js';
+import {readSetup,collectSetup,collectNoninteractiveSetup,saveSetup} from './setup.js';
 import {executeNative,reconcileNative,reconcileJob} from './native-operations.js';
 import {importDriveFolder,resumeDriveBatch,abandonDriveBatch} from './drive-batch.js';
 import path from 'node:path';
@@ -22,6 +23,7 @@ async function interruptibleCommand(work:(tools:IntakeTools)=>Promise<unknown>){
 async function main(){
  if(command==='setup'){
   const snapshot=await readSetup(HOME);
+  if(args.includes('--non-interactive')){const saved=await saveSetup(HOME,snapshot,await collectNoninteractiveSetup(snapshot,args,ROOT));output(saved);return;}
   const rl=createInterface({input:process.stdin,output:process.stdout});const controller=new AbortController();
   rl.on('close',()=>controller.abort());rl.on('SIGINT',()=>controller.abort());
   try{
@@ -34,14 +36,14 @@ async function main(){
   }finally{rl.close()}return;
  }
  if(command==='skills'){const {spawn}=await import('node:child_process');await new Promise<void>((resolve,reject)=>{const child=spawn('python3',[path.join(ROOT,'scripts','agent_skills.py'),...args],{stdio:'inherit'});child.on('error',reject);child.on('close',code=>code===0?resolve():reject(new Error('Skill registration needs attention')))});return}
- if(command==='credentials'){const {spawn}=await import('node:child_process');await new Promise<void>((resolve,reject)=>{const child=spawn('python3',[path.join(ROOT,'scripts','credentials.py'),HOME,...args],{stdio:'inherit'});child.on('error',reject);child.on('close',code=>code===0?resolve():reject(new Error('Credential entry failed')))});return}
- if(command==='help'||!command){console.log(`ACQ Edit\nsetup [backend] [agent]\ncredentials\nskills <list|install|check> [--agent codex|claude|both] [--scope workspace|user] [--only skill-name ...] [--update-owned]\ndoctor\nproject <title>\nprojects\nopen <project-id>\nsource <project-id> <file>\nyoutube <project-id> <url>\ndrive <project-id> <url> [rclone-remote]\ndrive-folder <project-id> <folder-url> [rclone-remote]\ndrive-batches <project-id>\ndrive-resume <batch-id> [--retry-failed]\ndrive-abandon <batch-id> <evidence.json>\nnative-operations <project-id>\nnative-reconcile <operation-id> <evidence.json>\nintakes <project-id>\nintake-abandon <intake-id> <evidence.json>\nintake-recover <intake-id>\nbrain <project-id> <request.json>\nbuild <project-id> <request>\nclip <project-id> <title>\npublish <project-id> <render-receipt.json>\nserve [--no-worker]\nworker\nreconcile <job-id> <ready|failed> <evidence-path>\nnative <project-id> <compile|captions|reference|inspect|open|build|revise|render> <packet.json>\n`);return}
+ if(command==='credentials'){const {spawn}=await import('node:child_process');await new Promise<void>((resolve,reject)=>{const child=spawn('python3',[path.join(ROOT,'scripts','credentials.py'),process.env.ACQ_EDIT_CREDENTIALS_HOME||HOME,...args],{stdio:'inherit'});child.on('error',reject);child.on('close',code=>code===0?resolve():reject(new Error('Credential entry failed')))});return}
+ if(command==='help'||!command){console.log(`ACQ Edit\nsetup [backend] [agent]\ncredentials\nskills <list|install|check> [--agent codex|claude|both] [--scope workspace|user] [--only skill-name ...] [--update-owned]\ndoctor\nproject <title>\nprojects\nopen <project-id>\nsource <project-id> <file>\nyoutube <project-id> <url>\ndrive <project-id> <url> [rclone-remote]\ndrive-folder <project-id> <folder-url> [rclone-remote]\ndrive-batches <project-id>\ndrive-resume <batch-id> [--retry-failed]\ndrive-abandon <batch-id> <evidence.json>\nnative-operations <project-id>\nnative-reconcile <operation-id> <evidence.json>\nintakes <project-id>\nintake-abandon <intake-id> <evidence.json>\nintake-recover <intake-id>\nbrain <project-id> <request.json>\nbuild <project-id> [--export] <request>\nhandoff <source-project> <destination-editor> <plan.json>\nhandoff-import <checkpoint.json>\nclip <project-id> <title>\npublish <project-id> <render-receipt.json>\nserve [--no-worker]\nworker\nreconcile <job-id> <ready|failed> <evidence-path>\nnative <project-id> <compile|captions|reference|inspect|open|build|revise|render|complete> <packet.json>\n`);return}
  if(command==='doctor'){
   try{const checks=await doctor(await config());output(checks);if(!checks.readiness.ready)process.exitCode=1;}
   catch{output({readiness:{ready:false,blocking:[{check:'configuration',repair:'Run setup to create a valid readable toolkit configuration, then rerun doctor.'}],optional:[],qualification:'Local prerequisite checks only; configuration could not be inspected.'}});process.exitCode=1;}
   return;
  }
- const c=await config();const store=new Store(path.join(HOME,'state.sqlite'));
+ const c=await config();process.env.PATH=path.dirname(c.python)+path.delimiter+path.dirname(process.execPath)+path.delimiter+(process.env.PATH||'');const store=new Store(path.join(HOME,'state.sqlite'));
  if(command==='serve'){
   const release=await serviceLock(HOME);store.recover();const room=serve(store,c,!args.includes('--no-worker'));room.server.listen(c.port,'127.0.0.1',()=>console.log(`Review room: http://127.0.0.1:${c.port}/session?token=${room.token}`));
   let stopping=false;const stop=()=>{if(stopping)return;stopping=true;void room.stop().then(()=>{store.close();return release()}).then(()=>process.exit(0)).catch(e=>{console.error(e.message);process.exitCode=1})};room.server.on('error',e=>{console.error(e.message);void release().finally(()=>process.exit(1))});process.on('SIGINT',stop);process.on('SIGTERM',stop);return;
@@ -55,9 +57,11 @@ async function main(){
  }
  try{
  switch(command){
+ case 'handoff':invariant(args[1]==='filmcraft'||args[1]==='premiere','Choose destination editor');invariant(args[2],'Frozen plan required');output(await prepareHandoff(store,c,args[0]!,{destination:args[1],planPath:path.resolve(args[2])}));break;
+ case 'handoff-import':invariant(args[0],'Checkpoint required');output(await importHandoff(store,c,path.resolve(args[0])));break;
  case 'project':invariant(args[0],'Project title required');output(await createProject(store,c.storageRoot,args.join(' '),c.backend,c.agent));break;
  case 'projects':output(store.projects());break;
- case 'open':output(await exportState(store,args[0]!));console.log('Run acq-edit serve to reopen the review room.');break;
+ case 'open':output(await exportState(store,args[0]!));console.log(store.project(args[0]!).backend==='premiere'?'Use native open with the latest verified reopen packet to open the saved editable timeline. Preserve unrelated projects.':'Run acq-edit serve to reopen the review room.');break;
  case 'brain':{
   const p=store.project(args[0]!);invariant(args[1],'Brain request JSON required');const request=await containedFile(p.root,path.resolve(args[1]!));
   const jobId=process.env.ACQ_EDIT_JOB_ID;if(jobId){const j=store.job(jobId);invariant(j.projectId===p.id&&['editing','rendering'].includes(j.state),'Brain request belongs to another or inactive job');}
@@ -73,13 +77,13 @@ async function main(){
  case 'intake-recover':await interruptibleCommand(tools=>recoverIntake(store,args[0]!,tools));break;
  case 'source':await interruptibleCommand(tools=>importLocal(store,args[0]!,args[1]!,'local',tools));break;
  case 'youtube':case 'drive':await interruptibleCommand(tools=>importUrl(store,args[0]!,args[1]!,command,args[2],tools));break;
- case 'build':output(store.enqueueBuild(args[0]!,args.slice(1).join(' ')));break;
+ case 'build':{const exported=args[1]==='--export';output(store.enqueueBuild(args[0]!,args.slice(exported?2:1).join(' '),exported?'rendered-review':undefined));break;}
  case 'clip':{store.project(args[0]!);const clip={id:randomUUID(),projectId:args[0]!,number:store.clips(args[0]!).length+1,title:args.slice(1).join(' '),currentVersionId:null};invariant(clip.title,'Title required');store.addClip(clip);output(clip);break}
  case 'publish':output(await publish(store,args[0]!,path.resolve(args[1]!)));break;
  case 'reconcile':invariant(args[1]==='failed'||args[1]==='ready','Choose ready or failed after native inspection');invariant(args[2],'Evidence path required');output(await reconcileJob(store,args[0]!,args[1],path.resolve(args[2]!)));break;
  case 'native-operations':output(store.nativeOperations(args[0]!));break;
  case 'native-reconcile':invariant(args[1],'Process and native inspection evidence required');output(await reconcileNative(store,args[0]!,path.resolve(args[1]!),{config:c}));break;
- case 'native':invariant(['compile','captions','hooks','reference','inspect','open','build','revise','render'].includes(args[1]!),'Unknown native operation');invariant(args[2],'Native packet required');await interruptibleCommand(tools=>executeNative(store,c,args[0]!,args[1] as NativeAction,path.resolve(args[2]!),tools));break;
+ case 'native':invariant(['compile','captions','hooks','reference','inspect','open','build','revise','render','complete'].includes(args[1]!),'Unknown native operation');invariant(args[2],'Native packet required');await interruptibleCommand(tools=>executeNative(store,c,args[0]!,args[1] as NativeAction,path.resolve(args[2]!),tools));break;
  default:throw Error('Unknown command. Run acq-edit help');
  }
  }finally{store.close()}

@@ -15,6 +15,8 @@ from prepare_premiere_runtime import prepare_helpers, compiled_hashes, REQUIRED_
 class PremiereInstallationTests(unittest.TestCase):
     def setUp(self):
         fixture.PremiereHelperTests.setUp(self)
+        from unittest.mock import patch
+        probe=patch('premiere_installation.subprocess.check_output',return_value='v24.0.0');probe.start();self.addCleanup(probe.stop)
         helpers = prepare_helpers(self.runtime, self.toolkit)
         (self.runtime / 'dist/lab').mkdir(parents=True)
         (self.runtime / 'dist/lab/index.js').write_text('// simulated compiled entrypoint')

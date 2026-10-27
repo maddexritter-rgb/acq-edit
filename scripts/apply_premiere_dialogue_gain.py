@@ -63,6 +63,7 @@ def run(a):
                 'intended_changes':['Frozen dialogue gain only, through calibrated native Level transport'],
                 'protected_state':['All cuts, picture, captions, graphics, music and other audio properties']}
             verification={'operation':operation,'baseline':copy.deepcopy(current['snapshot'])}
+            write(f'item-{i+1:02}-verification-plan.json',verification)
             execute_operation(client,operation,a.output/f'item-{i+1:02}.json',120)
             state=level.inspect(client);level.verify(verification,state)
             write(f'item-{i+1:02}-after.json',state)

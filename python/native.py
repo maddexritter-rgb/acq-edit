@@ -49,7 +49,7 @@ def execute(action,backend,config_path,project_path=None,packet_path=None):
 
 def main():
     parser=argparse.ArgumentParser()
-    parser.add_argument('action',choices=['doctor','compile','captions','hooks','reference','inspect','open','build','revise','render','reconcile'])
+    parser.add_argument('action',choices=['doctor','compile','captions','hooks','reference','inspect','open','build','revise','render','complete','reconcile'])
     parser.add_argument('--backend',choices=['filmcraft','premiere','resolve'],required=True)
     parser.add_argument('--config',required=True)
     parser.add_argument('--project');parser.add_argument('--packet')

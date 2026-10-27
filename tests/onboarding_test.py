@@ -123,3 +123,18 @@ class Onboarding(unittest.TestCase):
             self.assertTrue((Path(d)/'connection-check.json').is_file())
 
 if __name__=='__main__':unittest.main()
+
+class TwoEditors(unittest.TestCase):
+    def test_separate_engine_runtimes_and_fresh_repair_preserve_original(self):
+        with tempfile.TemporaryDirectory() as d:
+            base=Path(d);package=base/'package';package.mkdir();(package/'release.json').write_text('{"version":"0.2.0-test"}');(package/'code.txt').write_text('same shared source')
+            film=user_runtime(package,base,'filmcraft');prem=user_runtime(package,base,'premiere');repair=user_runtime(package,base,'premiere',fresh=True)
+            self.assertNotEqual(film,prem);self.assertNotEqual(prem,repair)
+            self.assertEqual((film/'code.txt').read_bytes(),(prem/'code.txt').read_bytes());self.assertTrue(prem.exists())
+    def test_legacy_config_is_adopted_without_rewriting_or_moving(self):
+        from acq_edit import engine_registry
+        with tempfile.TemporaryDirectory() as d:
+            home=Path(d);base=home/'.config/acq-edit';base.mkdir(parents=True)
+            root=home/'Library/Application Support/ACQ Edit/versions/old';root.mkdir(parents=True);(root/'.package-sha256').write_text('fixture')
+            config=base/'config.json';data=json.dumps({'backend':'filmcraft','python':str(root/'.local/venv/bin/python'),'storageRoot':'/unchanged'});config.write_text(data)
+            r=engine_registry(base,home);self.assertEqual(r['engines']['filmcraft']['runtime'],str(root));self.assertEqual(r['engines']['filmcraft']['home'],str(base));self.assertEqual(config.read_text(),data)

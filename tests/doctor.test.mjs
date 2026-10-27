@@ -13,6 +13,7 @@ function harness(backend,overrides={}){
   calls.push({command,args,options});
   if(args.includes('--version')||args.includes('-version'))return 'Fixture 1.0\n';
   if(args[0].endsWith('materialize.py'))return JSON.stringify({ready:true,verifiedFiles:683,routedEntrypoints:38});
+  if(args[0].endsWith('check_youtube.py'))return JSON.stringify({ready:true});
   if(args[0].endsWith('check_framing_dependencies.py'))return JSON.stringify({ready:true});
   if(args[0].endsWith('asset_bundle.py'))return JSON.stringify({ready:true,version:'fixture'});
   if(args[0].endsWith('brain_receipts.py'))return JSON.stringify({ready:true,remoteAccess:'not-checked'});
@@ -33,7 +34,7 @@ test('doctor checks only the selected engine and distinguishes local readiness f
  }
 });
 test('optional URL tools do not block local editing',async()=>{
- const h=harness('resolve');h.tools.execute=async(command,...rest)=>{if(['yt-dlp','rclone'].includes(command))throw Error('absent');return h.base(command,...rest)};
+ const h=harness('resolve');h.tools.execute=async(command,...rest)=>{if([path.resolve('.local/venv/bin/yt-dlp'),'rclone'].includes(command))throw Error('absent');return h.base(command,...rest)};
  const report=await doctor(config('resolve'),h.tools);assert.equal(report.readiness.ready,true);assert.deepEqual(report.readiness.optional.map(x=>x.check),['youtube','drive']);
 });
 test('doctor reports all missing prerequisites without launching native or brain code from a bad runtime',async()=>{
@@ -80,6 +81,7 @@ test('doctor before setup gives a repair without creating its configuration fold
 test('missing framing runtime blocks readiness without leaking child diagnostics',async()=>{
  const h=harness('filmcraft');
  h.tools.execute=async(command,args,options)=>{
+  if(args[0].endsWith('check_youtube.py'))return JSON.stringify({ready:true});
   if(args[0].endsWith('check_framing_dependencies.py'))throw Error('private diagnostic fixture-secret');
   return h.base(command,args,options);
  };

@@ -15,7 +15,7 @@ export interface Intake {
  youtubeVideoId?:string;youtubeInfoSha256?:string;
 }
 export interface DriveFile {id:string;name:string;parentId:string;folders:string[];bytes:number;md5:string}
-export type NativeAction='compile'|'captions'|'hooks'|'reference'|'inspect'|'open'|'build'|'revise'|'render';
+export type NativeAction='compile'|'captions'|'hooks'|'reference'|'inspect'|'open'|'build'|'revise'|'render'|'complete';
 export interface NativeOperation {
  id:string;projectId:string;jobId:string|null;backend:Backend;action:NativeAction;
  packetPath:string;packetSha256:string;directory:string;
@@ -44,7 +44,7 @@ export interface DeferredFeedback {
   originatingJobId:string; createdAt:string;
 }
 export interface Submission { clipId:string; version:Version; feedback:Feedback; owners:string[]; deferred?:DeferredFeedback[] }
-export interface Job { id:string; projectId:string; state:JobState; kind:'revision'|'build'; snapshot:Submission[]; request:string; dedupe:string; createdAt:string; updatedAt:string; error:string|null; agentSession:string|null }
+export interface Job { id:string; projectId:string; state:JobState; kind:'revision'|'build'; completion?:'editable-project'|'rendered-review'; nativeCompletions?:unknown[]; snapshot:Submission[]; request:string; dedupe:string; createdAt:string; updatedAt:string; error:string|null; agentSession:string|null }
 export const now=()=>new Date().toISOString();
 export const hash=(value:unknown)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 export function invariant(value:unknown,message:string):asserts value {if(!value) throw new Error(message)}

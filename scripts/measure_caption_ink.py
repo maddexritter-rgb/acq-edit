@@ -34,6 +34,10 @@ def measure(handoff, plan, binary, output):
     client = Filmcraft(binary, output / 'session')
     results, cache = [], {}
     try:
+        from font_faces import metadata,resolve_cards
+        records=metadata([Path.home()/'Library/Fonts',Path('/Library/Fonts'),Path('/System/Library/Fonts')])
+        cards=resolve_cards(cards,profile,client.run('fonts.list'),records)
+        for original,resolved in zip(h['cards'],cards):original['style']=copy.deepcopy(resolved['style'])
         validate_native_fonts(client,cards)
         client.run('file.newSequence', {'name': 'Caption ink calibration', 'width': plan['width'],
                    'height': plan['height'], 'fps': fps, 'sampleRate': plan['sampleRate'], 'video': 1, 'audio': 0})

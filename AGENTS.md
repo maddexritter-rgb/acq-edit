@@ -12,3 +12,5 @@ When the user asks to install, get started, connect services or resume setup, re
 For direct stage requests (captions, Assembly Design, reframing, music or delivery), read docs/SKILLS.md. Run only the requested owner and necessary prerequisites; do not force full editing onboarding for standalone delivery.
 
 Premiere connector lock: use only this installation’s ACQ Edit Agent MCP through the toolkit native adapter or verified repository helper. Never use ambient/global Premiere tools (including mcp__premiere_pro), old MCP Bridge/production panels, or a global default profile. Installed does not mean authorized. If the verified ACQ Edit Agent route is unavailable, stop and repair its setup; never switch bridges. Preserve unrelated installed integrations.
+
+For new editing jobs ask FilmCraft or Premiere unless specified. Premiere ends at a verified saved editable timeline left open; no automatic export, room or upload. FilmCraft ends with a verified export and the worker-enabled room. Follow docs/NATIVE_COMPLETION.md and docs/EDITOR_HANDOFF.md. Runtime helpers use toolkit Python; preserve exact host guards and report unqualified versions.

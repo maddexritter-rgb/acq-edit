@@ -331,3 +331,38 @@ macOS/CPU architecture, failed step and redacted logs. Do not include credential
 The other chat's `vibe-editing` onboarding is the source for the delivery interview;
 ACQ Edit is the authoritative engine/runtime for this test. Do not install the old editing pipeline
 alongside it. Read-only checks and offline tests do not certify a new Mac or Workbrew-managed deployment.
+
+## Agent execution and repair paths
+
+After gathering the editor, agent and storage choices in chat, use:
+
+```sh
+acq-edit onboard filmcraft codex --non-interactive --storage-root "/Volumes/Your Drive/ACQ Edit"
+```
+
+Use `premiere` or `claude` when selected. This skips terminal configuration questions,
+reusing the normal validator, configuration history and active-service lock. The private key
+form and account sign-in still need the user. Never improvise scripts to write config after EOF.
+
+Both engines can be installed: run onboarding once for each. Use `--engine premiere` or
+`--engine filmcraft` on subsequent commands. Each engine has its own runtime, config and state;
+assets, fonts and credentials are shared. The earlier single-engine configuration is adopted
+in place, preserving its database and project paths. New jobs still ask the editor choice.
+
+The launcher checks Node and certificate trust before downloads and supplies the same environment
+to children. Company CA variables are preserved; invalid/missing bundles stop with a repair.
+Never disable certificate verification. `doctor` checks the toolkit YouTube downloader, EJS solver
+and selected Node. No session-created downloader wrapper is needed.
+
+If a pinned runtime executable breaks, repair the underlying Homebrew/Workbrew dependency and
+run `acq-edit onboard premiere codex --fresh-runtime --non-interactive` (or FilmCraft). This builds
+a newly verified runtime, backs up config and retargets only paths owned by the old runtime;
+it preserves storage, projects, custom paths and the old runtime. Stop/reconcile active work first.
+Never hand-edit an alternate Premiere profile. Premiere discovery reports installed and observed
+host versions from the compatibility registry; unknown versions require qualification.
+
+For the first clip, Premiere finishes in its editable timeline. FilmCraft finishes in its review
+room with revision processing active. `serve --no-worker` is explicitly **Review only**: notes
+save, but revision buttons and API submission are disabled. A successful provider read check
+is authentication evidence only. Gemini HTTP 402 means billing/credit is needed, not successful
+analysis; do not mark audio/video inspection complete without an actual generation result.
