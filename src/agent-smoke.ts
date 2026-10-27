@@ -28,8 +28,10 @@ export async function smokeAgent(c:Config,p:Project,transport=runAgentTransport,
   invariant(!denied&&commands.every(x=>passed.has(x))&&(await readFile(proof,'utf8')).trim()===marker,'Project smoke failed: command permission or file access was not demonstrated');
   const report={ready:true,projectId:p.id,projectRoot:p.root,readiness,commands,checkedAt:new Date().toISOString(),qualification:'Observed basic commands and project writes only; not all editing permissions, provider credit or native qualification.'};
   await atomicJson(path.join(directory,'result.json'),report);return report;
- }catch{
-  const report={ready:false,projectId:p.id,projectRoot:p.root,checkedAt:new Date().toISOString(),repair:'Open Claude interactively in this exact project folder, accept its trust prompt and review the command permissions in docs/CLAUDE_SETUP.md. Then rerun this check. No permissions were changed by ACQ Edit.'};
+ }catch(error){
+  const providerLimited=/credit|balance|quota|rate.limit|\b402\b|\b429\b/i.test(String(error));
+  const modelUnavailable=/does not support this model|model.*(unavailable|not found)/i.test(String(error));
+  const report={ready:false,commands,passedCommands:[...passed],status:providerLimited?'provider-limited':modelUnavailable?'model-unavailable':denied?'permissions-denied':'smoke-incomplete',projectId:p.id,projectRoot:p.root,checkedAt:new Date().toISOString(),repair:providerLimited?'The agent provider could not run this check because of credit or rate limits. Resolve that provider limitation and retry; changing project trust will not repair provider credit.':modelUnavailable?'Update the configured CLI or choose an available model through normal Claude setup, then rerun the check.':'Open Claude interactively in this exact project folder, accept its trust prompt and review the command permissions in docs/CLAUDE_SETUP.md. Then rerun this check. No permissions were changed by ACQ Edit.'};
   await atomicJson(path.join(directory,'result.json'),report);return report;
  }
 }
