@@ -1,0 +1,79 @@
+# Use the whole editor or just one part
+
+ACQ Edit includes individual agent skills. You can ask for only captions, only an assembly,
+only reframing, or delivery of existing clips. The agent should do that job, not restart the
+whole workflow. These are chat skills, not Bash aliases.
+
+| What you want | Skill to select |
+| --- | --- |
+| Full editing workflow | `edit` |
+| Choose a moment and design the cuts | `assembly-design` |
+| Reframe an existing cut vertically | `horizontal-to-vertical` |
+| Add or restyle captions | `caption-clips` |
+| Choose and apply music | `music` |
+| Send finished clips to Frame.io and Monday | `monday` |
+| Review, render, or revise | `clip-review-room`, `render`, `revision-planner` |
+
+Claude Code supports `/edit`, `/caption-clips`, and the other skill names. In Codex, use the
+skill picker (search for the name) or explicitly mention `$edit`, `$caption-clips`, etc.;
+the exact picker shortcut varies by client. Natural language also works, for example:
+“Use caption-clips to caption this video. Keep the cuts and framing unchanged.”
+
+## Agent setup instructions
+
+Run these commands for the user; do not make them edit hidden folders or copy skill files.
+Normal onboarding registers all packaged owners in the installed toolkit's project for the
+chosen agent. For a skills-only installation, no editor, Rust, Node build, API key or asset
+download is required just to make the procedures selectable:
+
+```sh
+acq-edit skills install --agent codex
+# Claude Code: replace codex with claude; both is supported.
+acq-edit skills check --agent codex
+acq-edit skills list
+```
+
+In a source checkout, use `python3 scripts/agent_skills.py` instead of `acq-edit skills`.
+The command materializes and verifies the complete repository dependency chain, then links
+owners into `.agents/skills` for Codex or `.claude/skills` for Claude Code. It does not copy
+procedures into a second source of truth or use this machine's global editing helpers.
+Open this toolkit folder in the agent and reopen the session if the picker has not refreshed.
+Check the actual picker before claiming that discovery was accepted by the host.
+
+For skills available in **all chats**, use the explicit personal scope:
+
+```sh
+acq-edit skills install --agent codex --scope user
+# Or install only selected picker entries:
+acq-edit skills install --agent claude --scope user --only caption-clips monday
+```
+
+Personal scope uses the agent's user skill folder. Existing user skills and symlink farms are
+preserved. Conflicts are reported, never silently overwritten. On an upgrade, the agent may
+run the same install with `--update-owned` to move only receipt-owned links to the new verified
+release. Old runtimes and their projects remain intact. Skills not selected remain unchanged.
+If an old unreceipted link conflicts, report its path and resolve explicitly; do not delete it.
+
+Registration is not proof of an editor, asset bundle, credentials, or rendered output. At first
+use, resolve only the requested capability's missing dependencies from repository instructions:
+
+- Captions → Use skill: caption-clips. Set up its selected native backend, fonts/profile and
+  word timings as needed; preserve unrelated cuts, framing and music.
+- Assembly → Use skill: assembly-design. Stop at the requested design/assembly, without
+  adding captions, music or delivery unless requested.
+- Reframing → Use skill: horizontal-to-vertical. Preserve the existing editorial selection.
+- Music → Use skill: music. Load the approved asset bundle and the selected editor as needed.
+- Delivery → Use skill: monday. Follow its own onboarding for Frame/Monday accounts and
+  brand routes. Do not require FilmCraft/Premiere, AssemblyAI or Gemini to deliver existing files.
+
+Keep the immutable project backend, source preservation, exact-project permissions, scoped
+revisions, and explicit external-delivery authorization. Never resolve a missing capability by
+calling a global/private helper or switching engines.
+
+## Discovery references
+
+- [Codex skill locations and symlink support](https://learn.chatgpt.com/docs/build-skills)
+- [Claude Code skill locations and slash invocation](https://code.claude.com/docs/en/skills)
+
+This is local Codex/Claude Code discovery. It does not install cloud/Cowork skills or bypass
+organization policies that disable local skills.

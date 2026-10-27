@@ -11,3 +11,7 @@ __pycache__/
 work/
 projects/
 *.log
+
+# Generated discovery links and receipts, never copies of canonical skills
+.agents/
+.claude/

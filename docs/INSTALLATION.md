@@ -2,7 +2,7 @@
 
 For the packaged new-Mac flow, start with [ONBOARDING.md](ONBOARDING.md). It installs a versioned user runtime and supplies the team reader; the source/developer recovery details below still apply.
 
-Use a fresh checkout for a teammate installation or an upgrade. Keep existing projects and credentials in their configured external locations. The installer does not migrate project state or install global agent skills.
+Use a fresh checkout for a teammate installation or an upgrade. Keep existing projects and credentials in their configured external locations. The installer does not migrate project state. Onboarding registers skills in the toolkit project; personal discovery is an explicit optional install. See [skill discovery](SKILLS.md).
 
 Resume saved review state with `acq-edit open PROJECT_ID`, then `acq-edit serve`. Resolve's explicit native reopening uses a prior inspection's identity/fingerprint packet; follow [RESOLVE_STATE.md](RESOLVE_STATE.md). Keep the existing native project database available. Review exports and DRP checkpoints alone do not silently replace a missing or manually changed native project.
 

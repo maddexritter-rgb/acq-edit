@@ -200,6 +200,7 @@ def main():
         bundle=stage('assets',lambda:assets(release))
         stage('fonts',lambda:install_fonts(bundle))
         brain=stage('brain',lambda:install_brain(bundle))
+        stage('skill-discovery',lambda:execute(['python3.11','scripts/agent_skills.py','install','--agent',a.agent,'--assets',bundle]))
         if not (ROOT/'dist/cli.js').exists():
             stage('service',lambda:(execute(['npm','ci','--ignore-scripts']),execute(['npm','run','build'])))
         if not (ROOT/'.local/venv/bin/python').exists() or state['steps'].get('shared')!='completed':
