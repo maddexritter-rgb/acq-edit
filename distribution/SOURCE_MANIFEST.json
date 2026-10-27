@@ -3538,12 +3538,15 @@
       "path": "caption-clips/scripts/premiere_caption_handoff.py",
       "source": "canonical-skills/caption-clips/scripts/premiere_caption_handoff.py",
       "source_sha256": "a834e0924614da41780c0f17ddf7fff8723679f40eef65dfa4684a28266411b8",
-      "distribution_sha256": "f5d4c9e61f8656484e07d3e84684d0eb7992d701c4e45a847f5e6027fd096d42",
-      "bytes": 11856,
+      "distribution_sha256": "273ddb8aa0110089cc12af409cb8c5b124ed85d7c896e1a0758700a2da9bcfcf",
+      "bytes": 11876,
       "transforms": [
         {
           "patch": "joined-skill-root",
           "count": 1
+        },
+        {
+          "patch": "native-caption-line-break-equivalence"
         }
       ]
     },

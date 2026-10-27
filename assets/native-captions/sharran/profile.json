@@ -21,5 +21,6 @@
     }
   },
   "y_pct": 69,
-  "status": "native-render-and-human-review-required"
+  "status": "native-render-and-human-review-required",
+  "donorMode": "style"
 }

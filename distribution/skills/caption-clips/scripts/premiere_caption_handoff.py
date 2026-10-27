@@ -112,7 +112,7 @@ def bind_segments(receipt, manifest):
         if end <= start or start < prior_end or sout - sin != end - start:
             raise ValueError('Overlapping or inconsistent card/source duration')
         prior_end = end
-        if card['text'] != segment['text'] or ''.join(run['text'] for run in card['expected_runs']) != card['text']:
+        if card['text'] != segment['text'].replace('\n', '\r') or ''.join(run['text'] for run in card['expected_runs']) != card['text']:
             raise ValueError('Manifest/decoded text mismatch')
         result.append({'segment_id': sid, 'semantic_card_id': semantic,
                        'prepared_object_id': card['item_id'], 'timing': timing, 'expected_text': card['text']})

@@ -60,7 +60,7 @@ def extract(source, profile_path, output, native, integrity):
     # Do not distribute old project paths, transcripts or unrelated profile fields.
     portable={'schema':'acq-edit/premiere-donor-asset-v1','sourceSha256':sha(source),
               'graphSha256':sha(graph_path),'donors':profile['donors'],
-              'y_pct':profile['y_pct'],'status':'native-render-and-human-review-required'}
+              'y_pct':profile['y_pct'],'donorMode':profile.get('donorMode','speaker'),'status':'native-render-and-human-review-required'}
     (output/'profile.json').write_text(json.dumps(portable,indent=2))
     return {'nodes':len(nodes),'graphSha256':portable['graphSha256'],'externalMedia':0}
 
@@ -71,6 +71,9 @@ def graft(project, asset, sequence_uid, output, out_profile, native, integrity):
     profile=json.loads((asset/'profile.json').read_text())
     if profile['schema']!='acq-edit/premiere-donor-asset-v1' or sha(asset/'graph.xml')!=profile['graphSha256']:
         raise ValueError('Donor asset changed')
+    donor_mode=profile.get('donorMode','speaker')
+    if donor_mode not in ('speaker','style'):raise ValueError('Unknown donor selection mode')
+    donor_key='donors_by_style' if donor_mode=='style' else 'donors'
     root=native.load(project); before={n.get('ObjectID') or n.get('ObjectUID'):ET.tostring(n) for n in root}
     source=ET.parse(asset/'graph.xml').getroot(); seeds=[d['item_id'] for d in profile['donors'].values()]
     nodes=integrity.materialize_aliases(closure(source,seeds),[source])
@@ -118,7 +121,7 @@ def graft(project, asset, sequence_uid, output, out_profile, native, integrity):
     output.write_bytes(gzip.compress(ET.tostring(root,encoding='utf-8',xml_declaration=True)))
     result={'project_sha256':sha(output),'sequence_uid':sequence_uid,'track_index':index,
             'expected_item_ids':[],'y_pct':profile['y_pct'],
-            'donors':{name:{**d,'item_id':mapping[d['item_id']]} for name,d in profile['donors'].items()},
+            donor_key:{name:{**d,'item_id':mapping[d['item_id']]} for name,d in profile['donors'].items()},
             'asset_graph_sha256':profile['graphSha256'],'status':'native-render-and-human-review-required'}
     out_profile.write_text(json.dumps(result,indent=2))
     return {'output':str(output),'trackIndex':index,'protectedObjects':len(before)-1,'nativeVerified':False}

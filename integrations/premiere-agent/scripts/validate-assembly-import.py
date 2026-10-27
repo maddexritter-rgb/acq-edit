@@ -38,10 +38,12 @@ def bounded(path, root):
     return path
 
 
-def checked(path, expected, root):
+def checked(path, expected, root, *, transcript=False):
     path = bounded(path, root)
-    if path.stat().st_size > 8_000_000:
-        raise ValueError('Assembly XML/receipt size limit')
+    # Full-session word data is larger than an XML packet. Keep both bounded.
+    limit = 32_000_000 if transcript else 8_000_000
+    if path.stat().st_size > limit:
+        raise ValueError('Assembly transcript size limit' if transcript else 'Assembly XML/receipt size limit')
     data = path.read_bytes()
     if hashlib.sha256(data).hexdigest() != expected:
         raise ValueError('Assembly input hash changed')
@@ -249,9 +251,11 @@ def validate_compiled_packet(xml_path, xml_sha, expected_path, expected_sha, fix
     artifacts = {str(resolved_path): resolved_sha, str(compiled_path): compiled_sha, str(design_path): design_sha,
                  str(bounded(xml_path, root)): xml_sha, str(bounded(expected_path, root)): expected_sha}
     media = {}
+    transcripts = set()
     for clip in compiled['clips']:
         words = bounded(clip['source_words'], root)
-        checked(words, clip['source_words_sha256'], root)
+        checked(words, clip['source_words_sha256'], root, transcript=True)
+        transcripts.add(str(words))
         artifacts[str(words)] = clip['source_words_sha256']
         source = bounded(clip['media'], root); info = source.stat()
         media[str(source)] = {'path': str(source), 'size': str(info.st_size), 'mtime_ns': str(info.st_mtime_ns)}
@@ -292,7 +296,7 @@ def validate_compiled_packet(xml_path, xml_sha, expected_path, expected_sha, fix
             raise ValueError('XML is not the exact existing writer output for this resolved selection')
         if json.loads(rebuilt.with_suffix('.expected.json').read_text()) != json.loads(checked(expected_path, expected_sha, root)):
             raise ValueError('XML receipt differs from original compiled/resolved selection')
-    for p, sha in artifacts.items(): checked(p, sha, root)
+    for p, sha in artifacts.items(): checked(p, sha, root, transcript=p in transcripts)
     for p, prior in media.items():
         info = bounded(p, root).stat()
         if str(info.st_size) != prior['size'] or str(info.st_mtime_ns) != prior['mtime_ns']:

@@ -6,13 +6,17 @@ from PIL import Image, ImageDraw
 
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--plan',required=True,type=Path);ap.add_argument('--media',required=True,type=Path);ap.add_argument('--output',required=True,type=Path);a=ap.parse_args()
+    ap=argparse.ArgumentParser();ap.add_argument('--plan',required=True,type=Path);ap.add_argument('--media',required=True,type=Path);ap.add_argument('--output',required=True,type=Path)
+    ap.add_argument('--caption-entrances',action='store_true',help='Inspect each card two frames after onset instead of its center')
+    a=ap.parse_args()
     p=json.loads(a.plan.read_text());fps=p['fps']['numerator']/p['fps']['denominator'];total=max(c['recordFrame']+c['frames'] for c in p['cuts'])
     points={}
     def add(frame,label):
         if not 0<=frame<total:raise ValueError('Sample outside timeline')
         points.setdefault(frame,[]).append(label)
-    for i,c in enumerate(p['captions']):add((c['startFrame']+c['endFrame']-1)//2,f'caption {i+1}: {c["text"]}')
+    for i,c in enumerate(p['captions']):
+        frame=min(c['startFrame']+2,c['endFrame']-1) if a.caption_entrances else (c['startFrame']+c['endFrame']-1)//2
+        add(frame,f'caption {i+1}: {c["text"]}')
     for c in p['cuts']:
         for f in sorted({c['recordFrame'],c['recordFrame']+c['frames']//2,c['recordFrame']+c['frames']-1}):add(f,c['id'])
     a.output.mkdir(parents=True,exist_ok=False);frames=sorted(points)
