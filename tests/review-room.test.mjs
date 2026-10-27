@@ -14,7 +14,7 @@ class Element {
  load(){this.loaded=true}
  addEventListener(){}
 }
-async function room(){
+async function room(revisionProcessing=true){
  const elements=new Map(),get=id=>{if(!elements.has(id))elements.set(id,new Element());return elements.get(id)};
  get('filter').value='all';
  const decisions=['yes','revise','no'].map(decision=>Object.assign(new Element(),{dataset:{decision}}));
@@ -25,6 +25,7 @@ async function room(){
  const snapshots={full,empty,waiting},requests=[];let fault,reference;
  const fetch=async(url,options={})=>{
   requests.push({url,...options});
+  if(url==='/api/capabilities')return response({revisionProcessing,mode:revisionProcessing?'editing':'review-only'});
   if(url==='/api/projects')return response(Object.values(snapshots).map(s=>s.project));
   if(url.startsWith('/api/projects/')&&!url.endsWith('/revisions'))return response(snapshots[url.split('/').at(-1)]);
   if(url==='/api/feedback/v'){
@@ -86,4 +87,11 @@ for(const target of ['empty','waiting'])test(`switching to ${target} clears medi
  for(const id of ['notes','apply','apply-selected','compare','versions','add-comment','timestamp'])assert.equal(r.get(id).disabled,true,id);
  assert(r.decisions.every(d=>d.disabled));r.type('Cannot save on empty project');await r.app.settled();assert.equal(r.requests.filter(x=>x.url.startsWith('/api/feedback')).length,0);
  await r.switch('full');assert.equal(r.get('player').src,'/media/v');assert.equal(r.get('notes').disabled,false);assert.equal(r.get('apply').disabled,false);assert(r.decisions.every(d=>!d.disabled));
+});
+
+test('review-only room labels the mode, saves feedback and disables revision actions',async()=>{
+ const r=await room(false);assert.match(r.get('room-mode').textContent,/Review only/);assert.equal(r.get('room-mode').hidden,false);
+ assert.equal(r.get('apply').disabled,true);assert.equal(r.get('apply-selected').disabled,true);assert.equal(r.get('notes').disabled,false);
+ r.type('Keep this for later');await r.app.settled();assert.equal(r.feedback().notes,'Keep this for later');
+ await r.get('apply').onclick();assert.equal(r.requests.filter(x=>x.url.endsWith('/revisions')).length,0);
 });

@@ -80,3 +80,14 @@ test('EOF during real setup exits unsuccessfully without saving partial answers'
  const code=await new Promise((resolve,reject)=>{child.on('error',reject);child.on('close',resolve)});
  assert.equal(code,1,stderr);assert.match(stderr,/aborted|cancelled/);assert.equal(await readFile(path.join(f.home,'config.json'),'utf8'),text);assert.deepEqual(await readdir(f.home),['config.json']);
 });
+
+test('noninteractive setup uses gathered choices and preserves previous project storage',async()=>{
+ const {collectNoninteractiveSetup}=await import('../dist/setup.js');
+ const before={backend:'premiere',agent:'codex',python:'/prior/.local/venv/bin/python',premiereProfile:'/prior/.local/premiere-profile.json',storageRoot:'/projects',port:4317};
+ const old=process.env.ACQ_EDIT_PREVIOUS_RUNTIME;process.env.ACQ_EDIT_PREVIOUS_RUNTIME='/prior';
+ try{
+  const c=await collectNoninteractiveSetup({text:JSON.stringify(before),config:before},['premiere','claude','--non-interactive'],'/new','/user');
+  assert.equal(c.storageRoot,'/projects');assert.equal(c.python,'/new/.local/venv/bin/python');assert.equal(c.premiereProfile,'/new/.local/premiere-profile.json');assert.equal(c.agent,'claude');assert.equal(before.python,'/prior/.local/venv/bin/python');
+  await assert.rejects(collectNoninteractiveSetup({text:null,config:null},['premiere','--non-interactive'],'/new'),/backend and agent/);
+ }finally{if(old===undefined)delete process.env.ACQ_EDIT_PREVIOUS_RUNTIME;else process.env.ACQ_EDIT_PREVIOUS_RUNTIME=old;}
+});

@@ -84,3 +84,21 @@ export async function saveSetup(home:string,snapshot:SetupSnapshot,c:Config){
   return {changed:true,backup};
  }finally{await release()}
 }
+
+/** Agent setup uses the same validation/save path without depending on terminal stdin. */
+export async function collectNoninteractiveSetup(snapshot:SetupSnapshot,args:string[],root:string,userHome=os.homedir()){
+ const positional:string[]=[],options=new Map<string,string>();
+ for(let i=0;i<args.length;i++){
+  const arg=args[i]!;if(arg==='--non-interactive')continue;
+  if(arg==='--storage-root'){invariant(args[i+1]&&!args[i+1]!.startsWith('--'),'--storage-root requires a path');options.set(arg,args[++i]!);}
+  else {invariant(!arg.startsWith('--'),'Unknown setup option');positional.push(arg);}
+ }
+ invariant(positional.length===2,'Noninteractive setup requires backend and agent');
+ const previous=process.env.ACQ_EDIT_PREVIOUS_RUNTIME;
+ // Only migrate paths owned by the prior registered runtime. Preserve custom paths.
+ const updated=snapshot.config?{...snapshot.config}:null;
+ if(previous&&updated){for(const key of ['python','filmcraft','premiereProfile','brainConfig'] as const){
+  const value=updated[key];if(value&&path.isAbsolute(previous)&&value.startsWith(previous+path.sep))updated[key]=path.join(root,path.relative(previous,value));
+ }}
+ return collectSetup({...snapshot,config:updated},positional,async prompt=>prompt.startsWith('Project storage root')?options.get('--storage-root')||'':'',root,userHome);
+}

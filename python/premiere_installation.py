@@ -3,6 +3,8 @@ import json
 import hashlib
 from pathlib import Path
 import sys
+import subprocess
+sys.path.insert(0,str(Path(__file__).resolve().parent))
 
 
 def verify_profile(config, toolkit):
@@ -24,11 +26,16 @@ def verify_profile(config, toolkit):
         'schema': 'edit.premiere-bridge-profile/v1',
         'command': [node, str(local / 'skills/assembly-design/scripts/precision_bridge.mjs'), str(runtime)],
         'cwd': str(runtime), 'fixture_root': str(runtime / 'lab/runtime/fixtures'),
-        'connector': 'premiere-agent-lab', 'host_version': '26.3.0', 'mode': 'scoped-edit',
+        'connector': 'premiere-agent-lab', 'host_version': __import__('premiere_compatibility').default_version(), 'mode': 'scoped-edit',
         'project_authorization': str(runtime / 'lab/runtime/edit-project-authorization.json'),
     }
     if profile != expected or not Path(node).is_absolute() or not Path(node).is_file():
         raise RuntimeError('Premiere profile differs from the isolated installation; preserve it and use a fresh installation')
+    try:
+        version=subprocess.check_output([node,'--version'],text=True,stderr=subprocess.PIPE,timeout=10).strip()
+        if int(version.lstrip('v').split('.')[0])<24:raise ValueError('Unsupported Node')
+    except (OSError,ValueError,subprocess.SubprocessError) as error:
+        raise RuntimeError('Pinned Premiere Node is broken. Preserve this runtime and run onboarding in a fresh release runtime with a verified Node; do not edit its profile') from error
     panel = json.loads((runtime / 'lab/panel-preparation.json').read_text())
     settings = json.loads((runtime / 'lab/runtime/config.json').read_text())
     if (panel.get('runtime') != str(runtime / 'lab/runtime')

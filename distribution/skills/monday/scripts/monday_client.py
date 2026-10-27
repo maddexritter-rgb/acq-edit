@@ -5,7 +5,7 @@ from pathlib import Path
 import urllib.request
 import urllib.error
 
-CFG = Path(os.environ.get('ACQ_EDIT_HOME', str(Path.home() / '.config/acq-edit'))) / 'delivery'
+CFG = Path(os.environ.get('ACQ_EDIT_CREDENTIALS_HOME', os.environ.get('ACQ_EDIT_HOME', str(Path.home() / '.config/acq-edit')))) / 'delivery'
 
 
 class MondayClient:

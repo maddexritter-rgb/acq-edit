@@ -1,0 +1,9 @@
+{
+  "schema": "acq-edit/premiere-compatibility-v1",
+  "defaultQualifiedVersion": "26.3.0",
+  "operations": ["construction", "captions", "framing", "audio", "export", "revision", "save-reopen"],
+  "versions": {
+    "26.3.0": {"executionAllowed": true, "status": "retained-existing-support", "evidence": "docs/STATUS.md"},
+    "26.5.2": {"executionAllowed": false, "status": "awaiting-native-qualification", "evidence": null}
+  }
+}

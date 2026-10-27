@@ -4,7 +4,7 @@ import urllib.parse, urllib.request, urllib.error
 import http.server
 from delivery_ledger import atomic_json
 
-CFG = pathlib.Path(os.environ.get("ACQ_EDIT_HOME", str(pathlib.Path.home() / ".config/acq-edit"))) / "delivery/frameio"
+CFG = pathlib.Path(os.environ.get("ACQ_EDIT_CREDENTIALS_HOME", os.environ.get("ACQ_EDIT_HOME", str(pathlib.Path.home() / ".config/acq-edit")))) / "delivery/frameio"
 CRED = CFG / "credentials.json"
 TOKEN = CFG / "token.json"
 CERT = CFG / "cert.pem"

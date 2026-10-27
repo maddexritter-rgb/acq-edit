@@ -1,3 +1,18 @@
+## Session repairs and separate editor workflows — preview.11
+
+The session audit and remaining qualification boundaries are in
+[SESSION_REPAIR_LEDGER.md](SESSION_REPAIR_LEDGER.md). New Premiere builds now request editable
+native completion, while FilmCraft retains rendered review. Historical jobs/versions are
+unchanged. New native-only completion and both-direction checkpoint handoff have regression
+coverage but are not yet real-host qualified. Their verifiers stop on missing/stale evidence
+and unsupported layers. Premiere 26.5.2 is explicitly unqualified; 26.3 support is retained.
+
+Installation now validates certificate/Node selection, offers noninteractive setup and separate
+engine runtimes, supplies yt-dlp's exact Node/EJS requirements, selects toolkit Python and resolves
+caption faces from PostScript metadata. Review-only rooms save notes but cannot queue revisions.
+See [ONBOARDING.md](ONBOARDING.md), [NATIVE_COMPLETION.md](NATIVE_COMPLETION.md), and
+[EDITOR_HANDOFF.md](EDITOR_HANDOFF.md) for precise commands and limitations.
+
 ## Premiere connector lock — preview.10
 
 Every materialized skill entrypoint, generated project instruction file and worker prompt

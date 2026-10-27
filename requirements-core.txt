@@ -11,3 +11,9 @@ transformers==5.20.2
 # Shared camera/microphone synchronization helper.
 librosa==0.11.0
 opencv-python-headless==4.11.0.86
+
+# YouTube challenge solver installed with the downloader, not fetched as remote code.
+yt-dlp[default]==2026.10.26
+
+# Exact installed PostScript and subfamily metadata for caption calibration.
+fonttools==4.60.1

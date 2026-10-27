@@ -1,6 +1,6 @@
 import {projectActivity,jobPresentation} from './activity.js';
 import {referenceView} from './reference.js';
-const $=id=>document.getElementById(id);let projectId='',data,clipId='',versionId='',pending=Promise.resolve(),selected=new Set(),draft,comparison=false,dirty=0,activityKey='',saveGeneration=0,uncertainFeedback;
+const $=id=>document.getElementById(id);let projectId='',data,clipId='',versionId='',pending=Promise.resolve(),selected=new Set(),draft,comparison=false,dirty=0,activityKey='',saveGeneration=0,uncertainFeedback,revisionProcessing=false;
 const api=async(url,options={})=>{const r=await fetch(url,{...options,headers:{'Content-Type':'application/json',...options.headers}});const b=await r.json();if(!r.ok)throw Error(b.error||r.statusText);return b};
 const error=e=>{$('error').hidden=false;$('error').textContent=e.message;$('save-state').textContent='Needs attention'};
 const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n};
@@ -8,7 +8,7 @@ const stamp=s=>`${String(Math.floor(s/60)).padStart(2,'0')}:${(s%60).toFixed(2).
 const reference=referenceView({button:$('reference-toggle'),video:$('reference-player'),panel:$('reference-panel'),fetchReference:id=>api('/api/versions/'+id+'/reference'),onOpen:()=>{$('comparison').pause();$('comparison').hidden=true;comparison=false}});
 $('reference-player').onplay=()=>{$('player').pause();$('comparison').pause()};$('player').onplay=()=>{$('reference-player').pause()};
 const currentClip=()=>data?.clips.find(c=>c.id===clipId);const currentVersion=()=>currentClip()?.versions.find(v=>v.id===versionId);
-function selectionState(){$('selected-count').textContent=`${selected.size} selected`;$('apply-selected').disabled=!data?.clips.some(c=>selected.has(c.id)&&c.currentVersionId)}
+function selectionState(){$('selected-count').textContent=`${selected.size} selected`;$('apply-selected').disabled=!revisionProcessing||!data?.clips.some(c=>selected.has(c.id)&&c.currentVersionId)}
 function queue(){const list=$('clips');list.replaceChildren();const query=$('search').value.toLowerCase(),filter=$('filter').value;for(const c of data.clips){const v=c.versions.find(v=>v.id===c.currentVersionId);const status=v?.feedback.decision||'unreviewed';if(!c.title.toLowerCase().includes(query)||(filter!=='all'&&filter!==status))continue;const row=el('div',undefined,'clip'+(c.id===clipId?' active':''));const check=el('input');check.type='checkbox';check.ariaLabel='Select '+c.title;check.checked=selected.has(c.id);check.onchange=()=>{check.checked?selected.add(c.id):selected.delete(c.id);selectionState()};row.append(check,el('span',String(c.number).padStart(2,'0'),'number'));const text=el('div');text.append(el('h3',c.title),el('small',`${v?'V'+v.number+' · ':''}${status}`,'status-'+status));row.append(text);row.onclick=e=>{if(e.target!==check)void switchClip(c.id).catch(error)};list.append(row)}$('count').textContent=data.clips.length;selectionState()}
 function renderJobs(){
  const activity=projectActivity(data),key=JSON.stringify([data.project.id,activity,data.jobs]);if(key===activityKey)return;activityKey=key;
@@ -31,7 +31,7 @@ function renderVersion(){const c=currentClip(),v=currentVersion();reference.rese
  }
  $('player').src='/media/'+v.id;$('comparison').hidden=true;comparison=false;$('download').href=`/media/${v.id}?download=1`;$('version-label').textContent=`VERSION ${v.number} · ${new Date(v.createdAt).toLocaleDateString()}`;$('notes').value=draft.notes;decision();renderComments();renderPending();
  const prev=c.versions.find(x=>x.id===v.parentId),previousFeedback=data.jobs.find(j=>j.id===v.jobId)?.snapshot.find(s=>s.clipId===c.id)?.feedback||prev?.feedback;$('previous').hidden=!prev;$('previous-content').replaceChildren();if(prev){$('previous-content').append(el('p',previousFeedback.notes||'No general notes.'));for(const cm of previousFeedback.comments){const a=versionJump(c,prev,cm.seconds,stamp(cm.seconds)+' · '+cm.text);$('previous-content').append(a,el('br'))}}
- const historical=v.id!==c.currentVersionId;for(const id of ['apply','notes','comment','add-comment'])$(id).disabled=historical;document.querySelectorAll('[data-decision]').forEach(b=>b.disabled=historical);$('notes').previousElementSibling.textContent=`Your notes on V${v.number}${historical?' · read-only':''}`;
+ const historical=v.id!==c.currentVersionId;for(const id of ['apply','notes','comment','add-comment'])$(id).disabled=historical||(id==='apply'&&!revisionProcessing);document.querySelectorAll('[data-decision]').forEach(b=>b.disabled=historical);$('notes').previousElementSibling.textContent=`Your notes on V${v.number}${historical?' · read-only':''}`;
 }
 function versionJump(clip,version,seconds,text){
  const a=el('a',text);a.href=`#${version.id}:${seconds}`;
@@ -74,7 +74,7 @@ function save(){
 }
 $('retry-save').onclick=()=>save();
 function renderComments(){$('comments').replaceChildren();for(const c of draft?.comments||[]){const row=el('div',undefined,'comment'),jump=el('button',stamp(c.seconds));jump.onclick=()=>{$('player').currentTime=c.seconds};const del=el('button','×','delete');del.ariaLabel='Delete comment';del.disabled=versionId!==currentClip().currentVersionId;del.onclick=()=>{draft.comments=draft.comments.filter(x=>x.id!==c.id);renderComments();void save()};row.append(jump,del,el('span',c.text));$('comments').append(row)}}
-async function apply(ids){await pending;if(dirty)throw Error('Feedback must be saved before applying revisions');$('error').hidden=true;await api(`/api/projects/${projectId}/revisions`,{method:'POST',body:JSON.stringify({versionIds:ids})});await refresh()}
+async function apply(ids){if(!revisionProcessing)throw Error('Review only: start revision processing before applying changes. Your notes remain saved.');await pending;if(dirty)throw Error('Feedback must be saved before applying revisions');$('error').hidden=true;await api(`/api/projects/${projectId}/revisions`,{method:'POST',body:JSON.stringify({versionIds:ids})});await refresh()}
 $('notes').oninput=()=>{if(!draft)return;draft.notes=$('notes').value;void save()};document.querySelectorAll('[data-decision]').forEach(b=>b.onclick=()=>{if(!draft)return;draft.decision=b.dataset.decision;decision();void save()});
 $('player').ontimeupdate=()=>{$('timestamp').textContent=stamp($('player').currentTime)};$('timestamp').onclick=()=>{$('player').pause();$('comment').focus()};
 $('add-comment').onclick=()=>{const text=$('comment').value.trim();if(!text||!draft)return;draft.comments.push({id:crypto.randomUUID(),seconds:$('player').currentTime,text});$('comment').value='';renderComments();void save()};
@@ -89,6 +89,8 @@ function rememberProject(){
 $('projects').onchange=async()=>{try{await pending;if(dirty)throw Error('Save failed. Resolve the feedback conflict before switching projects.');reference.reset(null);projectId=$('projects').value;clipId='';versionId='';selected.clear();data=undefined;$('clips').replaceChildren();$('count').textContent='0';selectionState();renderVersion();await refresh();rememberProject()}catch(e){$('projects').value=projectId;error(e)}};
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
 renderVersion();selectionState();
+const capabilities=await api('/api/capabilities');revisionProcessing=capabilities.revisionProcessing===true;
+$('room-mode').hidden=revisionProcessing;$('room-mode').textContent='Review only · Notes save normally. Start ACQ Edit without --no-worker to apply revisions.';
 const projects=await api('/api/projects');for(const p of projects){const o=el('option',p.title);o.value=p.id;$('projects').append(o)}
 if(projects.length){
  let remembered='';try{remembered=localStorage.getItem('acq-edit:review-project')||''}catch{}

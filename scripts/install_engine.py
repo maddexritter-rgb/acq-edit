@@ -12,6 +12,7 @@ import sys
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'python'))
 from materialize import materialize
 import filmcraft_runtime
 from prepare_premiere_panel import prepare as prepare_premiere_panel
@@ -116,6 +117,8 @@ def record_filmcraft_build(dest, check):
 
 
 def install(backend, assets, premiere_port=17878, source_build=False):
+    from runtime_environment import execution_environment
+    os.environ.update(execution_environment())
     check = preflight(backend, source_build)
     if check['errors']:
         raise RuntimeError('\n'.join(check['errors']))
@@ -173,7 +176,7 @@ def install(backend, assets, premiere_port=17878, source_build=False):
             profile = {'schema': 'edit.premiere-bridge-profile/v1',
                        'command': [check['executables']['node'], str(local / 'skills/assembly-design/scripts/precision_bridge.mjs'), str(dest)],
                        'cwd': str(dest), 'fixture_root': str(dest / 'lab/runtime/fixtures'),
-                       'connector': 'premiere-agent-lab', 'host_version': '26.3.0', 'mode': 'scoped-edit',
+                       'connector': 'premiere-agent-lab', 'host_version': __import__('premiere_compatibility').default_version(), 'mode': 'scoped-edit',
                        'project_authorization': str(dest / 'lab/runtime/edit-project-authorization.json')}
             target = local / 'premiere-profile.json'
             with target.open('x') as stream:

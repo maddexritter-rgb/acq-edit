@@ -6,6 +6,7 @@ import {Store} from './store.js';
 import {type Intake,type Source,type DriveFile,now,invariant} from './contracts.js';
 import {atomicJson,sha256,safeName,containedFile} from './files.js';
 import {run,type RunOptions} from './process.js';
+import {ROOT} from './config.js';
 import {exportState} from './projects.js';
 
 export interface IntakeTools {execute?:typeof run;freeBytes?:(folder:string)=>Promise<number>;signal?:AbortSignal}
@@ -116,7 +117,7 @@ async function attempt(store:Store,i:Intake,tools:IntakeTools,download=false){
   if(download){
    const folder=path.join(i.directory,'download');await mkdir(folder,{mode:0o700});
    const budget=Math.floor((await available(store.project(i.projectId).root,tools)-reserve)/4);invariant(budget>0,'Insufficient free space for download and verified source copy');
-   if(i.kind==='youtube')await execute(store,i.id,'yt-dlp',['--ignore-config','--no-playlist','--no-simulate','--restrict-filenames','--no-overwrites','--no-progress','--write-info-json','--clean-info-json','--no-write-playlist-metafiles','--match-filter','!is_live','--max-filesize',String(budget),'--print-to-file','after_move:filepath',path.join(i.directory,'completed-path.txt'),'-o',path.join(folder,'source.%(ext)s'),'--',`https://www.youtube.com/watch?v=${i.youtubeVideoId}`],tools,{timeout:4*3600_000});
+   if(i.kind==='youtube')await execute(store,i.id,path.join(ROOT,'.local/venv/bin/yt-dlp'),['--js-runtimes','node:'+process.execPath,'--ignore-config','--no-playlist','--no-simulate','--restrict-filenames','--no-overwrites','--no-progress','--write-info-json','--clean-info-json','--no-write-playlist-metafiles','--match-filter','!is_live','--max-filesize',String(budget),'--print-to-file','after_move:filepath',path.join(i.directory,'completed-path.txt'),'-o',path.join(folder,'source.%(ext)s'),'--',`https://www.youtube.com/watch?v=${i.youtubeVideoId}`],tools,{timeout:4*3600_000});
    else await execute(store,i.id,'rclone',['backend','copyid',i.remote+':',i.fileId!,folder+path.sep,'--checksum','--immutable','--max-transfer',String(budget),'--cutoff-mode','hard'],tools,{timeout:4*3600_000});
    await record(store,i.id,{state:'verifying'});
   }

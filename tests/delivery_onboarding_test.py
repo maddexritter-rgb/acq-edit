@@ -160,3 +160,12 @@ class DeliveryOnboarding(unittest.TestCase):
 
 
 if __name__ == '__main__': unittest.main()
+
+class SharedEditorCredentials(unittest.TestCase):
+    def test_delivery_clients_use_shared_credentials_root(self):
+        import subprocess
+        root=Path(__file__).resolve().parents[1]
+        code="import sys;sys.path.insert(0,sys.argv[1]);import monday_client,frameio_client;print(monday_client.CFG);print(frameio_client.CFG_DIR)"
+        env={**os.environ,'ACQ_EDIT_HOME':'/fixture/engines/premiere','ACQ_EDIT_CREDENTIALS_HOME':'/fixture/shared'}
+        result=subprocess.run([sys.executable,'-c',code,str(root/'distribution/skills/monday/scripts')],env=env,capture_output=True,text=True,check=True)
+        self.assertEqual(result.stdout.splitlines(),['/fixture/shared/delivery','/fixture/shared/delivery/frameio'])

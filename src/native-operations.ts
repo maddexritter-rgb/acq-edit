@@ -127,7 +127,7 @@ export async function reconcileJob(store:Store,id:string,outcome:'ready'|'failed
  const file=await containedFile(store.project(job.projectId).root,evidencePath),report=await readJson<any>(file);
  invariant(report.jobId===id,'Reconciliation evidence belongs to another job');
  if(outcome==='ready'){
-  const {verifyPublishedVersions}=await import('./publish.js');await verifyPublishedVersions(store,id,report.versionIds);store.finishJob(id,report.versionIds);
+  const {completeJob}=await import('./completion.js');await completeJob(store,id,report);
  }else{
   invariant(report.noActiveWriter===true&&typeof report.processInspection==='string'&&report.processInspection.trim()&&typeof report.nativeInspection==='string'&&report.nativeInspection.trim(),'Failed reconciliation requires terminal process and native host inspection');
   store.transaction(()=>{invariant(store.job(id).state==='reconciliation_required','Job state changed');store.assertNativeSettled(job.projectId);store.setJob(id,'failed','Operator reconciled the native outcome; see evidence.')});

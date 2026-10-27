@@ -26,7 +26,7 @@ export async function doctor(c:Config,tools:DoctorTools={}){
  const entries=[
   {id:'ffmpeg',binary:'ffmpeg',args:['-version'],required:true,repair:'Install FFmpeg and make ffmpeg available on PATH.'},
   {id:'ffprobe',binary:'ffprobe',args:['-version'],required:true,repair:'Install FFmpeg and make ffprobe available on PATH.'},
-  {id:'youtube',binary:'yt-dlp',args:['--version'],required:false,repair:'Install yt-dlp before importing YouTube footage.'},
+  {id:'youtube',binary:path.join(ROOT,'.local/venv/bin/yt-dlp'),args:['--version'],required:false,repair:'Install yt-dlp before importing YouTube footage.'},
   {id:'drive',binary:'rclone',args:['--version'],required:false,repair:'Install rclone and configure your Drive remote before importing Drive footage.'},
   {id:'python',binary:c.python,args:['--version'],required:true,repair:'Run scripts/install_shared.sh, then select its Python environment in setup.'},
   {id:'agent',binary:agentExecutable(c,c.agent),args:['--version'],required:true,repair:'Install the selected agent CLI and sign in; check agentCommands (or the legacy agentCommand) if customized.'},
@@ -54,6 +54,13 @@ export async function doctor(c:Config,tools:DoctorTools={}){
  checks.framing={ready:false};
  if(checks.dependencies.python.available){
   try{checks.framing=JSON.parse(await execute(c.python,[path.join(ROOT,'python/check_framing_dependencies.py')],{env,timeout:15000}));}catch{/* preserve bounded dependency diagnostics */}
+ }
+ if(c.backend==='premiere'&&checks.dependencies.python.available){
+  try{checks.compatibility=JSON.parse(await execute(c.python,[path.join(ROOT,'python/premiere_compatibility.py')],{env,timeout:15000}));}catch{checks.compatibility={status:'detection-failed',repair:'Restore toolkit Python and run the compatibility probe; do not guess a host version.'};}
+ }
+ if(checks.dependencies.youtube.available&&checks.dependencies.python.available){
+  try{checks.youtubeSolver=JSON.parse(await execute(c.python,[path.join(ROOT,'scripts/check_youtube.py')],{env,timeout:15000}));}catch{checks.youtubeSolver={ready:false};}
+  if(checks.youtubeSolver.ready!==true)issue('youtube-solver','Run the shared installer to restore yt-dlp[default] with EJS and a working Node 24+ runtime.',false);
  }
  if(checks.framing.ready!==true)issue('framing','Run scripts/install_shared.sh and restore the hash-verified packaged YuNet model before subject tracking.');
  if(checks.dependencies.python.available){

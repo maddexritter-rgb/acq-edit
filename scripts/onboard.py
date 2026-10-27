@@ -130,7 +130,8 @@ def panel_install():
     print('If unsigned CEP is disabled, follow docs/ENGINES.md for the host debug setting.')
 
 def verify_connections():
-    saved = json.loads((HOME/'credentials.json').read_text()) if (HOME/'credentials.json').exists() else {}
+    credential_home=Path(os.environ.get('ACQ_EDIT_CREDENTIALS_HOME',str(HOME)))
+    saved = json.loads((credential_home/'credentials.json').read_text()) if (credential_home/'credentials.json').exists() else {}
     endpoints = {'ASSEMBLYAI_API_KEY':('https://api.assemblyai.com/v2/transcript?limit=1','authorization'),
                  'GEMINI_API_KEY':('https://generativelanguage.googleapis.com/v1beta/models','x-goog-api-key')}
     results=[]
@@ -141,7 +142,7 @@ def verify_connections():
             with urllib.request.urlopen(urllib.request.Request(url,headers={header:token}),timeout=30) as response:
                 response.read(1024)  # Never display account/transcript data.
             results.append({'service':name,'status':'read-verified'})
-        except urllib.error.HTTPError as e: results.append({'service':name,'status':'failed','http':e.code})
+        except urllib.error.HTTPError as e: results.append({'service':name,'status':'billing-required' if e.code==402 else 'failed','http':e.code})
         except (OSError,urllib.error.URLError): results.append({'service':name,'status':'unreachable'})
     save(HOME/'connection-check.json',{'results':results,'qualification':'Read access only; not billing balance, model generation or an editing test'})
     print(json.dumps(results,indent=2))
@@ -150,7 +151,7 @@ def verify_connections():
 def delivery_connections():
     """Resume the actual credential/login steps; the agent handles account-page guidance."""
     owner = ROOT/'distribution/skills/monday/scripts'
-    delivery = HOME/'delivery'
+    delivery = Path(os.environ.get('ACQ_EDIT_CREDENTIALS_HOME',str(HOME)))/'delivery'
     if not all((delivery/name).is_file() for name in ('monday.json', 'frameio/credentials.json')):
         execute([sys.executable, owner/'connect.py', 'credentials'])
     if not (delivery/'frameio/token.json').is_file():
@@ -192,6 +193,8 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action',nargs='?',default='guide',choices=['guide','filmcraft','premiere','status','verify','premiere-panel','delivery'])
     parser.add_argument('agent',nargs='?',choices=['codex','claude'],default='codex')
+    parser.add_argument('--non-interactive', action='store_true', help='Use saved/default settings and explicit --storage-root; key entry remains in the browser')
+    parser.add_argument('--storage-root', type=Path)
     parser.add_argument('--source-build',action='store_true',help='Explicit FilmCraft source build; requires Rust and build tools')
     a=parser.parse_args()
     if a.action=='guide':
@@ -208,6 +211,8 @@ def main():
         print(state.read_text() if state.exists() else '{"status":"not-started"}')
         print('Full onboarding includes Frame/Monday sign-in and destination verification. Run onboard delivery after the guided connection steps.'); return
     if a.action=='delivery': sys.exit(0 if finish_delivery() else 2)
+    from runtime_environment import execution_environment
+    os.environ.update(execution_environment())
     if a.action=='verify': sys.exit(0 if verify_connections() else 1)
     if a.action=='premiere-panel': panel_install(); return
     if sys.platform!='darwin': raise ValueError('This release requires macOS')
@@ -252,7 +257,7 @@ def main():
             stage('engine',lambda:execute(['python3.11','scripts/install_engine.py',a.action,'--assets',bundle]+(['--source-build'] if a.source_build else [])))
         else: stage('skills-check',lambda:execute(['python3.11','scripts/materialize.py','--verify']))
         env={**os.environ,'ACQ_EDIT_TEAM_BRAIN_DIR':str(brain)}
-        stage('configuration',lambda:execute(['node','dist/cli.js','setup',a.action,a.agent],env=env))
+        stage('configuration',lambda:execute(['node','dist/cli.js','setup',a.action,a.agent]+(['--non-interactive'] if a.non_interactive else [])+(['--storage-root',str(a.storage_root)] if a.storage_root else []),env=env))
         stage('credentials',lambda:execute(['node','dist/cli.js','credentials']))
         state['status']='delivery-pending';state['steps']['delivery']='pending';save(state_file,state)
         stage('delivery-connections',delivery_connections)

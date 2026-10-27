@@ -218,9 +218,11 @@ export class Store {
       this.insertJob(j); return j;
     });
   }
-  enqueueBuild(projectId: string, request: string) {
-    this.project(projectId); invariant(request.trim(), 'Build request required');
-    const j: Job = { id: randomUUID(), projectId, state: 'queued', kind: 'build', snapshot: [], request, dedupe: randomUUID(), createdAt: now(), updatedAt: now(), error: null, agentSession: null };
+  enqueueBuild(projectId: string, request: string, completion?:'editable-project'|'rendered-review') {
+    const project=this.project(projectId); invariant(request.trim(), 'Build request required');
+    completion=completion||(project.backend==='premiere'?'editable-project':'rendered-review');
+    invariant(completion==='rendered-review'||project.backend==='premiere','Editable completion requires Premiere');
+    const j: Job = { id: randomUUID(), projectId, state: 'queued', kind: 'build', completion, snapshot: [], request, dedupe: randomUUID(), createdAt: now(), updatedAt: now(), error: null, agentSession: null };
     this.insertJob(j); return j;
   }
   private insertJob(j: Job) {
@@ -262,6 +264,14 @@ export class Store {
       const published = this.clips(j.projectId).flatMap(c => this.versions(c.id)).filter(v => v.jobId === id);
       invariant(published.length === versions.length, 'Result omitted a version published by this job');
       return this.setJob(id, 'ready');
+    });
+  }
+  finishEditableJob(id:string,receipts:unknown[]){
+    return this.transaction(()=>{
+      const j=this.job(id);this.assertNativeSettled(j.projectId);
+      invariant(j.completion==='editable-project'&&activeStates.includes(j.state)&&receipts.length>0,'Active editable job and verified receipts required');
+      j.nativeCompletions=receipts;this.db.prepare('UPDATE jobs SET data=? WHERE id=?').run(JSON.stringify(j),id);
+      return this.setJob(id,'ready');
     });
   }
   setJob(id: string, state: JobState, error: string | null = null, session?: string) {
