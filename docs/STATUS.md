@@ -6,6 +6,8 @@ Opening text headlines were removed from the current toolkit on 2026-10-26. Any 
 
 Implemented:
 
+- 2026-10-27: preview.2 fixes review-room save recovery, empty-project state and media-stream failure handling. Failed saves retain notes and can be retried; lost responses are reconciled without overwriting conflicting feedback. Empty or not-yet-rendered clips clear old media and disable feedback. Media read failures and abandoned playback close only their stream. Nine regression tests cover these scenarios; this does not qualify clean-Mac or live-editor acceptance.
+
 - 2026-10-27: approved caption changes merged; real Alex and Sharran caption proofs rendered independently in FilmCraft and Premiere. New-Mac preview packaging adds a per-user installer, private asset/brain bundle, Homebrew/Workbrew tap support and optional Frame/Monday onboarding. Clean-Mac and managed Workbrew acceptance remain unverified until exercised on another host.
 
 - FilmCraft composition repair passed a real eight-cut, two-camera revision: tighter fixed crops in both split panels and three full-screen shots, plus a consistent-scale tracked final shot. The complete native project was protected outside selected Anchor/Scale fields; all 1,021 exported frames decoded and audio matched the parent exactly. Source composition checks covered 140 samples; 110 rendered views and a dense final-movement detail were inspected. New production framing builds require the owning composition evidence; user approval and other engines remain separate.
