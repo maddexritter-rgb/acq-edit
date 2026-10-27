@@ -53,12 +53,12 @@ def main():
     elif args and args[0] == 'skills':
         command = [sys.executable, str(root/'scripts/agent_skills.py'), *args[1:]]
     elif args and args[0] == 'delivery':
-        mapping = {'credentials':'connect.py', 'check':'connect.py', 'login':'setup_frameio_oauth.py'}
+        mapping = {'credentials':'connect.py', 'check':'connect.py', 'status':'connect.py', 'login':'setup_frameio_oauth.py'}
         action = args[1] if len(args)>1 else 'help'
         if action not in mapping:
-            raise ValueError('Use delivery credentials, login or check; see docs/ONBOARDING.md for routes')
+            raise ValueError('Use delivery credentials, login, check or status; see docs/ONBOARDING.md for routes')
         command = [sys.executable, str(root/'distribution/skills/monday/scripts'/mapping[action])]
-        if action in {'credentials','check'}: command.append(action)
+        if action in {'credentials','check','status'}: command.extend([action, *args[2:]])
     else:
         if not (root/'dist/cli.js').is_file():
             raise ValueError('Run acq-edit onboard guide for guided setup, or acq-edit onboard filmcraft codex (or premiere / claude) first')

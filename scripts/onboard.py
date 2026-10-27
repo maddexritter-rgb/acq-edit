@@ -147,9 +147,50 @@ def verify_connections():
     print(json.dumps(results,indent=2))
     return all(x['status']=='read-verified' for x in results)
 
+def delivery_connections():
+    """Resume the actual credential/login steps; the agent handles account-page guidance."""
+    owner = ROOT/'distribution/skills/monday/scripts'
+    delivery = HOME/'delivery'
+    if not all((delivery/name).is_file() for name in ('monday.json', 'frameio/credentials.json')):
+        execute([sys.executable, owner/'connect.py', 'credentials'])
+    if not (delivery/'frameio/token.json').is_file():
+        execute([sys.executable, owner/'setup_frameio_oauth.py'])
+
+
+def delivery_check():
+    command = [sys.executable, str(ROOT/'distribution/skills/monday/scripts/connect.py'), 'check']
+    result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
+    try:
+        check = json.loads(result.stdout)
+        if not isinstance(check, dict): raise ValueError('Invalid response')
+    except (ValueError, TypeError):
+        check = {'ready': False, 'status': 'delivery-pending', 'repair': 'Follow the monday onboarding guide and retry.'}
+    check['ready'] = result.returncode == 0 and check.get('ready') is True
+    return check
+
+
+def finish_delivery():
+    """Complete the standard delivery checkpoint without an upload or editor operation."""
+    local = ROOT/'.local'; local.mkdir(exist_ok=True)
+    lock = local/'onboarding.lock'
+    fd = os.open(lock, os.O_WRONLY|os.O_CREAT|os.O_EXCL, 0o600)
+    try:
+        with os.fdopen(fd, 'w') as stream: json.dump({'pid': os.getpid()}, stream)
+        check = delivery_check()
+        state_file = local/'onboarding.json'
+        state = json.loads(state_file.read_text()) if state_file.exists() else {'steps': {}}
+        state['steps']['delivery'] = 'read-verified' if check['ready'] else 'pending'
+        state['status'] = 'delivery-read-verified' if check['ready'] else 'delivery-pending'
+        state['currentStep'] = 'delivery'
+        save(state_file, state)
+        print(json.dumps(check, indent=2))
+        return check['ready']
+    finally: lock.unlink()
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action',nargs='?',default='guide',choices=['guide','filmcraft','premiere','status','verify','premiere-panel'])
+    parser.add_argument('action',nargs='?',default='guide',choices=['guide','filmcraft','premiere','status','verify','premiere-panel','delivery'])
     parser.add_argument('agent',nargs='?',choices=['codex','claude'],default='codex')
     parser.add_argument('--source-build',action='store_true',help='Explicit FilmCraft source build; requires Rust and build tools')
     a=parser.parse_args()
@@ -165,7 +206,8 @@ def main():
     if a.action=='status':
         state=ROOT/'.local/onboarding.json'
         print(state.read_text() if state.exists() else '{"status":"not-started"}')
-        print('Read docs/ONBOARDING.md for the interview and optional Frame/Monday setup.'); return
+        print('Full onboarding includes Frame/Monday sign-in and destination verification. Run onboard delivery after the guided connection steps.'); return
+    if a.action=='delivery': sys.exit(0 if finish_delivery() else 2)
     if a.action=='verify': sys.exit(0 if verify_connections() else 1)
     if a.action=='premiere-panel': panel_install(); return
     if sys.platform!='darwin': raise ValueError('This release requires macOS')
@@ -212,11 +254,20 @@ def main():
         env={**os.environ,'ACQ_EDIT_TEAM_BRAIN_DIR':str(brain)}
         stage('configuration',lambda:execute(['node','dist/cli.js','setup',a.action,a.agent],env=env))
         stage('credentials',lambda:execute(['node','dist/cli.js','credentials']))
-        state['status']='configured';save(state_file,state)
+        state['status']='delivery-pending';state['steps']['delivery']='pending';save(state_file,state)
+        stage('delivery-connections',delivery_connections)
+        delivery = delivery_check()
+        state['steps']['delivery'] = 'read-verified' if delivery['ready'] else 'pending'
+        state['status'] = 'delivery-read-verified' if delivery['ready'] else 'delivery-pending'
+        state['currentStep'] = 'delivery';save(state_file,state)
+        print(json.dumps(delivery,indent=2))
         if a.action=='premiere':
             print('Next: acq-edit onboard premiere-panel; open the ACQ Edit Agent panel in Premiere.')
-        print('Next: acq-edit onboard verify; acq-edit doctor. Then make one real clip. No upload is performed by onboarding.')
+        if not delivery['ready']:
+            print('Full onboarding is DELIVERY PENDING. Your agent must finish the failed account/destination step using docs/ONBOARDING.md, then run acq-edit onboard delivery. Setup does not upload clips.')
+        print('Also run acq-edit onboard verify and acq-edit doctor before an editing test.')
         execute(['node','dist/cli.js','doctor'])
+        if not delivery['ready']: sys.exit(2)
     finally: lock.unlink()
 
 if __name__=='__main__':

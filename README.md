@@ -23,7 +23,7 @@ help troubleshoot through your first clip. For a Homebrew/Workbrew package, run
 [onboarding guide](docs/ONBOARDING.md).
 
 Use the [guided new-Mac onboarding](docs/ONBOARDING.md) for Homebrew or Workbrew, bundled
-assets, personal credentials, editor setup and optional Frame/Monday delivery.
+assets, personal credentials, editor setup and Frame/Monday delivery setup.
 
 ```sh
 brew tap maddexritter-rgb/acq https://github.com/maddexritter-rgb/homebrew-acq.git

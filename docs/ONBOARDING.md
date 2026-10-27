@@ -39,7 +39,7 @@ it does not download a separate conversational model.
 - Keep setup progress across interruptions. Read `onboard status`, saved configuration and
   connection-check results; use presence/status checks for credentials without displaying them.
   Keep a brief non-secret interview checkpoint at `~/.config/acq-edit/onboarding-interview.json`
-  (or the configured `ACQ_EDIT_HOME`): engine, agent, storage, brands, optional connections,
+  (or the configured `ACQ_EDIT_HOME`): engine, agent, storage, brands, delivery progress, optional intake connections,
   current step and next action. Never store keys, account responses or login URLs in that file.
   Installer progress remains in `.local/onboarding.json`; do not edit its completed-step ledger.
 - If an earlier session is already configured, summarize the remaining steps and resume there.
@@ -98,10 +98,16 @@ Use a background tool session so the user can fill it while you remain available
    connection come through the team bundle. They do not need a Supabase account or a
    separate OpenAI/Anthropic API key for the signed-in agent. Verify installation instead of
    asking them to rebuild styles or copy files from someone else's computer.
-5. **Optional connections, after the essentials.**
-   Ask about Drive only if they want Drive footage. Ask about Frame/Monday only if they want
-   delivery. They can skip both for a local-file first clip. Follow the existing owners below;
-   do not invent a second connection or delivery workflow.
+5. **Frame and Monday — required standard onboarding step.**
+   Say: “Next we'll connect where your finished clips go: Frame for video review and Monday
+   for tracking. I'll guide you through sign-in and save the destinations for each brand.”
+   → Use skill: [monday](../distribution/skills/monday/SKILL.md), starting with its onboarding
+   reference. Run the credential form, Frame browser login, destination discovery and final
+   read check yourself; the user signs in and pastes credentials. Never silently skip this.
+   Full setup is **delivery pending** until `acq-edit onboard delivery` succeeds. If the user
+   explicitly chooses local-only work, record “delivery deferred by user” in the interview
+   checkpoint and continue that limited work; do not describe full onboarding as complete.
+   Drive remains optional and is separate from this delivery step.
 
 The installer currently collects both editing keys together. You can explain both account steps
 first, then open the form. Do not claim a key was entered before the command reports success.
@@ -261,9 +267,9 @@ clip. Credential files are kept outside the repo under `~/.config/acq-edit` with
 For optional Groq fallback/audits, configure that helper only if selected; it is not a primary
 transcription or onboarding requirement. No third model-provider key is required for editing.
 
-## 4. Optional connections — reuse the other onboarding work
+## 4. Connect Frame and Monday before completing onboarding
 
-Ask which brands the user edits and whether they want Frame/Monday delivery. Default to shorts.
+Ask which brands the user edits and guide Frame/Monday delivery setup by default. Default to shorts.
 Reuse the included profiles; don't ask users to rebuild the approved caption styles.
 
 For delivery, → Use skill: [monday](../distribution/skills/monday/SKILL.md).
@@ -273,21 +279,26 @@ and exact Frame folder/Monday board routes for each brand. Commands:
 ```sh
 acq-edit delivery credentials
 acq-edit delivery login
-acq-edit delivery check
+acq-edit onboard delivery  # Verify identities and all saved destinations; record the checkpoint
+acq-edit delivery status  # Read-only local readiness (never prints keys)
 ```
 
 Read and save destination IDs using the owner's [route guide](../distribution/skills/monday/references/configuration.md).
+Do not mark onboarding complete after merely saving tokens or opening sign-in. The final
+check requires both identities, editor initials, and valid routes for every saved brand/format.
 Setup checks identity and routes only. It does not upload clips, create board items or grant
 permission for future deliveries. A later request such as “push these clips to Frame and Monday”
 authorizes that selected batch. Preserve the delivery ledger for recovery and revisions.
 
 For Drive intake, use `rclone config` to sign into the user's own Drive, then record the remote
 name. YouTube uses the installed `yt-dlp`; authenticated/private content needs the user's access.
-These connections can be skipped for a local-file test. There is no publishing-account requirement.
+Drive authentication can be skipped for a local-file test. There is no publishing-account requirement.
 
 ## 5. Prove one real job, then use the review room
 
-Show a short checklist with **configured / read-verified / pending / skipped** and any repair.
+Show a short checklist with **configured / read-verified / pending / deferred by user** and any repair.
+Always include Frame sign-in, Monday connection and brand destinations. A missing delivery
+connection must remain visible; it must not disappear behind an “editing ready” summary.
 Use `acq-edit onboard status` to resume. Ask for one source file or link and the desired clip.
 Use the installed repository's `/edit` owners, fetch live guidance before design, and produce a
 native render with the selected engine. Inspect the actual clip, then open the review room:
@@ -305,6 +316,6 @@ verified music, one native clip visible/playable in the room, one caption revisi
 and successful reopening after restart. Record timings and bugs with `acq-edit version`, backend,
 macOS/CPU architecture, failed step and redacted logs. Do not include credentials or login URLs.
 
-The other chat's `vibe-editing` onboarding is the source for the optional delivery interview;
+The other chat's `vibe-editing` onboarding is the source for the delivery interview;
 ACQ Edit is the authoritative engine/runtime for this test. Do not install the old editing pipeline
 alongside it. Read-only checks and offline tests do not certify a new Mac or Workbrew-managed deployment.
