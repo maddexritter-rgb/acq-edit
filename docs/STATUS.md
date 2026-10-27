@@ -1,3 +1,22 @@
+## Premiere connector lock — preview.10
+
+Every materialized skill entrypoint, generated project instruction file and worker prompt
+now explicitly restricts Premiere to this installation's ACQ Edit Agent MCP. Ambient/global
+Premiere MCP tools, older MCP Bridge panels and global default profiles are forbidden.
+The direct repository helper now defaults only to the toolkit profile and verifies transport
+binding before spawning: exact command/runtime/profile, ACQ panel identity and isolated port.
+The full native adapter retains its compiled-code, helper and panel hash verification.
+Missing ACQ setup stops with a repair; no alternative bridge is selected. Existing unrelated
+installed integrations are not changed. This does not remove tools from an external agent's
+ambient tool catalog; its instructions must also be refreshed by reopening the current release.
+
+New editing project folders now expose only the six public skills, using the same shared list
+as registration. Supporting owners remain available internally.
+Validation: 7 direct connector-lock tests, 6 installation isolation tests, 19 installer tests,
+15 discovery tests and 8 job/project policy tests pass. The packaging transform reproduces
+the bridge distribution exactly. No installed editor, global bridge or live project was changed.
+This is transport binding and instruction verification, not a new native render qualification.
+
 ## Six public picker skills — preview.9
 
 Discovery now exposes only edit, assembly-design, horizontal-to-vertical, caption-clips,

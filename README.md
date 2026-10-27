@@ -6,6 +6,10 @@ A Mac-based editing toolkit for Codex and Claude Code. Give your agent footage a
 
 **New-Mac preview.** FilmCraft and Premiere have produced real native caption proofs; clean-Mac installation and full team acceptance still require the new-machine test. Resolve work is paused. See [evidence and remaining work](docs/STATUS.md).
 
+**Premiere uses ACQ Edit Agent MCP only.** An older installed Premiere bridge is not a
+fallback. If the toolkit connection is unavailable, repair its setup and open the ACQ Edit
+Agent panel. Do not use global Premiere MCP tools or another bridge for this workflow.
+
 ## Individual skills
 
 Use the whole `edit` workflow or just `assembly-design`, `horizontal-to-vertical`,

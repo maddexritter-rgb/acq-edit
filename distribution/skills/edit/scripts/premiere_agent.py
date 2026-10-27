@@ -27,7 +27,7 @@ def doctor(profile):
  return {'profile_mode':profile.mode,'connector':profile.connector,'cwd':profile.cwd,
   'command':profile.command,'executable_exists':Path(profile.command[0]).is_file(),
   'entrypoint_exists':Path(profile.command[1]).is_file(),'runtime':str(root),
-  'panel':'Premiere Agent Lab','heartbeat_files':[{'path':str(p),'age_seconds':round(time.time()-p.stat().st_mtime,1)} for p in heartbeats],
+  'panel':'ACQ Edit Agent','heartbeat_files':[{'path':str(p),'age_seconds':round(time.time()-p.stat().st_mtime,1)} for p in heartbeats],
   'lease':read_optional(root/'lease.json'),'scope':read_optional(Path(profile.project_authorization)) if profile.project_authorization else None,
   'pending_lock':read_optional(root/'writer.lock'),
   'next':'Use tools/schema to verify discovery without Premiere; use inspect ping and inspect lab_snapshot for live readback. Missing MCP tools in this chat do not imply bridge failure. Do not use the retired MCP Bridge panel.'}

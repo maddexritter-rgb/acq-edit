@@ -1,3 +1,7 @@
+> **Premiere connector lock:** use only ACQ Edit Agent MCP from this toolkit installation.
+> An older installed Premiere MCP is not an alternative. Use the verified repository native
+> route, open the ACQ Edit Agent panel, and run doctor. Missing setup is a repair, not a fallback.
+
 # Independent native backends
 
 ## FilmCraft

@@ -48,3 +48,12 @@ test('removed headline owner is never routed or suggested as a build stage',()=>
  for(const request of ['Add a text hook','Remove this headline','Replace the spoken hook','Re-cut this clip'])assert(!routeRevision(request).includes('text-hook'));
  assert(jobPrompt({id:'p',root:'/project',backend:'filmcraft'},{id:'j',kind:'build',request:'Make a clip'},'/packet').includes('Opening text headlines are not included'));
 });
+
+test('every background job explicitly forbids ambient and legacy Premiere bridges',()=>{
+ for(const agent of ['codex','claude']){
+  const prompt=jobPrompt({id:'p',root:'/project',backend:'premiere',agent},{id:'j',kind:'build',request:'Add captions'},'/packet');
+  assert(prompt.includes('ACQ Edit Agent MCP'));
+  assert(prompt.includes('mcp__premiere_pro'));
+  assert(prompt.includes('no bridge fallback'));
+ }
+});

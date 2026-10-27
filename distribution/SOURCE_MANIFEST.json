@@ -254,11 +254,16 @@
       "path": "_shared/premiere_bridge.py",
       "source": "canonical-skills/_shared/premiere_bridge.py",
       "source_sha256": "02d16a0125a32880b5db46856cb31ab958962bb7b24301877123d80160cb3784",
-      "distribution_sha256": "af6ffb82c6c74064959e33413937be796464e3ef5597e34bd1ce2761b35ea1dd",
-      "bytes": 20892,
+      "distribution_sha256": "7180d965b1979f0a64c9f070d73999ef98c9eab5cce242f33395e05d81d6f077",
+      "bytes": 22022,
       "transforms": [
         {
           "patch": "bounded-native-graphic-asset-scope"
+        },
+        {
+          "patch": "acq-edit-agent-only-profile-and-transport",
+          "revision": "0.2.0-preview.10",
+          "snippetSha256": "03c4eb33519e5d3f574f6718b6ad9eb3abd04596d94ceac45bb5a7222e2b3002"
         }
       ]
     },
@@ -1291,11 +1296,14 @@
       "path": "edit/scripts/premiere_agent.py",
       "source": "canonical-skills/edit/scripts/premiere_agent.py",
       "source_sha256": "86306e64d705af8e7e2dd48ff4e898e7066a1128224a3283d256758028ed495e",
-      "distribution_sha256": "3b3430ea8fe82b69135f1f2013bedbca0e8947a5b02195ac6e50d583539f53de",
-      "bytes": 8297,
+      "distribution_sha256": "5454f05f761b862d736021f7ede61ebbfbebb1a0d60c087f7d1914d5b592e2d5",
+      "bytes": 8293,
       "transforms": [
         {
           "patch": "bounded-native-graphic-asset-scope"
+        },
+        {
+          "patch": "acq-edit-agent-panel-name"
         }
       ]
     },

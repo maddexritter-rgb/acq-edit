@@ -45,6 +45,15 @@ it does not download a separate conversational model.
 - If an earlier session is already configured, summarize the remaining steps and resume there.
   Setup requests authorize routine installation, not purchases, unrelated editor changes or uploads.
 
+### Premiere bridge selection is locked
+
+When Premiere is selected, use only **ACQ Edit Agent MCP** from this toolkit. Other installed
+Premiere bridges must not be used for discovery, inspection, editing or export. Open the
+ACQ Edit Agent panel and verify this installation with doctor. Do not select an older connector
+just because its tools are already visible in chat. If needed, refresh the session or use the
+verified repository helper; a missing or failing ACQ Edit route is a setup repair, not a fallback.
+Do not remove or reconfigure the user's other bridges. Explain that they remain separate.
+
 ### Make the skills available
 
 Onboarding registers only six picker skills: edit, assembly-design, horizontal-to-vertical,

@@ -25,7 +25,11 @@ def route_entrypoint(content, root):
     note=('\n## ACQ Edit execution route\n'
           f'Read the [toolkit execution contract]({target}#native-execution-routing) before using this skill. '
           'Use project.json for the fixed backend; the contract supplies its native execution route. '
-          'Keep the creative procedure below, but use only the selected backend\'s toolkit integration.\n\n')
+          'Keep the creative procedure below, but use only the selected backend\'s toolkit integration. '
+          'PREMIERE LOCK: use only this installation\'s ACQ Edit Agent MCP through the toolkit native adapter or verified repository helper. '
+          'Never call an ambient/global Premiere MCP (including mcp__premiere_pro), an older MCP Bridge panel, '
+          'or a global default profile, even if already installed or immediately available. '
+          'If ACQ Edit Agent is unavailable, stop and repair its setup; never fall back.\n\n')
     lines=content.splitlines(keepends=True)
     if lines and lines[0].strip()=='---':
         end=next((i for i,line in enumerate(lines[1:],1) if line.strip()=='---'),None)
