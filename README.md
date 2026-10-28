@@ -27,13 +27,15 @@ project. Ask your agent to make them available in all chats, or install only sel
 
 Open this repo in Codex or Claude Code and say **“Help me get set up.”** Your agent will guide
 you one step at a time, give you the account links, explain where to enter keys privately and
-help troubleshoot through your first clip. For a Homebrew/Workbrew package, run
-`acq-edit onboard guide` to find the installed folder to open. The agent instructions are in
+help troubleshoot through your first clip. For a Homebrew/Workbrew package, ask your agent
+to locate the installed toolkit and finish setup; it runs internal commands for you. The agent instructions are in
 [AGENTS.md](AGENTS.md), with a [Claude Code entrypoint](CLAUDE.md) and one shared
 [onboarding guide](docs/ONBOARDING.md).
 
 Use the [guided new-Mac onboarding](docs/ONBOARDING.md) for Homebrew or Workbrew, bundled
 assets, personal credentials, editor setup and Frame/Monday delivery setup.
+
+The following commands are for the agent to execute, not terminal steps for the user:
 
 ```sh
 brew tap maddexritter-rgb/acq https://github.com/maddexritter-rgb/homebrew-acq.git
@@ -66,7 +68,7 @@ node dist/cli.js serve
 
 Open the authenticated loopback URL printed by `serve`. Editing stays in your current chat. `build` returns a job packet; follow `session-start` / `session-complete` in [the agent workflow](docs/AGENT_WORKFLOW.md). Apply revisions saves an exact request to copy back into your chat. No second agent CLI login or saved permission rules are required. Missing permissions or uncertain native outcomes stop the job with recoverable evidence. Do not treat an agent's completion message as a successful render.
 
-Use `serve --no-worker` for feedback-only review. Unattended editing is opt-in: `build --background` and `serve --worker` require a separately configured CLI. `projects` lists persisted projects; `open PROJECT_ID` re-exports its state. The next `serve` session reopens the same projects, versions, and feedback.
+Use `serve --no-worker` for feedback-only review. All editing stays in the existing chat. Separate agent workers are removed; the agent runs internal commands so users do not need terminal setup. `projects` lists persisted projects; `open PROJECT_ID` re-exports its state. The next `serve` session reopens the same projects, versions, and feedback.
 
 ## What stays constant
 

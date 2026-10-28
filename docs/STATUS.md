@@ -18,8 +18,8 @@ Normal onboarding, doctor, builds and review revisions no longer require a secon
 agent CLI login or saved command approvals. Builds prepare durable session jobs;
 the existing chat claims and completes them with the same native/publication evidence.
 Default review rooms capture feedback for a chat handoff and never spawn an agent.
-Background execution requires explicit `--background` / `--worker` opt-in; legacy jobs
-retain their execution mode. Interrupted chats remain reserved for evidence-backed recovery.
+Separate agent execution has been removed; legacy jobs retain their execution mode and
+evidence but are not automatically dispatched. Interrupted chats remain reserved for evidence-backed recovery.
 
 Drive links now auto-route files/folders, with remembered connections and guided browser
 OAuth. Homebrew/Workbrew already includes rclone. Provider login on a fresh teammate Mac

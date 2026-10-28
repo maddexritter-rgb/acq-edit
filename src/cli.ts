@@ -2,8 +2,6 @@
 import {driveLinkKind,driveRemote,driveStatus,connectDrive,loginDrive} from './drive-access.js';
 import {sessionPacket,startSession,completeSession,interruptSession} from './session.js';
 import {prepareHandoff,importHandoff} from './handoff.js';
-import {smokeAgent} from './agent-smoke.js';
-import {agentReadiness,requireAgentReady} from './agent-readiness.js';
 import {doctor} from './doctor.js';
 import {readSetup,collectSetup,collectNoninteractiveSetup,saveSetup} from './setup.js';
 import {executeNative,reconcileNative,reconcileJob} from './native-operations.js';
@@ -21,10 +19,14 @@ import { publish } from './publish.js';
 import { run } from './process.js';
 import {recoverIntake,abandonIntake,type IntakeTools} from './intake.js';
 import { serviceLock } from './lock.js';
-import { workOne } from './worker.js';
 const [command,...args]=process.argv.slice(2);const output=(x:unknown)=>console.log(JSON.stringify(x,null,2));
 async function interruptibleCommand(work:(tools:IntakeTools)=>Promise<unknown>){const controller=new AbortController();const stop=()=>controller.abort();process.on('SIGINT',stop);process.on('SIGTERM',stop);try{output(await work({signal:controller.signal}))}finally{process.off('SIGINT',stop);process.off('SIGTERM',stop)}}
 async function main(){
+ const separateAgent = command==='worker'||command==='agent-check'||
+  (command==='doctor'&&args.includes('--background'))||
+  (command==='serve'&&args.includes('--worker'))||
+  (command==='build'&&args.slice(1).some((arg,i,list)=>arg==='--background'&&list.slice(0,i).every(x=>x.startsWith('--'))));
+ invariant(!separateAgent,'Separate agent CLI execution has been removed. Continue in your existing chat; no extra login or saved command approvals are required. Existing jobs and feedback are preserved.');
  if(command==='setup'){
   const snapshot=await readSetup(HOME);
   if(args.includes('--non-interactive')){const saved=await saveSetup(HOME,snapshot,await collectNoninteractiveSetup(snapshot,args,ROOT));output(saved);return;}
@@ -41,24 +43,17 @@ async function main(){
  }
  if(command==='skills'){const {spawn}=await import('node:child_process');await new Promise<void>((resolve,reject)=>{const child=spawn('python3',[path.join(ROOT,'scripts','agent_skills.py'),...args],{stdio:'inherit'});child.on('error',reject);child.on('close',code=>code===0?resolve():reject(new Error('Skill registration needs attention')))});return}
  if(command==='credentials'){const {spawn}=await import('node:child_process');await new Promise<void>((resolve,reject)=>{const child=spawn('python3',[path.join(ROOT,'scripts','credentials.py'),process.env.ACQ_EDIT_CREDENTIALS_HOME||HOME,...args],{stdio:'inherit'});child.on('error',reject);child.on('close',code=>code===0?resolve():reject(new Error('Credential entry failed')))});return}
- if(['help','--help','-h'].includes(command||'')||!command){console.log(`ACQ Edit\nsetup [backend] [agent]\ncredentials\nskills <list|install|check> [--agent codex|claude|both] [--scope workspace|user] [--only skill-name ...] [--update-owned]\ndoctor [--background]\nagent-check <project-id> [--smoke]\nproject <title>\nprojects\nopen <project-id>\nsource <project-id> <file>\nyoutube <project-id> <url>\ndrive-status\ndrive-login\ndrive-connect <connection-name>\ndrive <project-id> <file-or-folder-url> [rclone-remote]\ndrive-folder <project-id> <folder-url> [rclone-remote]\ndrive-batches <project-id>\ndrive-resume <batch-id> [--retry-failed]\ndrive-abandon <batch-id> <evidence.json>\nnative-operations <project-id>\nnative-reconcile <operation-id> <evidence.json>\nintakes <project-id>\nintake-abandon <intake-id> <evidence.json>\nintake-recover <intake-id>\nbrain <project-id> <request.json>\nbuild <project-id> [--export] [--background] <request>\nsession-start <job-id>\nsession-packet <job-id>\nsession-interrupt <job-id> <inspection.json>\nsession-complete <job-id> <result.json>\nhandoff <source-project> <destination-editor> <plan.json>\nhandoff-import <checkpoint.json>\nclip <project-id> <title>\npublish <project-id> <render-receipt.json>\nserve [--worker|--no-worker]\nworker\nreconcile <job-id> <ready|failed> <evidence-path>\nnative <project-id> <compile|captions|reference|inspect|open|build|revise|render|complete> <packet.json>\n`);return}
+ if(['help','--help','-h'].includes(command||'')||!command){console.log(`ACQ Edit\nsetup [backend] [agent]\ncredentials\nskills <list|install|check> [--agent codex|claude|both] [--scope workspace|user] [--only skill-name ...] [--update-owned]\ndoctor\nproject <title>\nprojects\nopen <project-id>\nsource <project-id> <file>\nyoutube <project-id> <url>\ndrive-status\ndrive-login\ndrive-connect <connection-name>\ndrive <project-id> <file-or-folder-url> [rclone-remote]\ndrive-folder <project-id> <folder-url> [rclone-remote]\ndrive-batches <project-id>\ndrive-resume <batch-id> [--retry-failed]\ndrive-abandon <batch-id> <evidence.json>\nnative-operations <project-id>\nnative-reconcile <operation-id> <evidence.json>\nintakes <project-id>\nintake-abandon <intake-id> <evidence.json>\nintake-recover <intake-id>\nbrain <project-id> <request.json>\nbuild <project-id> [--export] <request>\nsession-start <job-id>\nsession-packet <job-id>\nsession-interrupt <job-id> <inspection.json>\nsession-complete <job-id> <result.json>\nhandoff <source-project> <destination-editor> <plan.json>\nhandoff-import <checkpoint.json>\nclip <project-id> <title>\npublish <project-id> <render-receipt.json>\nserve [--no-worker]\nreconcile <job-id> <ready|failed> <evidence-path>\nnative <project-id> <compile|captions|reference|inspect|open|build|revise|render|complete> <packet.json>\n`);return}
  if(command==='doctor'){
-  try{const checks=await doctor(await config(),{background:args.includes('--background')});output(checks);if(!checks.readiness.ready)process.exitCode=1;}
+  try{const checks=await doctor(await config());output(checks);if(!checks.readiness.ready)process.exitCode=1;}
   catch{output({readiness:{ready:false,blocking:[{check:'configuration',repair:'Run setup to create a valid readable toolkit configuration, then rerun doctor.'}],optional:[],qualification:'Local prerequisite checks only; configuration could not be inspected.'}});process.exitCode=1;}
   return;
  }
  const c=await config();process.env.PATH=path.dirname(c.python)+path.delimiter+path.dirname(process.execPath)+path.delimiter+(process.env.PATH||'');const store=new Store(path.join(HOME,'state.sqlite'));
  if(command==='serve'){
-  invariant(args.every(a=>['--worker','--no-worker'].includes(a))&&!(args.includes('--worker')&&args.includes('--no-worker')),'Use serve [--worker|--no-worker]');
-  const release=await serviceLock(HOME);if(args.includes('--worker'))store.recover(true);const room=serve(store,c,args.includes('--worker')?true:args.includes('--no-worker')?false:'session');room.server.listen(c.port,'127.0.0.1',()=>console.log(`Review room: http://127.0.0.1:${c.port}/session?token=${room.token}`));
+  invariant(args.every(a=>a==='--no-worker'),'Use serve [--no-worker]');
+  const release=await serviceLock(HOME);const room=serve(store,c,args.includes('--no-worker')?false:'session');room.server.listen(c.port,'127.0.0.1',()=>console.log(`Review room: http://127.0.0.1:${c.port}/session?token=${room.token}`));
   let stopping=false;const stop=()=>{if(stopping)return;stopping=true;void room.stop().then(()=>{store.close();return release()}).then(()=>process.exit(0)).catch(e=>{console.error(e.message);process.exitCode=1})};room.server.on('error',e=>{console.error(e.message);void release().finally(()=>process.exit(1))});process.on('SIGINT',stop);process.on('SIGTERM',stop);return;
- }
- if(command==='worker'){
-  const release=await serviceLock(HOME),controller=new AbortController();
-  const stop=()=>controller.abort();process.on('SIGINT',stop);process.on('SIGTERM',stop);
-  try{store.recover(true);output({worked:await workOne(store,c,controller.signal)})}
-  finally{process.off('SIGINT',stop);process.off('SIGTERM',stop);store.close();await release()}
-  return;
  }
  try{
  switch(command){
@@ -85,13 +80,11 @@ async function main(){
  case 'intake-recover':await interruptibleCommand(tools=>recoverIntake(store,args[0]!,tools));break;
  case 'source':await interruptibleCommand(tools=>importLocal(store,args[0]!,args[1]!,'local',tools));break;
  case 'youtube':await interruptibleCommand(tools=>importUrl(store,args[0]!,args[1]!,command,args[2],tools));break;
- case 'agent-check':{const p=store.project(args[0]!);invariant(!args[1]||args[1]==='--smoke','Use agent-check PROJECT_ID [--smoke]');const report=args[1]==='--smoke'?await smokeAgent(c,p):await agentReadiness(c,p.agent,run,process.env,p.root);output(report);if(!report.ready)process.exitCode=1;break;}
  case 'build':{
-  const options=args.slice(1);let exported=false,background=false;
-  while(options[0]?.startsWith('--')){const option=options.shift();invariant(option==='--export'||option==='--background','Use build PROJECT_ID [--export] [--background] REQUEST');if(option==='--export')exported=true;else background=true;}
-  if(background)await requireAgentReady(c,store.project(args[0]!).agent,store.project(args[0]!).root);
-  const job=store.enqueueBuild(args[0]!,options.join(' '),exported?'rendered-review':undefined,background?'background':'session');
-  output(background?job:await sessionPacket(store,job.id));break;
+  const options=args.slice(1);let exported=false;
+  while(options[0]?.startsWith('--')){const option=options.shift();invariant(option==='--export','Use build PROJECT_ID [--export] REQUEST');exported=true;}
+  const job=store.enqueueBuild(args[0]!,options.join(' '),exported?'rendered-review':undefined,'session');
+  output(await sessionPacket(store,job.id));break;
  }
  case 'session-packet':output(await sessionPacket(store,args[0]!));break;
  case 'session-start':output(await startSession(store,args[0]!));break;
