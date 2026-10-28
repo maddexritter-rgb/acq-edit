@@ -258,7 +258,7 @@
       "path": "_shared/premiere_bridge.py",
       "source": "canonical-skills/_shared/premiere_bridge.py",
       "source_sha256": "02d16a0125a32880b5db46856cb31ab958962bb7b24301877123d80160cb3784",
-      "distribution_sha256": "7180d965b1979f0a64c9f070d73999ef98c9eab5cce242f33395e05d81d6f077",
+      "distribution_sha256": "5a3a6ccec7cc65faa2311b8ae9f6558f4491fcc42919b7643a2fb5ad423abd3b",
       "bytes": 22022,
       "transforms": [
         {
@@ -268,6 +268,9 @@
           "patch": "acq-edit-agent-only-profile-and-transport",
           "revision": "0.2.0-preview.10",
           "snippetSha256": "03c4eb33519e5d3f574f6718b6ad9eb3abd04596d94ceac45bb5a7222e2b3002"
+        },
+        {
+          "patch": "enable-exact-premiere-26-5-2"
         }
       ]
     },

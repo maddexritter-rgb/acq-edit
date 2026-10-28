@@ -17,6 +17,7 @@ from materialize import materialize
 import filmcraft_runtime
 from prepare_premiere_panel import prepare as prepare_premiere_panel
 from prepare_premiere_runtime import copy_resources, check_transport, prepare_helpers
+from premiere_compatibility import select_host, bind_host
 
 ROOT = Path(__file__).resolve().parents[1]
 PIN = '71438c627b5cbcfb550526c3971f4d0037733c5c'
@@ -82,6 +83,10 @@ def preflight(backend, source_build=False):
             errors.append('Cannot determine Rust version')
     if backend == 'resolve' and not RESOLVE.is_file():
         errors.append('Install DaVinci Resolve Studio 21.1; bundled ResolvePython was not found')
+    premiere_host=None
+    if backend=='premiere':
+        try:premiere_host=select_host()
+        except RuntimeError as error:errors.append(str(error))
     native_build = {}
     if backend == 'filmcraft' and sys.platform == 'darwin' and tools.get('xcrun'):
         try:
@@ -92,7 +97,7 @@ def preflight(backend, source_build=False):
         except subprocess.SubprocessError:
             errors.append('Install or select Xcode Command Line Tools; xcrun could not locate the compiler and macOS SDK')
     return {'backend': backend, 'prerequisitesPresent': not errors, 'executables': tools, 'nativeBuildTools': native_build,
-            'errors': errors, 'nativeWorkflowQualified': False, 'installMode': 'source' if source_build else 'prebuilt' if backend=='filmcraft' else 'native-integration'}
+            'premiereHost': premiere_host, 'errors': errors, 'nativeWorkflowQualified': False, 'installMode': 'source' if source_build else 'prebuilt' if backend=='filmcraft' else 'native-integration'}
 
 
 def record_filmcraft_build(dest, check):
@@ -175,6 +180,7 @@ def install(backend, assets, premiere_port=17878, source_build=False):
             record_filmcraft_build(dest, check)
             print('FilmCraft CLI: ' + str(dest / 'target/release/filmcraft-cli'))
         elif backend == 'premiere':
+            host_version=bind_host(ROOT,check['premiereHost'])
             shutil.copytree(ROOT / 'integrations/premiere-agent', dest,
                             ignore=shutil.ignore_patterns('node_modules', 'dist', '__pycache__'))
             helper_hashes = prepare_helpers(dest, ROOT)
@@ -188,7 +194,7 @@ def install(backend, assets, premiere_port=17878, source_build=False):
             profile = {'schema': 'edit.premiere-bridge-profile/v1',
                        'command': [check['executables']['node'], str(local / 'skills/assembly-design/scripts/precision_bridge.mjs'), str(dest)],
                        'cwd': str(dest), 'fixture_root': str(dest / 'lab/runtime/fixtures'),
-                       'connector': 'premiere-agent-lab', 'host_version': __import__('premiere_compatibility').default_version(), 'mode': 'scoped-edit',
+                       'connector': 'premiere-agent-lab', 'host_version': host_version, 'mode': 'scoped-edit',
                        'project_authorization': str(dest / 'lab/runtime/edit-project-authorization.json')}
             target = local / 'premiere-profile.json'
             with target.open('x') as stream:

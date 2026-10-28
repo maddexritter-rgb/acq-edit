@@ -18,3 +18,5 @@ For new editing jobs ask FilmCraft or Premiere unless specified. Premiere ends a
 Execution default: use the existing chat to perform editing. `build` prepares a current-chat job; use session-start and session-complete with verified evidence. Never start a second Claude/Codex session, require CLI login, run an agent smoke test, or demand saved command approvals for ordinary onboarding/editing. A background worker requires an explicit user request; see docs/AGENT_WORKFLOW.md.
 
 A pasted Google Drive file or folder link routes to the packaged footage-fetch owner. Homebrew/Workbrew includes rclone. Use drive-status and guided drive-login or drive-connect when needed; the user should not have to identify file IDs, downloader commands, or connection syntax.
+
+Premiere 26.5.2 is enabled for normal editing in preview.14. Native qualification is still pending, but that evidence label is not a reason to block setup when executionAllowed and the live exact-host match pass. Use its installed ACQ Edit Agent route; do not ask for a downgrade, separate qualification meeting, or FilmCraft switch. Normal native operation validation still applies.

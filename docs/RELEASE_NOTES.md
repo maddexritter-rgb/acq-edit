@@ -1,3 +1,26 @@
+# 0.2.0-preview.14
+
+Enables Premiere Pro 26.5.2 without requiring a downgrade, editor switch or separate
+qualification meeting. Installation now detects the running/installed enabled Premiere
+and pins that exact host instead of always writing 26.3.0 into the integration profile.
+The shared bridge accepts 26.5.2; connector isolation, exact project scopes, live version
+matching and native completion evidence remain in place.
+
+26.5.2 is enabled but not native-qualified on the development Mac. No real 26.5.2 render,
+caption appearance, revision or save/reopen result is claimed by this release.
+
+When updating an existing ACQ Edit panel, `onboard premiere-panel --update-owned` verifies
+it against the prior owned runtime and retains a backup. It never overwrites modified or
+foreign panels or an integration with unsettled native writers.
+
+Validation: 209 Node tests and 105 targeted Python tests cover exact host selection,
+26.5.2 routing, wrong-host rejection, connector isolation, installer preservation and
+owned panel backup/upgrade. These are software tests, not a live 26.5.2 editing claim.
+
+Upgrade the package, rerun Premiere onboarding in the new release runtime using existing
+choices, upgrade the owned panel and reopen ACQ Edit Agent. Keep credentials, assets and
+project paths. Continue editing in the existing chat; no extra agent CLI login is needed.
+
 # 0.2.0-preview.13
 
 Fixes the onboarding loop that asked already signed-in users to open another Claude CLI

@@ -70,7 +70,7 @@ class Profile:
             raise BridgeError('Supported Premiere Agent profile required; no fallback')
         if self.mode in ('scoped-reframe', 'scoped-edit') and (not self.project_authorization or not Path(self.project_authorization).is_absolute()):
             raise BridgeError('Scoped editing requires an exact-project authorization file')
-        if self.host_version not in ('26.3.0', '27.0.0'):
+        if self.host_version not in ('26.3.0', '26.5.2'):
             raise BridgeError('This integration requires an explicitly supported exact host profile')
         if not self.command or not all(isinstance(s, str) and s for s in self.command):
             raise BridgeError('An explicit executable argument list is required')

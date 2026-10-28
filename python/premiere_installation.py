@@ -26,7 +26,7 @@ def verify_profile(config, toolkit):
         'schema': 'edit.premiere-bridge-profile/v1',
         'command': [node, str(local / 'skills/assembly-design/scripts/precision_bridge.mjs'), str(runtime)],
         'cwd': str(runtime), 'fixture_root': str(runtime / 'lab/runtime/fixtures'),
-        'connector': 'premiere-agent-lab', 'host_version': __import__('premiere_compatibility').default_version(), 'mode': 'scoped-edit',
+        'connector': 'premiere-agent-lab', 'host_version': __import__('premiere_compatibility').profile_host(toolkit), 'mode': 'scoped-edit',
         'project_authorization': str(runtime / 'lab/runtime/edit-project-authorization.json'),
     }
     if profile != expected or not Path(node).is_absolute() or not Path(node).is_file():

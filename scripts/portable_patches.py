@@ -61,6 +61,10 @@ def portable_distribution(text,relative):
 '''+text[end:]
   changes.append({'patch':'toolkit-gemini-listener-credentials'})
  if relative=='_shared/premiere_bridge.py':
+  old="if self.host_version not in ('26.3.0', '27.0.0'):"
+  if text.count(old)!=1:raise ValueError('Premiere exact-host validation changed')
+  text=text.replace(old,"if self.host_version not in ('26.3.0', '26.5.2'):")
+  changes.append({'patch':'enable-exact-premiere-26-5-2'})
   guard_path=Path(__file__).with_name('portable_snippets')/'premiere_profile_guard.py'
   guard=guard_path.read_text()
   if '_verified_toolkit_profile' in text:raise ValueError('Premiere profile guard already present; reconcile upstream')
