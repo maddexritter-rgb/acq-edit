@@ -1,3 +1,10 @@
+## Current-chat-only execution
+
+Separate Claude/Codex worker entrypoints, auth checks and model smoke tests are no longer
+available through the product. Existing-chat editing and review handoffs remain. Agents
+run internal commands; users are not directed to a terminal or a second agent login.
+Historical jobs and evidence are preserved for inspection/reconciliation.
+
 # 0.2.0-preview.14
 
 Enables Premiere Pro 26.5.2 without requiring a downgrade, editor switch or separate

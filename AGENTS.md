@@ -15,7 +15,7 @@ Premiere connector lock: use only this installation’s ACQ Edit Agent MCP throu
 
 For new editing jobs ask FilmCraft or Premiere unless specified. Premiere ends at a verified saved editable timeline left open; no automatic export, room or upload. FilmCraft ends with a verified export and the room with current-chat revision handoffs. Follow docs/NATIVE_COMPLETION.md and docs/EDITOR_HANDOFF.md. Runtime helpers use toolkit Python; preserve exact host guards and report unqualified versions.
 
-Execution default: use the existing chat to perform editing. `build` prepares a current-chat job; use session-start and session-complete with verified evidence. Never start a second Claude/Codex session, require CLI login, run an agent smoke test, or demand saved command approvals for ordinary onboarding/editing. A background worker requires an explicit user request; see docs/AGENT_WORKFLOW.md.
+Execution policy: use the existing chat to perform editing. `build` prepares a current-chat job; use session-start and session-complete with verified evidence. Never start a second Claude/Codex session, require CLI login, run an agent smoke test, or demand saved command approvals for ordinary onboarding/editing. Separate agent workers are not a supported product mode. Run internal toolkit commands yourself; never send users to a terminal, ask them to learn commands, or guide a second agent login. See docs/AGENT_WORKFLOW.md.
 
 A pasted Google Drive file or folder link routes to the packaged footage-fetch owner. Homebrew/Workbrew includes rclone. Use drive-status and guided drive-login or drive-connect when needed; the user should not have to identify file IDs, downloader commands, or connection syntax.
 

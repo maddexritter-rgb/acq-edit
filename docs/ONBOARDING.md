@@ -5,8 +5,9 @@ Open this repo in Codex or Claude Code and say:
 > Set up ACQ Edit for me. Follow docs/ONBOARDING.md, ask one question at a time,
 > save my progress, and use only this repository's editing skills.
 
-After a Homebrew/Workbrew installation, run `acq-edit onboard guide` to find the installed
-folder and a ready-to-paste request for your agent. Open that folder in Codex or Claude Code.
+After a Homebrew/Workbrew installation, ask your agent to finish ACQ Edit setup. The agent
+runs `acq-edit onboard guide` to find the installed folder and reads its instructions.
+You do not need to open a terminal or type commands.
 
 The agent does the setup; you sign in and paste your keys into a small local setup page. No configuration files to open.
 There is no separate Anthropic or OpenAI API key requirement. Use your signed-in Codex or
@@ -423,6 +424,7 @@ this choice and is never silently converted to deferral. Resume accounts/routes 
 Normal onboarding and editing use the current chat. Do not open another Claude/Codex
 CLI, request another login, run an agent smoke test, or demand saved command approvals.
 `doctor` checks editing dependencies without requiring an agent CLI.
-[CLAUDE_SETUP.md](CLAUDE_SETUP.md), `doctor --background` and `agent-check PROJECT_ID --smoke`
-apply only after an explicit request for optional unattended background editing. Help is available before installation
-with `acq-edit --help`; use `help-runtime` for the installed runtime's full CLI inventory.
+Separate agent workers and their login/smoke-test setup are removed. Do not offer a CLI
+setup or ask the user to open a terminal or type commands. Execute internal toolkit
+commands from this chat; users only supply choices, browser sign-ins and review feedback.
+See [CLAUDE_SETUP.md](CLAUDE_SETUP.md). Normal host permission prompts still apply.

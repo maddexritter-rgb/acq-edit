@@ -71,6 +71,17 @@ def main():
         print('ACQ Edit: onboard guide | onboard filmcraft|premiere codex|claude [--non-interactive] [--defer-delivery] | version')
         print('Before setup: media-check [--install-missing]. After setup: --engine filmcraft|premiere doctor | helper OWNER/scripts/HELPER.py ARGS | project TITLE | build PROJECT_ID REQUEST | help-runtime')
         return
+    # Reject retired modes before routing into a previously installed runtime.
+    routed = args[2:] if args[:1] == ['--engine'] else args
+    command = routed[0] if routed else ''
+    options = routed[2:] if command == 'build' else routed[1:]
+    build_background = False
+    if command == 'build':
+        for option in options:
+            if not option.startswith('--'): break
+            if option == '--background': build_background = True
+    if command in ('worker', 'agent-check') or build_background or (command == 'serve' and '--worker' in options) or (command == 'doctor' and '--background' in options):
+        raise ValueError('Separate agent CLI execution has been removed. Continue in your existing chat; no extra login or saved command approvals are required. Existing jobs and feedback are preserved.')
     if args == ['help-runtime']: args = ['help']
     base = Path(os.environ.get('ACQ_EDIT_HOME',str(Path.home()/'.config/acq-edit')))
     registry_path=base/'engines.json'

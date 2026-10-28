@@ -33,12 +33,12 @@ reopening the room releases a session reservation. Do not rerun session-start fo
 Room startup/shutdown cannot claim or terminate a job owned by the current chat.
 
 `serve --no-worker` is explicit review-only mode: feedback saves, revision submission is
-disabled. Default `serve` instead enables current-chat handoffs. Only an explicit request
-for unattended editing permits `build --background` and `serve --worker` / `worker`.
-Background workers cannot claim session jobs. Existing jobs retain their original mode;
-missing execution metadata means historical background execution, never auto-conversion.
-Read CLAUDE_SETUP.md only for optional Claude background-worker setup. `doctor --background`
-checks that optional CLI; ordinary `doctor` does not require or probe an agent CLI.
+disabled. Default `serve` enables current-chat handoffs. Separate agent workers and their
+login/smoke-test setup are removed. Run internal toolkit commands yourself; the user
+should not open a terminal, type commands, or configure an agent CLI. Respect normal
+host permission prompts without demanding permanent approvals.
+Existing jobs retain their original mode and evidence; never auto-convert historical work.
+Inspect and reconcile old interrupted jobs before creating a fresh current-chat request.
 
 ## Direct skill requests
 
@@ -164,9 +164,9 @@ For optional background workers, agent completion must match the exact Codex thr
 
 The default agent deadline is six hours; `agentTimeoutMs` in local configuration can set another positive duration in milliseconds. Protocol requests time out after 60 seconds. A deadline does not authorize replay. Native subprocess timeouts likewise terminate the owned command before returning failure.
 
-Ctrl-C or SIGTERM on `serve --worker` stops dispatch, interrupts the owned agent process group, waits for exit (escalating after five seconds), saves reconciliation state and then releases the service lock. The standalone `worker` uses the same lock and shutdown path; stop `serve` before running it. Do not interpret process termination as proof that an editor-host render or remote task stopped. Inspect the selected host and its receipts before resolving an uncertain job. A hard OS kill still requires native-state reconciliation after restart.
-
-The installed Claude CLI may emit `subtype: success` together with `is_error: true` for an account failure. The toolkit treats that as failure. Fix the operator's account configuration before retrying; do not change accounts or credentials automatically.
+Review room shutdown does not terminate or release work owned by the current chat.
+Never treat a stopped chat or process as proof an editor-host render stopped. Inspect the
+selected host and receipts before reconciling interrupted or historical jobs.
 
 ### Timed vertical Q&A execution
 
