@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
+import {sessionRequest,jobPresentation} from '../web/activity.js';
 
 // Execute the real browser entrypoint and its event handlers with a small DOM/network fixture.
 // No extracted copies of save/project-switch logic: regressions in app.js run here directly.
@@ -9,6 +10,9 @@ class Element {
  constructor(){this.value='';this.textContent='';this.hidden=false;this.disabled=false;this.children=[];this.dataset={};this.classList={toggle(){}};this.previousElementSibling={};this.currentTime=0;this.paused=true}
  append(...nodes){this.children.push(...nodes)}
  replaceChildren(...nodes){this.children=[...nodes]}
+ setAttribute(name,value){this[name]=value}
+ focus(){}
+ select(){this.selected=true}
  removeAttribute(name){delete this[name]}
  pause(){this.paused=true}
  load(){this.loaded=true}
@@ -25,7 +29,7 @@ async function room(revisionProcessing=true){
  const snapshots={full,empty,waiting},requests=[];let fault,reference;
  const fetch=async(url,options={})=>{
   requests.push({url,...options});
-  if(url==='/api/capabilities')return response({revisionProcessing,mode:revisionProcessing?'editing':'review-only'});
+  if(url==='/api/capabilities')return response({revisionProcessing:!!revisionProcessing,mode:revisionProcessing==='session'?'session':revisionProcessing?'editing':'review-only'});
   if(url==='/api/projects')return response(Object.values(snapshots).map(s=>s.project));
   if(url.startsWith('/api/projects/')&&!url.endsWith('/revisions'))return response(snapshots[url.split('/').at(-1)]);
   if(url==='/api/feedback/v'){
@@ -37,11 +41,11 @@ async function room(revisionProcessing=true){
    if(behavior)await behavior('after');
    return response(full.clips[0].versions[0].feedback);
   }
-  if(url.endsWith('/revisions'))return response({id:'job'});
+  if(url.endsWith('/revisions')){const j={id:'job',state:'queued',execution:revisionProcessing==='session'?'session':'background',kind:'revision',snapshot:[],updatedAt:new Date().toISOString()};full.jobs=[j];return response(j)};
   return response({error:'Not found'},false);
  };
  function response(data,ok=true){return {ok,json:async()=>structuredClone(data)}}
- const context=vm.createContext({structuredClone,URL,Promise,console,fetch,crypto:globalThis.crypto,setInterval(){},location:{href:'http://127.0.0.1/?project=full'},history:{replaceState(){}},localStorage:{getItem(){},setItem(){}},window:{addEventListener(){}},document:{getElementById:get,createElement:()=>new Element(),querySelectorAll:()=>decisions},projectActivity:()=>({reserved:false,reservations:[]}),jobPresentation:()=>({}),referenceView:()=>({reset:v=>{reference=v},close(){}})});
+ const context=vm.createContext({structuredClone,URL,Promise,console,fetch,crypto:globalThis.crypto,setInterval(){},location:{href:'http://127.0.0.1/?project=full'},history:{replaceState(){}},localStorage:{getItem(){},setItem(){}},window:{addEventListener(){}},document:{getElementById:get,createElement:()=>new Element(),querySelectorAll:()=>decisions},projectActivity:()=>({reserved:false,reservations:[]}),jobPresentation,sessionRequest,referenceView:()=>({reset:v=>{reference=v},close(){}})});
  const source=(await readFile(new URL('../web/app.js',import.meta.url),'utf8')).replace(/^import .*\n/gm,'');
  const app=await vm.runInContext(`(async()=>{${source}\nreturn {settled:()=>pending,state:()=>({projectId,versionId,dirty,draft})}})()`,context);
  return {get,app,decisions,requests,snapshots,reference:()=>reference,feedback:()=>full.clips[0].versions[0].feedback,fail:f=>{fault=f},type:note=>{get('notes').value=note;get('notes').oninput()},switch:async id=>{get('projects').value=id;await get('projects').onchange()}};
@@ -94,4 +98,11 @@ test('review-only room labels the mode, saves feedback and disables revision act
  assert.equal(r.get('apply').disabled,true);assert.equal(r.get('apply-selected').disabled,true);assert.equal(r.get('notes').disabled,false);
  r.type('Keep this for later');await r.app.settled();assert.equal(r.feedback().notes,'Keep this for later');
  await r.get('apply').onclick();assert.equal(r.requests.filter(x=>x.url.endsWith('/revisions')).length,0);
+});
+
+test('current-chat room shows a usable revision handoff even when clipboard access fails',async()=>{
+ const r=await room('session');assert.match(r.get('room-mode').textContent,/Edit in your chat/);assert.equal(r.get('apply').disabled,false);
+ r.type('Please restyle these captions');await r.app.settled();await r.get('apply').onclick();
+ const row=r.get('jobs').children[0],text=row.children[1],copy=text.children.find(n=>n.textContent==='Copy request for your chat');assert(copy);
+ await copy.onclick();const details=text.children.find(n=>n.open===true);assert(details);assert.match(details.children[1].value,/session-start job/);assert.equal(details.children[1].selected,true);
 });

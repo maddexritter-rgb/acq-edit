@@ -1,3 +1,36 @@
+# 0.2.0-preview.13
+
+Fixes the onboarding loop that asked already signed-in users to open another Claude CLI
+and repeatedly save command permissions. The default workflow now uses the existing chat.
+
+- Setup and ordinary doctor do not require or probe a separate Claude/Codex executable.
+- `build` returns a durable request; `session-start` reserves it and `session-complete`
+  validates the same native artifacts and receipts as before.
+- `serve` never spawns a worker by default. Apply revisions freezes the submitted versions
+  and notes and offers a request to copy into the editing chat. Feedback stays on disk.
+- Unattended workers are explicitly optional: `build --background`, `serve --worker`.
+  They cannot claim or recover session-owned jobs. `--no-worker` remains review-only.
+- Interrupted sessions have an explicit inspection/reconciliation path; missing evidence
+  cannot mark a clip finished. Historical jobs are preserved, not silently converted.
+
+Drive intake also accepts file and folder links through one command. Guided `drive-login`
+opens Google sign-in with read-only download scope, `drive-connect` remembers an existing
+connection, and missing/old downloaders receive an actionable check. OAuth uses rclone's
+[documented configuration flow](https://rclone.org/commands/rclone_config_create/) and
+[read-only scope](https://rclone.org/drive/#drive-readonly). The existing checksum, exact-file
+identity and interrupted-transfer guards remain.
+
+Validation: 209 Node tests, 138 targeted Python tests and five portable-distribution
+tests pass; source/manifest audit is clean. Live local rclone 1.75.2 connection discovery
+and an authenticated read check passed using an existing work connection. Fresh browser
+OAuth on a teammate Mac and a new remote footage download are not claimed by that check.
+
+Existing installations: upgrade the Homebrew/Workbrew package, rerun the installed
+engine onboarding with existing choices, then refresh owned skill links. Preserve keys,
+projects and active work; settle any live or uncertain operation before updating its runtime.
+Read the new installed AGENTS.md and docs/ONBOARDING.md rather than repeating the old
+CLI-approval instructions. Normal host permission prompts still apply to individual commands.
+
 # 0.2.0-preview.12
 
 Repairs confirmed from the teammate's preview.11 installation and first FilmCraft job.

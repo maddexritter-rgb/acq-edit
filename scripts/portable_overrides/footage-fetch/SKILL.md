@@ -12,11 +12,18 @@ copies under `00_SOURCE`; work and final versions stay in `10_WORK` and `20_DELI
 
 → Follow [the intake implementation and recovery contract](__ACQ_TOOLKIT__/docs/INTAKE.md).
 
-Use `source` for local files, `youtube` for a single non-live video, `drive` for an
-exact file link, or `drive-folder` for a folder link. Supply the teammate's configured
-rclone remote explicitly; its authentication is local and is not bundled. The
-packaged `scripts/gdrive_pull.sh PROJECT_ID URL [REMOTE]` delegates to those same
-Drive commands. It never creates or renames a project itself.
+Use `source` for local files, `youtube` for a single non-live video, or
+`drive PROJECT_ID URL` for a pasted Google Drive file **or folder** link. The toolkit
+routes the URL and reuses a selected connection; do not ask users for file IDs or commands.
+Run `drive-status` before their first Drive import. If none is connected, explain the
+one-time browser sign-in and run `drive-login`; the user selects their Google account.
+If multiple existing connections are listed, ask which work account to use in plain
+language, then run `drive-connect NAME` once. Never guess between multiple accounts.
+Authentication stays local; new connections request read-only download access.
+Homebrew/Workbrew installs rclone. If missing/broken, repair it through the existing
+package manager. No second Claude/Codex CLI login is involved. The packaged
+`scripts/gdrive_pull.sh PROJECT_ID URL [REMOTE]` delegates to the same intake owner.
+It never creates or renames a project itself.
 
 Let the toolkit own preflight, transfer processes, hashes, remote identity checks,
 source registration and recovery. Inspect the persisted attempt or batch when a

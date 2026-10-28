@@ -64,9 +64,9 @@ node dist/cli.js build PROJECT_ID "Design three complete, useful short clips."
 node dist/cli.js serve
 ```
 
-Open the authenticated loopback URL printed by `serve`. The worker runs the project's selected agent. Missing permissions or uncertain native outcomes stop the job with recoverable evidence. Do not treat an agent's completion message as a successful render.
+Open the authenticated loopback URL printed by `serve`. Editing stays in your current chat. `build` returns a job packet; follow `session-start` / `session-complete` in [the agent workflow](docs/AGENT_WORKFLOW.md). Apply revisions saves an exact request to copy back into your chat. No second agent CLI login or saved permission rules are required. Missing permissions or uncertain native outcomes stop the job with recoverable evidence. Do not treat an agent's completion message as a successful render.
 
-Use `serve --no-worker` to review without dispatching jobs. `projects` lists persisted projects; `open PROJECT_ID` re-exports its state. The next `serve` session reopens the same projects, versions, and feedback.
+Use `serve --no-worker` for feedback-only review. Unattended editing is opt-in: `build --background` and `serve --worker` require a separately configured CLI. `projects` lists persisted projects; `open PROJECT_ID` re-exports its state. The next `serve` session reopens the same projects, versions, and feedback.
 
 ## What stays constant
 

@@ -5,7 +5,10 @@ Use the toolkit CLI inside an existing project. The selected editing backend is 
 ```sh
 acq-edit source PROJECT_ID /absolute/path/recording.mp4
 acq-edit youtube PROJECT_ID https://youtu.be/VIDEO_ID
-acq-edit drive PROJECT_ID https://drive.google.com/file/d/FILE_ID/view MY_REMOTE
+acq-edit drive-status
+acq-edit drive-login  # only if no existing connection; browser Google sign-in
+acq-edit drive-connect MY_REMOTE  # select one of several existing connections
+acq-edit drive PROJECT_ID https://drive.google.com/file/d/FILE_ID/view
 acq-edit drive-folder PROJECT_ID https://drive.google.com/drive/folders/FOLDER_ID MY_REMOTE
 acq-edit drive-batches PROJECT_ID
 acq-edit drive-resume BATCH_ID
@@ -21,9 +24,9 @@ The original file is never moved or edited. A successful source is a verified re
 
 Local intake checks the original before and after copying, compares hashes, probes the copied media, checks it again after verification, and registers source/state together in one SQLite transaction. A process interruption after file placement or after the database commit can be recovered without another source registration. Missing, changed or incomplete bytes cannot become registered sources just because a filename exists.
 
-Drive uses the operator's configured rclone remote; no credentials are copied into the repository and no scopes are changed. The [rclone `copyid` directory form](https://rclone.org/drive/#copyid) preserves the source filename. After download, the toolkit queries matching-name metadata through [rclone's Drive query command](https://rclone.org/drive/#query), then requires the **exact requested file ID**, size and MD5. Duplicate names cannot substitute a different file. Remote checks run again before registration; local SHA-256 separately proves the project copy. Missing metadata, absent MD5 or a checksum mismatch fails explicitly. The metadata query requires a current rclone version with the Drive `query` command (tested interface: 1.74.3). Encoded/unqueryable names and shortcuts without verifiable binary metadata may require a dedicated intake repair; they are never accepted as remotely verified by filename alone.
+Drive reuses the operator's selected rclone remote, or the only existing Drive connection. `drive-login` creates a separate read-only connection through browser OAuth; it never overwrites existing connections or changes their scopes. The selected connection name is stored beside shared credentials, and tokens remain in the local rclone configuration. See [the guided steps](ONBOARDING.md#pasted-google-drive-footage-links). No credentials are copied into the repository. The [rclone `copyid` directory form](https://rclone.org/drive/#copyid) preserves the source filename. After download, the toolkit queries matching-name metadata through [rclone's Drive query command](https://rclone.org/drive/#query), then requires the **exact requested file ID**, size and MD5. Duplicate names cannot substitute a different file. Remote checks run again before registration; local SHA-256 separately proves the project copy. Missing metadata, absent MD5 or a checksum mismatch fails explicitly. The metadata query requires a current rclone version with the Drive `query` command (tested interface: 1.74.3). Encoded/unqueryable names and shortcuts without verifiable binary metadata may require a dedicated intake repair; they are never accepted as remotely verified by filename alone.
 
-The `drive` command accepts single-file links; `drive-folder` accepts folder links and follows the batch contract below. `doctor` reports rclone and yt-dlp availability but does not establish authenticated access. No authenticated Drive account has yet passed the toolkit's live acceptance fixture.
+The `drive` command detects either file or folder links; `drive-folder` also accepts folder links and follows the batch contract below. `doctor` reports rclone and yt-dlp availability but does not establish authenticated access. No authenticated Drive account has yet passed the toolkit's live acceptance fixture.
 
 YouTube accepts an explicit watch, shortened, Shorts, embed or archived-live video URL. It extracts one video ID before creating an attempt; channel, playlist-only and ambiguous links fail before a transfer. Downloads use the canonical watch URL for that ID, so time/share/playlist parameters do not select an excerpt or expand the request. Assembly Design handles requested cuts after full-source intake.
 

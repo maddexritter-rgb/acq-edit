@@ -224,7 +224,7 @@ acq-edit onboard filmcraft codex
 ```
 
 Only FilmCraft and Premiere are included in this onboarding pilot. Resolve remains paused.
-Install and sign into the chosen agent CLI before continuing. FilmCraft installs its pinned
+Use the current signed-in chat. Do not install or sign into another agent CLI. FilmCraft installs its pinned
 headless runtime from a pinned prebuilt package on Apple-silicon Macs running macOS 15.7 or
 later. Rust and Xcode build tools are not required for that runtime. Other architectures or
 older macOS must be reported explicitly; never silently fall back to another editor or build.
@@ -265,7 +265,7 @@ Paste and click **Save keys**; blank keeps an existing key. The page expires aft
 | AssemblyAI | Transcripts, word timings and speaker labels | [AssemblyAI dashboard](https://www.assemblyai.com/dashboard) |
 | Gemini | Audio/visual inspection and audits | [Google AI Studio](https://aistudio.google.com/apikey) |
 | Editorial brain | Current shared editorial guidance | Included restricted team reader; no user signup |
-| Codex or Claude Code | Editing reasoning and job execution | Sign into the selected CLI |
+| Codex or Claude Code | Editing reasoning and job execution | Use the existing signed-in chat |
 
 ```sh
 acq-edit onboard verify
@@ -302,9 +302,30 @@ Setup checks identity and routes only. It does not upload clips, create board it
 permission for future deliveries. A later request such as “push these clips to Frame and Monday”
 authorizes that selected batch. Preserve the delivery ledger for recovery and revisions.
 
-For Drive intake, use `rclone config` to sign into the user's own Drive, then record the remote
-name. YouTube uses the installed `yt-dlp`; authenticated/private content needs the user's access.
-Drive authentication can be skipped for a local-file test. There is no publishing-account requirement.
+### Pasted Google Drive footage links
+
+Homebrew/Workbrew installs rclone with ACQ Edit; no separate downloader application is needed.
+When the user supplies a Drive link, route it to footage-fetch. The agent handles commands:
+
+1. Run `drive-status`. It checks the downloader and lists connection names without tokens.
+2. With no connection, say “I'll open Google sign-in. Choose the account that can open
+   this footage.” Run `drive-login`; the browser handles Google login. Newly created
+   connections request read-only metadata and download access. Never ask for a password
+   or an OAuth token in chat, or for a second Claude/Codex login.
+3. One existing Drive connection is selected automatically. If there are multiple, ask
+   which work connection to use, then run `drive-connect NAME`; remember it across both
+   editors. Do not guess between personal and work accounts or overwrite existing remotes.
+4. Run `drive PROJECT_ID "PASTED_URL"`. The same command accepts a file or folder link;
+   folders recursively import supported video/audio files. Originals stay on Drive,
+   verified project copies go to `00_SOURCE`, and interrupted transfers retain their records.
+
+The user only needs to paste the link and, on first use, sign into Google if needed.
+Account readiness does not prove access to every link: explain sharing restrictions,
+expired access or organization OAuth policy specifically. Do not bypass those controls.
+If rclone is missing or old, use the machine's existing Homebrew/Workbrew installation
+through the normal allowed command flow. Do not replace another installation or loop on
+blocked commands. Drive login can wait until first Drive use; it does not block local files.
+YouTube uses the installed yt-dlp. Private content still needs the user's access.
 
 ## 5. Prove one real job, then use the review room
 
@@ -362,7 +383,7 @@ Never hand-edit an alternate Premiere profile. Premiere discovery reports instal
 host versions from the compatibility registry; unknown versions require qualification.
 
 For the first clip, Premiere finishes in its editable timeline. FilmCraft finishes in its review
-room with revision processing active. `serve --no-worker` is explicitly **Review only**: notes
+room with current-chat revision handoffs. `serve --no-worker` is explicitly **Review only**: notes
 save, but revision buttons and API submission are disabled. A successful provider read check
 is authentication evidence only. Gemini HTTP 402 means billing/credit is needed, not successful
 analysis; do not mark audio/video inspection complete without an actual generation result.
@@ -391,7 +412,9 @@ this choice and is never silently converted to deferral. Resume accounts/routes 
 `delivery credentials`, `delivery login`, the monday owner's destination steps, and
 `onboard delivery`. Re-running engine onboarding without the flag resumes delivery.
 
-For Claude projects complete [CLAUDE_SETUP.md](CLAUDE_SETUP.md) before the first headless
-job. `doctor` now includes CLI authentication/version checks, while `agent-check PROJECT_ID
---smoke` verifies basic project commands and writes. Help is available before installation
+Normal onboarding and editing use the current chat. Do not open another Claude/Codex
+CLI, request another login, run an agent smoke test, or demand saved command approvals.
+`doctor` checks editing dependencies without requiring an agent CLI.
+[CLAUDE_SETUP.md](CLAUDE_SETUP.md), `doctor --background` and `agent-check PROJECT_ID --smoke`
+apply only after an explicit request for optional unattended background editing. Help is available before installation
 with `acq-edit --help`; use `help-runtime` for the installed runtime's full CLI inventory.

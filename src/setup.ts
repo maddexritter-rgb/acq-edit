@@ -36,7 +36,8 @@ export async function collectSetup(snapshot:SetupSnapshot,args:string[],question
  // Retain the old agent's custom executable when choosing a different default.
  const commands={...previous?.agentCommands};
  if(previous?.agentCommand&&previous.agent)commands[previous.agent]=previous.agentCommand;
- const command=await ask('Agent executable (enter - for the standard command)',commands[agent]||agent);
+ // Preserve optional worker configuration without prompting normal chat users for a CLI.
+ const command=commands[agent]||agent;
  if(command==='-'||command===agent)delete commands[agent];else commands[agent]=command.startsWith('~')?absolute(command,userHome):command;
  delete c.agentCommand;
  if(Object.keys(commands).length)c.agentCommands=commands;else delete c.agentCommands;

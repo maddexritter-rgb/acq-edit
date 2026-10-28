@@ -40,7 +40,7 @@ class PortableDistributionTests(unittest.TestCase):
             script = root / 'gdrive_pull.sh'
             script.write_text((ROOT / 'distribution/skills/footage-fetch/scripts/gdrive_pull.sh').read_text().replace('__ACQ_TOOLKIT__', str(root)))
             env = {**os.environ, 'PATH': str(root) + os.pathsep + os.environ['PATH']}
-            for url, command in [('https://drive.google.com/file/d/test/view?x=a&b=c', 'drive'), ('https://drive.google.com/drive/folders/test', 'drive-folder')]:
+            for url, command in [('https://drive.google.com/file/d/test/view?x=a&b=c', 'drive'), ('https://drive.google.com/drive/folders/test', 'drive'), ('https://drive.google.com/drive/u/0/folders/test', 'drive')]:
                 run = subprocess.run(['/bin/bash', str(script), 'project-id', url, 'team remote'], env=env, text=True, capture_output=True)
                 self.assertEqual(run.returncode, 0, run.stderr)
                 self.assertEqual(json.loads(run.stdout), [str(root/'dist/cli.js'), command, 'project-id', url, 'team remote'])

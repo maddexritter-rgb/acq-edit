@@ -1,4 +1,4 @@
-import {projectActivity,jobPresentation} from './activity.js';
+import {projectActivity,jobPresentation,sessionRequest} from './activity.js';
 import {referenceView} from './reference.js';
 const $=id=>document.getElementById(id);let projectId='',data,clipId='',versionId='',pending=Promise.resolve(),selected=new Set(),draft,comparison=false,dirty=0,activityKey='',saveGeneration=0,uncertainFeedback,revisionProcessing=false;
 const api=async(url,options={})=>{const r=await fetch(url,{...options,headers:{'Content-Type':'application/json',...options.headers}});const b=await r.json();if(!r.ok)throw Error(b.error||r.statusText);return b};
@@ -16,7 +16,10 @@ function renderJobs(){
  $('recovery-request').value=activity.request;$('copy-recovery').textContent='Copy request for your agent';$('activity-copy-state').textContent='';
  const details=$('activity-reservations');details.replaceChildren();for(const r of activity.reservations){details.append(el('p',`${r.kind} · ${r.state.replaceAll('_',' ')}${r.detail?' · '+r.detail:''}`));if(r.error)details.append(el('pre',r.error))}
  const jobs=$('jobs');jobs.replaceChildren();if(!data.jobs.length&&!activity.reserved)jobs.append(el('p','No jobs yet.','muted'));
- for(const j of data.jobs.slice(0,8)){const row=el('div',undefined,'job '+j.state),presentation=jobPresentation(j);row.append(el('span','','dot'));const text=el('div');text.append(el('strong',presentation.label),el('p',`${j.kind==='build'?'New clips':j.snapshot.length+' clip revision'+(j.snapshot.length===1?'':'s')} · ${presentation.description}`));if(j.error){const detail=el('details');detail.append(el('summary','Request details'),el('pre',j.error));text.append(detail)}row.append(text,el('time',new Date(j.updatedAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})));jobs.append(row)}
+ for(const j of data.jobs.slice(0,8)){const row=el('div',undefined,'job '+j.state),presentation=jobPresentation(j);row.append(el('span','','dot'));const text=el('div');text.append(el('strong',presentation.label),el('p',`${j.kind==='build'?'New clips':j.snapshot.length+' clip revision'+(j.snapshot.length===1?'':'s')} · ${presentation.description}`));if(j.execution==='session'&&j.state==='queued'){
+ const request=sessionRequest(j,data.project),copy=el('button','Copy request for your chat'),details=el('details'),area=el('textarea');area.value=request;area.readOnly=true;area.setAttribute('aria-label','Request for your editing chat');details.append(el('summary','Show chat request'),area);
+ copy.onclick=async()=>{try{await navigator.clipboard.writeText(request);copy.textContent='Copied — paste into your chat'}catch{details.open=true;area.focus();area.select();copy.textContent='Select and copy the request below'}};text.append(copy,details);
+ }if(j.error){const detail=el('details');detail.append(el('summary','Request details'),el('pre',j.error));text.append(detail)}row.append(text,el('time',new Date(j.updatedAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})));jobs.append(row)}
 }
 async function refresh(){if(!projectId)return;const requested=projectId,snapshot=await api('/api/projects/'+requested);if(projectId!==requested)return;data=snapshot;$('backend').textContent=data.project.backend;$('feedback-export').href=`/api/projects/${projectId}/export`;queue();renderJobs();renderPending();if(!data.clips.length){clipId='';versionId='';renderVersion()}else if(!clipId&&data.clips.length)await switchClip((data.clips.find(c=>c.currentVersionId)||data.clips[0]).id);else if(currentClip()?.currentVersionId&&!versionId&&!dirty)await switchClip(clipId);else if(currentClip()&&currentClip().currentVersionId!==versionId&&!dirty){$('version-label').textContent='Viewing an earlier version · latest is available in the version menu';populateVersions();for(const id of ['apply','notes','comment','add-comment'])$(id).disabled=true;document.querySelectorAll('[data-decision],.delete').forEach(b=>b.disabled=true)}}
 function populateVersions(){const select=$('versions');select.replaceChildren();for(const v of currentClip()?.versions||[]){const option=el('option',`Version ${v.number}${v.id===currentClip().currentVersionId?' · Latest':''}`);option.value=v.id;select.append(option)}select.value=versionId}
@@ -90,7 +93,7 @@ $('projects').onchange=async()=>{try{await pending;if(dirty)throw Error('Save fa
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
 renderVersion();selectionState();
 const capabilities=await api('/api/capabilities');revisionProcessing=capabilities.revisionProcessing===true;
-$('room-mode').hidden=revisionProcessing;$('room-mode').textContent='Review only · Notes save normally. Start ACQ Edit without --no-worker to apply revisions.';
+$('room-mode').hidden=capabilities.mode==='editing';$('room-mode').textContent=capabilities.mode==='session'?'Edit in your chat · Apply revisions captures your notes. Copy the request from Activity into your editing chat.':'Review only · Notes save normally. Start ACQ Edit without --no-worker to prepare revisions for your chat.';
 const projects=await api('/api/projects');for(const p of projects){const o=el('option',p.title);o.value=p.id;$('projects').append(o)}
 if(projects.length){
  let remembered='';try{remembered=localStorage.getItem('acq-edit:review-project')||''}catch{}

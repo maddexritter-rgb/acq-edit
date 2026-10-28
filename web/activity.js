@@ -19,7 +19,11 @@ export function projectActivity(data){
  ].join('\n'):'';
  return {reserved,attention,heading,description,request,reservations};
 }
+export function sessionRequest(job,project){
+ return `Apply ACQ Edit job ${job.id} in this chat, using only the installed repository. Project: ${project.id}; backend: ${project.backend}. Run acq-edit --engine ${project.backend} session-packet ${job.id}, read the frozen request and current project state, then session-start ${job.id} only if it is still queued. Use ACQ_EDIT_JOB_ID=${job.id} for native, brain and publish commands. Complete with session-complete and verified result evidence. Preserve later feedback and existing versions. If already active or interrupted, inspect and reconcile rather than replaying. Do not launch another Claude/Codex CLI, ask for another login, or require saved permissions.`;
+}
 export function jobPresentation(job){
+ if(job.execution==='session'&&job.state==='queued')return {label:'Ready for your chat',description:'Notes captured. Copy this request into your editing chat to apply them.'};
  const labels={queued:'Queued',editing:'Editing',rendering:'Rendering',ready:'Ready for review',failed:'Failed',reconciliation_required:'Needs recovery review'};
  const descriptions={queued:'Waiting for its turn. The submitted notes are saved.',editing:'Your agent is working on the submitted request.',rendering:'A render was requested. The new version will appear after verification.',ready:'The new versions are available. Review them to make your decision.',failed:'This request did not complete. Existing versions and feedback are retained.',reconciliation_required:'The outcome needs inspection before more editing can start.'};
  return {label:labels[job.state]||job.state,description:descriptions[job.state]||'Check this request with your agent.'};

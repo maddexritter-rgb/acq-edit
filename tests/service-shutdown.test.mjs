@@ -15,7 +15,7 @@ test('service shutdown waits for its agent, reconciles the job, and exports dura
  const job=s.enqueueBuild('p','Fixture only');
  // This process fixture has no real skill installation or editor.
  const python=path.join(root,'fixture-runtime-verifier');await writeFile(python,'#!/usr/bin/env node\nconsole.log(JSON.stringify({ready:true,verifiedFiles:1,routedEntrypoints:1}));\n');await chmod(python,0o700);
- const room=serve(s,{storageRoot:root,backend:'filmcraft',agent:'codex',python,port:0,agentCommand:fileURLToPath(new URL('./fixtures/agent-process.mjs',import.meta.url))});
+ const room=serve(s,{storageRoot:root,backend:'filmcraft',agent:'codex',python,port:0,agentCommand:fileURLToPath(new URL('./fixtures/agent-process.mjs',import.meta.url))},true);
  t.after(async()=>{if(room.server.listening)await room.stop();s.close();await rm(root,{recursive:true,force:true})});
  await new Promise(r=>room.server.listen(0,'127.0.0.1',r));
  let pid;

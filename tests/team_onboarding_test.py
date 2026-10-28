@@ -11,6 +11,16 @@ asr=module('team_asr',ROOT/'distribution/skills/_shared/asr.py')
 transcribe=module('team_transcribe',ROOT/'distribution/skills/caption-clips/scripts/transcribe.py')
 
 class TeamOnboarding(unittest.TestCase):
+ def test_engine_onboarding_reaches_setup_without_a_second_agent_cli(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);(root/'release.json').write_text('{}');calls=[]
+   def execute(args,**kwargs):calls.append([str(x) for x in args])
+   with patch.object(onboard,'ROOT',root),patch.object(onboard.sys,'platform','darwin'),patch.object(onboard.sys,'argv',['onboard','filmcraft','claude','--non-interactive','--defer-delivery']),patch('runtime_environment.execution_environment',return_value={}),patch.object(onboard.shutil,'which',side_effect=lambda name:None if name in ('claude','codex') else '/fixture/'+name) as which,patch.object(install_engine,'preflight',return_value={'errors':[]}),patch.object(onboard,'assets',return_value=root/'bundle'),patch.object(onboard,'install_fonts'),patch.object(onboard,'install_brain',return_value=root/'brain'),patch.object(onboard,'execute',side_effect=execute),patch.object(onboard,'ensure_credentials'),patch.object(onboard,'configure_delivery',return_value={'ready':False,'deferred':True}),contextlib.redirect_stdout(io.StringIO()):
+    onboard.main()
+   self.assertTrue(any('setup' in c and '--non-interactive' in c for c in calls))
+   self.assertFalse(any(x.args[0] in ('claude','codex') for x in which.call_args_list))
+   self.assertFalse(any('agent-check' in c or '--background' in c for c in calls))
+
  def test_broken_existing_media_binary_is_not_ready(self):
   with patch.object(install_engine.shutil,'which',side_effect=lambda n:'/fixture/'+n),patch.object(install_engine,'output',return_value='v24.1.0'),patch.object(install_engine.subprocess,'run',return_value=subprocess.CompletedProcess([],127,'','dyld missing secret-path')):
    result=install_engine.preflight('premiere')
