@@ -6318,8 +6318,8 @@
       "path": "monday/references/onboarding.md",
       "source": "github:maddexritter-rgb/vibe-editing@a342d7173d49b6be43e477a0041aad6014fbf377/plugins/vibe-editing/skills/monday/references/onboarding.md",
       "source_sha256": "3ef2bcacd3486711fa2d80d5fe2a4c44e53283df7c9624b85a3d3a57a6db139d",
-      "distribution_sha256": "23fb46dbc5dd7e27c4ae83df42b3435cac64c7d7ae2fcdeed153855f098eacbf",
-      "bytes": 4018,
+      "distribution_sha256": "e7d1f6b8099bda6ca77ce71ea4688bde2418ac5b1f364edcb520e0f1d1e883c5",
+      "bytes": 4404,
       "transforms": [
         {
           "from": "vibe-editing user configuration",
@@ -6328,6 +6328,10 @@
         {
           "patch": "required-delivery-onboarding-local-form",
           "revision": "0.2.0-preview.8"
+        },
+        {
+          "patch": "shared-team-adobe-app-onboarding",
+          "description": "Owner-supplied app credentials with individual Adobe sign-in"
         }
       ]
     },
@@ -6348,8 +6352,8 @@
       "path": "monday/scripts/connect.py",
       "source": "github:maddexritter-rgb/vibe-editing@a342d7173d49b6be43e477a0041aad6014fbf377/plugins/vibe-editing/skills/monday/scripts/connect.py",
       "source_sha256": "d7ba592e59b2dc2140cc5c626cd4c7b5af02696b1855b65f70724f324c3cc11b",
-      "distribution_sha256": "f74fa57d8c98f559ddd80d9be327b222ead8a55696f2f69f78992a8484be6cc0",
-      "bytes": 8149,
+      "distribution_sha256": "f766e66a521b6f2c505106aac90884787ea474374a9efcb523eea8a27f95de53",
+      "bytes": 8204,
       "transforms": [
         {
           "from": "vibe-editing user configuration",
@@ -6358,6 +6362,10 @@
         {
           "patch": "required-delivery-onboarding-local-form",
           "revision": "0.2.0-preview.8"
+        },
+        {
+          "patch": "shared-team-adobe-app-onboarding",
+          "description": "Owner-supplied app credentials with individual Adobe sign-in"
         }
       ]
     },
@@ -6425,8 +6433,8 @@
       "path": "monday/scripts/setup_frameio_oauth.py",
       "source": "github:maddexritter-rgb/vibe-editing@a342d7173d49b6be43e477a0041aad6014fbf377/plugins/vibe-editing/skills/monday/scripts/setup_frameio_oauth.py",
       "source_sha256": "0213037dff2e8990620d8f209d541efa2c1b59a66f3f024a39d2c922ebf8f8f8",
-      "distribution_sha256": "83365cf6bb3460db8e5f8a6a797019bba026f1b21c633aea60524019f427baab",
-      "bytes": 5975,
+      "distribution_sha256": "6897be9b359bb474d785ce4b0b09f426d8c1ba24e0cfcb7154cd6397ea19e161",
+      "bytes": 5991,
       "transforms": [
         {
           "from": "vibe-editing user configuration",
@@ -6435,6 +6443,10 @@
         {
           "from": "per-engine delivery credentials",
           "to": "shared ACQ_EDIT_CREDENTIALS_HOME with legacy fallback"
+        },
+        {
+          "patch": "shared-team-adobe-app-onboarding",
+          "description": "Owner-supplied app credentials with individual Adobe sign-in"
         }
       ]
     },

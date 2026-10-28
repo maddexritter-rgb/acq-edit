@@ -116,10 +116,10 @@ def main():
     if args.action == 'credentials':
         sys.path.insert(0, str(Path(__file__).resolve().parents[4] / 'scripts'))
         from credentials import form_page, run_browser
-        page = form_page('Connect clip delivery', 'Paste the account details below. They are saved on this Mac, outside chat. Your agent will help with each account page.', [
+        page = form_page('Connect clip delivery', 'Get the shared Adobe client ID and secret from Maddex; no new Adobe app is needed. Use your own Monday token. After saving, sign into your own Adobe / Frame account. These values stay on this Mac.', [
             ('MONDAY_TOKEN', 'Monday personal API token', 'In Monday: profile → Developers → API token.', 'https://developer.monday.com/api-reference/docs/authentication'),
-            ('FRAME_CLIENT_ID', 'Frame / Adobe client ID', 'Use your team OAuth Web App or create one with your agent.', 'https://developer.adobe.com/console'),
-            ('FRAME_CLIENT_SECRET', 'Frame / Adobe client secret', 'From that same Adobe OAuth Web App.', 'https://developer.adobe.com/console'),
+            ('FRAME_CLIENT_ID', 'Frame / Adobe client ID', 'Get this from Maddex. Do not create an Adobe app.', None),
+            ('FRAME_CLIENT_SECRET', 'Frame / Adobe client secret', 'Get this from Maddex with the client ID. You will sign into your own Adobe account next.', None),
         ])
         run_browser(CFG, page, save_credentials, args.no_open)
         print('Delivery credentials saved. Next: acq-edit delivery login, choose destinations, then acq-edit onboard delivery.')

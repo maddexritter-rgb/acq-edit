@@ -112,7 +112,8 @@ Use a background tool session so the user can fill it while you remain available
    asking them to rebuild styles or copy files from someone else's computer.
 5. **Frame and Monday — required standard onboarding step.**
    Say: “Next we'll connect where your finished clips go: Frame for video review and Monday
-   for tracking. I'll guide you through sign-in and save the destinations for each brand.”
+   for tracking. Get the shared Adobe client ID and secret from Maddex—no new Adobe app
+   needed. You will sign into your own Adobe account and use your own Monday API token.”
    → Use skill: [monday](../distribution/skills/monday/SKILL.md), starting with its onboarding
    reference. Run the credential form, Frame browser login, destination discovery and final
    read check yourself; the user signs in and pastes credentials. Never silently skip this.
