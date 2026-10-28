@@ -116,14 +116,42 @@ def install_brain(bundle):
         with os.fdopen(os.open(token,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600),'w') as out: out.write(value['token']+'\n')
     return folder
 
-def panel_install():
+def panel_install(update_owned=False):
     source = ROOT/'.local/premiere-agent/lab/packages/ACQEditAgentCEP'
     if not (source/'CSXS/manifest.xml').is_file(): raise ValueError('Run Premiere onboarding first')
     target = Path.home()/'Library/Application Support/Adobe/CEP/extensions/ACQEditAgentCEP'
     if target.exists() or target.is_symlink():
         old = {p.relative_to(target).as_posix():digest(p) for p in target.rglob('*') if p.is_file()}
         new = {p.relative_to(source).as_posix():digest(p) for p in source.rglob('*') if p.is_file()}
-        if target.is_symlink() or old != new: raise ValueError('Existing Adobe panel differs; preserved. Coordinate its upgrade before replacing it.')
+        if target.is_symlink():raise ValueError('Existing Adobe panel is redirected; preserved.')
+        if old != new:
+            if not update_owned:raise ValueError('Existing Adobe panel differs; preserved. Use onboard premiere-panel --update-owned to upgrade a verified ACQ Edit panel with backup.')
+            current=json.loads((ROOT/'.local/premiere-agent/lab/panel-preparation.json').read_text())
+            current_hashes={key.removeprefix('ACQEditAgentCEP/'):value for key,value in current.get('packageHashes',{}).items() if key.startswith('ACQEditAgentCEP/')}
+            if current.get('cepId')!='com.acqedit.premiere.bridge' or new!=current_hashes or any(p.is_symlink() for p in source.rglob('*')):raise ValueError('New toolkit panel differs from its preparation receipt; preserved')
+            state=ROOT/'.local/onboarding.json'
+            previous=json.loads(state.read_text()).get('previousRuntime') if state.is_file() else None
+            parent=Path.home()/'Library/Application Support/ACQ Edit/versions'
+            prior=Path(previous) if previous else None
+            if not prior or not prior.is_absolute() or prior.is_symlink() or not prior.resolve().is_relative_to(parent.resolve()) or not (prior/'.package-sha256').is_file():
+                raise ValueError('Prior owned runtime is unavailable; existing panel preserved. Inspect its original installation before replacement.')
+            prior_source=prior/'.local/premiere-agent/lab/packages/ACQEditAgentCEP'
+            preparation=json.loads((prior/'.local/premiere-agent/lab/panel-preparation.json').read_text())
+            if preparation.get('cepId')!='com.acqedit.premiere.bridge':raise ValueError('Prior panel identity differs; preserved')
+            expected={key.removeprefix('ACQEditAgentCEP/'):value for key,value in preparation.get('packageHashes',{}).items() if key.startswith('ACQEditAgentCEP/')}
+            if any(p.is_symlink() for p in target.rglob('*')) or any(p.is_symlink() for p in prior_source.rglob('*')) or old!=expected or old!={p.relative_to(prior_source).as_posix():digest(p) for p in prior_source.rglob('*') if p.is_file()}:
+                raise ValueError('Existing panel differs from its owned installation receipt; preserved. Do not overwrite manual changes.')
+            if any((prior/'.local/premiere-agent/lab/runtime'/name).exists() for name in ('writer.lock','reconcile.lock')):raise ValueError('Prior Premiere integration has active native work; finish it before upgrading the panel')
+            backup=Path(os.environ.get('ACQ_EDIT_CREDENTIALS_HOME',str(HOME)))/'panel-backups'/__import__('uuid').uuid4().hex
+            backup.parent.mkdir(parents=True,exist_ok=True)
+            staging=target.parent/('ACQEditAgentCEP-staging-'+__import__('uuid').uuid4().hex)
+            shutil.copytree(source,staging)
+            target.rename(backup)
+            try:staging.rename(target)
+            except OSError:
+                backup.rename(target)
+                raise
+            print('Previous owned ACQ Edit panel backed up at '+str(backup))
     else:
         target.parent.mkdir(parents=True, exist_ok=True); shutil.copytree(source,target)
     print('Panel installed. Open Window > Extensions > ACQ Edit Agent in Premiere, then run acq-edit doctor.')
@@ -238,6 +266,7 @@ def main():
     parser.add_argument('--storage-root', type=Path)
     parser.add_argument('--defer-delivery', action='store_true', help='Explicitly configure local editing with delivery deferred; never inferred from cancellation')
     parser.add_argument('--reenter-keys', action='store_true', help='Open private entry even when both shared keys exist')
+    parser.add_argument('--update-owned',action='store_true',help='Upgrade only a receipt-verified older ACQ Edit panel, preserving a backup')
     parser.add_argument('--source-build',action='store_true',help='Explicit FilmCraft source build; requires Rust and build tools')
     a=parser.parse_args()
     if a.action=='guide':
@@ -257,7 +286,7 @@ def main():
     from runtime_environment import execution_environment
     os.environ.update(execution_environment())
     if a.action=='verify': sys.exit(0 if verify_connections() else 1)
-    if a.action=='premiere-panel': panel_install(); return
+    if a.action=='premiere-panel': panel_install(a.update_owned); return
     if sys.platform!='darwin': raise ValueError('This release requires macOS')
     for command in ['node','npm','python3.11','ffmpeg','ffprobe','fc-scan']:
         if not shutil.which(command): raise ValueError('Missing '+command+'; see docs/ONBOARDING.md')
@@ -270,6 +299,7 @@ def main():
         state=json.loads(state_file.read_text()) if state_file.exists() else {'backend':a.action,'agent':a.agent,'steps':{}}
         if state['backend']!=a.action: raise ValueError('This runtime is already configured for another backend; preserve it and use a separate installation')
         state['agent']=a.agent
+        if os.environ.get('ACQ_EDIT_PREVIOUS_RUNTIME') and os.environ['ACQ_EDIT_PREVIOUS_RUNTIME']!=str(ROOT):state['previousRuntime']=os.environ['ACQ_EDIT_PREVIOUS_RUNTIME']
         def stage(name,work):
             state['currentStep']=name; state['status']='running';save(state_file,state)
             started=time.monotonic()

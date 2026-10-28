@@ -259,3 +259,11 @@ class PremiereAdapterTests(unittest.TestCase):
   self.assertFalse(Path(self.packet['receipt']).exists())
 
 if __name__=='__main__':unittest.main()
+
+class EnabledHostDoctor(unittest.TestCase):
+ def test_2652_ready_is_distinct_from_native_qualification(self):
+  adapter=premiere.Adapter.__new__(premiere.Adapter);adapter.profile=types.SimpleNamespace(mode='scoped-edit',host_version='26.5.2');adapter.installation={'verified':True}
+  client=__import__('unittest.mock',fromlist=['Mock']).Mock();client.inspect.return_value={'data':{'connected':True,'premiereVersion':'26.5.2 (build 14)'}}
+  with patch.object(premiere,'PremiereBridge',return_value=client):
+   result=adapter.doctor();self.assertTrue(result['ready']);self.assertFalse(result['hostQualified']);self.assertTrue(result['compatibility']['executionAllowed'])
+   client.inspect.return_value={'data':{'connected':True,'premiereVersion':'26.3.0'}};self.assertFalse(adapter.doctor()['ready'])

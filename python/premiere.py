@@ -22,12 +22,12 @@ class Adapter:
   client=PremiereBridge(self.profile)
   try:
    response=client.inspect('ping',{});ping=response.get('data',response)
-   connected=ping.get('connected') is True;version=ping.get('premiereVersion')
+   connected=ping.get('connected') is True;version=ping.get('premiereVersion');compatibility=compatibility_report(version)
    import re
    matches=isinstance(version,str) and re.match(r'^'+re.escape(self.profile.host_version)+r'(?:\D|$)',version) is not None
-   return {'backend':'premiere','ready':connected and matches,'installation':self.installation,
+   return {'backend':'premiere','ready':connected and matches and compatibility['executionAllowed'],'installation':self.installation,
            'connected':connected,'hostVersion':version,'expectedHostVersion':self.profile.host_version,
-           'compatibility':compatibility_report(version),'installedVersions':installed_versions(),
+           'compatibility':compatibility,'installedVersions':installed_versions(),
            'versionMatches':matches,'profileMode':self.profile.mode,'hostQualified':False,
            'projectLifecycle':'guarded create/reopen from an empty workspace; native host qualification pending',
            'repair':None if connected and matches else 'Open the isolated ACQ Edit Agent panel in the supported Premiere version; do not select the production connector'}

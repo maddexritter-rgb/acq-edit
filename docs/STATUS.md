@@ -1,3 +1,17 @@
+## Premiere 26.5.2 enabled — preview.14
+
+Premiere 26.5.2 is enabled for normal scoped editing at the owner's request. It no longer
+requires a separate teammate qualification session. This is execution eligibility, not a
+claim of native qualification: real 26.5.2 construction/export/save checks have not run on
+the development Mac, which has 26.3.0. Normal per-operation inspection, readback, saved
+project verification and receipts remain mandatory. Unsupported operations still fail.
+
+Installer host detection selects the running enabled version, or the newest enabled installed
+version if none is running, and records its bundle/version. Profile and live-host checks remain
+exact. Unknown versions are not enabled. The old 26.3-only profile assumption is removed.
+Owned panel upgrades use the prior installation hashes and preserve a backup; modified or
+foreign panels and active native writers are refused without replacement.
+
 ## Current-chat editing default — preview.13
 
 Normal onboarding, doctor, builds and review revisions no longer require a second

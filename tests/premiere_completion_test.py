@@ -10,9 +10,10 @@ from premiere_compatibility import report
 
 class Completion(unittest.TestCase):
  def test_unknown_and_unqualified_hosts_never_gain_permission(self):
-  for version in ('26.5.2','28.0.0','26.3.1',None):
+  for version in ('28.0.0','26.3.1',None):
    value=report(version);self.assertFalse(value['executionAllowed']);self.assertTrue(all(x=='unverified' for x in value['operations'].values()))
   self.assertTrue(report('26.3.0')['executionAllowed'])
+  enabled=report('26.5.2');self.assertTrue(enabled['executionAllowed']);self.assertFalse(enabled['nativeQualified']);self.assertEqual(enabled['status'],'enabled-native-verification-pending')
  def test_nonfinite_and_wrong_curve_lengths_fail(self):
   self.assertFalse(close([float('nan')],[0]));self.assertFalse(close([1,2],[1]));self.assertFalse(close(True,1))
  def test_framing_verifies_every_key_against_design_and_native_readback(self):

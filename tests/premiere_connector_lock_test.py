@@ -72,4 +72,15 @@ class ConnectorLock(unittest.TestCase):
         with self.assertRaisesRegex(self.bridge.BridgeError, 'unavailable'): self.bridge.Profile.load(self.profile)
 
 
-if __name__ == '__main__': unittest.main()
+
+
+    def test_2652_uses_bound_installed_host_without_relaxing_connector_identity(self):
+        import plistlib
+        from premiere_compatibility import bind_host
+        app=self.toolkit/'Adobe Premiere Pro.app';(app/'Contents').mkdir(parents=True)
+        (app/'Contents/Info.plist').write_bytes(plistlib.dumps({'CFBundleShortVersionString':'26.5.2'}))
+        bind_host(self.toolkit,{'application':str(app),'observedVersion':'26.5.2'})
+        self.profile_data['host_version']='26.5.2';self.profile.write_text(json.dumps(self.profile_data))
+        profile=self.bridge.Profile.load(self.profile);self.assertEqual(profile.host_version,'26.5.2')
+        changed=copy.deepcopy(self.profile_data);changed['host_version']='26.3.0';self.profile.write_text(json.dumps(changed))
+        with self.assertRaises(self.bridge.BridgeError):self.bridge.Profile.load(self.profile)

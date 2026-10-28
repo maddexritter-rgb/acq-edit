@@ -251,7 +251,7 @@ acq-edit onboard premiere-panel
 ```
 
 This installs only the separately identified ACQ Edit panel and refuses to replace a different
-existing copy. Open **Window → Extensions → ACQ Edit Agent**. If the unsigned extension is
+existing copy. For an existing toolkit panel, use `acq-edit --engine premiere onboard premiere-panel --update-owned`; it verifies ownership and preserves the old panel in a backup. Close/reopen the panel after replacement. Open **Window → Extensions → ACQ Edit Agent**. If the unsigned extension is
 hidden, follow the host's CEP debug instructions in [ENGINES.md](ENGINES.md). Setup never
 closes or changes an unrelated project. Upgrading a panel needs an explicit coordinated step.
 
@@ -380,7 +380,14 @@ run `acq-edit onboard premiere codex --fresh-runtime --non-interactive` (or Film
 a newly verified runtime, backs up config and retargets only paths owned by the old runtime;
 it preserves storage, projects, custom paths and the old runtime. Stop/reconcile active work first.
 Never hand-edit an alternate Premiere profile. Premiere discovery reports installed and observed
-host versions from the compatibility registry; unknown versions require qualification.
+host versions from the compatibility registry. Premiere 26.3.0 and 26.5.2 are enabled.
+Setup automatically binds to the running enabled Premiere, or the newest enabled installed
+version if none is running. Keep the user's installed editor; do not require a downgrade,
+separate qualification session, or FilmCraft switch for 26.5.2. The registry's
+`enabled-native-verification-pending` status describes our release evidence; it is not a
+setup blocker when `executionAllowed` and the live profile match are true. Continue ordinary
+editing with the same source-linked/native readback, save and receipt checks. Report actual
+operation failures specifically. Unknown versions remain disabled; never hand-edit profiles.
 
 For the first clip, Premiere finishes in its editable timeline. FilmCraft finishes in its review
 room with current-chat revision handoffs. `serve --no-worker` is explicitly **Review only**: notes
