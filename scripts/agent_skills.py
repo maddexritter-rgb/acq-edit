@@ -46,6 +46,11 @@ def safe_directories(path):
             raise ValueError('Non-directory discovery parent preserved: ' + str(item))
 
 
+def default_scope(agent):
+    # Claude chats are usually opened in footage/project folders, not the toolkit root.
+    return 'user' if agent == 'claude' else 'workspace'
+
+
 def locations(root, agent, scope, home):
     base = home if scope == 'user' else root
     parent = base / AGENTS[agent]
@@ -130,6 +135,16 @@ def register(root, agent, scope='workspace', only=None, home=None, update_owned=
                 old = receipt['links'].get(name, {})
                 owned = link.is_symlink() and old.get('target') == os.readlink(link)
                 if owned and update_owned:
+                    prior = Path(old.get('toolkit', ''))
+                    expected = prior / '.local/skills' / name
+                    if not prior.is_absolute() or str(expected) != old.get('target'):
+                        conflicts.append(name + ' (invalid ownership record; preserved)')
+                        continue
+                    try:
+                        verify(prior)
+                    except (ValueError, RuntimeError, OSError, KeyError):
+                        conflicts.append(name + ' (older runtime modified or unverifiable; preserve custom changes before upgrading)')
+                        continue
                     operations.append((name, link, target, True))
                 else:
                     conflicts.append(name + (' (owned older release; use --update-owned)' if owned else ' (existing user skill; preserved)'))
@@ -190,7 +205,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action', choices=['list', 'install', 'check'])
     parser.add_argument('--agent', choices=['codex', 'claude', 'both'], default='both')
-    parser.add_argument('--scope', choices=['workspace', 'user'], default='workspace')
+    parser.add_argument('--scope', choices=['workspace', 'user'], default=None)
     parser.add_argument('--only', nargs='+')
     parser.add_argument('--assets', type=Path, help='Existing custom asset root; otherwise use this release bundle location')
     parser.add_argument('--update-owned', action='store_true', help='Retarget only links owned by a prior ACQ Edit registration')
@@ -207,8 +222,8 @@ def main():
             assets = args.assets or Path.home() / 'Library/Application Support/ACQ Edit/assets' / release['assets']['version']
             materialize(ROOT, assets)
     agents = list(AGENTS) if args.agent == 'both' else [args.agent]
-    results = [register(ROOT, agent, args.scope, args.only, update_owned=args.update_owned) if args.action == 'install'
-               else status(ROOT, agent, args.scope, args.only) for agent in agents]
+    results = [register(ROOT, agent, args.scope or default_scope(agent), args.only, update_owned=args.update_owned) if args.action == 'install'
+               else status(ROOT, agent, args.scope or default_scope(agent), args.only) for agent in agents]
     print(json.dumps(results, indent=2))
     if not all(result['ready'] for result in results):
         sys.exit(1)

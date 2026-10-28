@@ -175,6 +175,45 @@ class Discovery(unittest.TestCase):
         self.assertTrue((self.root/'.local/skills/watch/SKILL.md').is_file())
         self.assertTrue((next_root/'.local/skills/watch/SKILL.md').is_file())
 
+    def test_claude_default_personal_registration_and_repeated_upgrade(self):
+        self.assertEqual(agent_skills.default_scope('claude'), 'user')
+        self.assertEqual(agent_skills.default_scope('codex'), 'workspace')
+        for action in ('install', 'check'):
+            with patch.object(agent_skills, 'ROOT', self.root), \
+                 patch.object(Path, 'home', return_value=self.home), \
+                 patch.object(sys, 'argv', ['agent_skills.py', action, '--agent', 'claude']):
+                agent_skills.main()
+        folder = self.home / '.claude/skills'
+        self.assertEqual(sorted(p.name for p in folder.iterdir()), sorted(agent_skills.PUBLIC_SKILLS))
+        self.assertFalse((self.root / '.claude').exists())
+        next_root = self.fixture('new Claude release')
+        agent_skills.register(next_root, 'claude', 'user', home=self.home, update_owned=True)
+        self.assertTrue(agent_skills.status(next_root, 'claude', 'user', home=self.home)['ready'])
+        self.assertEqual((folder / 'edit').resolve(), next_root / '.local/skills/edit')
+
+    def test_upgrade_preserves_modified_prior_runtime_and_all_links(self):
+        agent_skills.register(self.root, 'claude', 'user', home=self.home)
+        changed = self.root / '.local/skills/edit/SKILL.md'
+        changed.write_text(changed.read_text() + '\nMy custom workflow\n')
+        before = {p.name: os.readlink(p) for p in (self.home / '.claude/skills').iterdir()}
+        next_root = self.fixture('upgrade with local edits')
+        with self.assertRaisesRegex(ValueError, 'preserve custom changes'):
+            agent_skills.register(next_root, 'claude', 'user', home=self.home, update_owned=True)
+        self.assertEqual(before, {p.name: os.readlink(p) for p in (self.home / '.claude/skills').iterdir()})
+        self.assertIn('My custom workflow', changed.read_text())
+
+    def test_onboarding_registers_and_checks_claude_personal_scope(self):
+        import onboard
+        with patch.object(onboard, 'execute') as execute:
+            onboard.register_picker_skills('claude', '/fixture/assets')
+        calls = [c.args[0] for c in execute.call_args_list]
+        self.assertEqual(len(calls), 2)
+        self.assertIn('--update-owned', calls[0])
+        for args in calls:
+            self.assertEqual(args[args.index('--scope') + 1], 'user')
+            self.assertEqual(args[args.index('--agent') + 1], 'claude')
+        self.assertIn('check', calls[1])
+
     def test_lock_prevents_parallel_writers(self):
         parent = self.root / '.agents'; parent.mkdir()
         (parent / 'acq-edit-skills.lock').write_text('123')

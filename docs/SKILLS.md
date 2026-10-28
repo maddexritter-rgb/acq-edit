@@ -21,8 +21,9 @@ the exact picker shortcut varies by client. Natural language also works, for exa
 ## Agent setup instructions
 
 Run these commands for the user; do not make them edit hidden folders or copy skill files.
-Normal onboarding registers only the six public skills listed above in the installed toolkit's
-project for the chosen agent. For a skills-only installation, no editor, Rust, Node build, API key or asset
+Normal onboarding registers only the six public skills listed above. Claude Code defaults to
+personal scope (`~/.claude/skills`) so they load when chats open in footage or project folders;
+Codex defaults to the installed toolkit workspace. Explicit `--scope workspace` remains available. For a skills-only installation, no editor, Rust, Node build, API key or asset
 download is required just to make the procedures selectable:
 
 ```sh
@@ -34,10 +35,11 @@ acq-edit skills list
 
 In a source checkout, use `python3 scripts/agent_skills.py` instead of `acq-edit skills`.
 The command materializes and verifies the complete repository dependency chain, then links
-only the six public owners (or a requested subset) into `.agents/skills` for Codex or
-`.claude/skills` for Claude Code. It does not copy
+only the six public owners (or a requested subset) into the selected discovery location:
+workspace `.agents/skills` for Codex by default, personal `~/.claude/skills` for Claude Code. It does not copy
 procedures into a second source of truth or use this machine's global editing helpers.
-Open this toolkit folder in the agent and reopen the session if the picker has not refreshed.
+For workspace scope, open the toolkit folder. For Claude personal scope, use any local project.
+Reopen the existing app session if the picker has not refreshed; never start another agent CLI.
 Check the actual picker before claiming that discovery was accepted by the host.
 
 For skills available in **all chats**, use the explicit personal scope:
@@ -51,7 +53,8 @@ acq-edit skills install --agent claude --scope user --only caption-clips monday
 Personal scope uses the agent's user skill folder. Existing user skills and symlink farms are
 preserved. Conflicts are reported, never silently overwritten. On an upgrade, the agent may
 run the same install with `--update-owned` to move only receipt-owned links to the new verified
-release. Old runtimes and their projects remain intact. Other public skills not selected remain
+release after verifying the old runtime has no changes. A changed/unverifiable runtime blocks
+retargeting so local customizations are not silently bypassed. Old runtimes and their projects remain intact. Other public skills not selected remain
 unchanged. Older toolkit-owned picker entries for
 internal helpers are removed on registration, while their underlying runtime files stay intact.
 User-modified or unowned entries are preserved and reported; they are never deleted.
@@ -83,3 +86,16 @@ calling a global/private helper or switching engines.
 
 This is local Codex/Claude Code discovery. It does not install cloud/Cowork skills or bypass
 organization policies that disable local skills.
+
+## Claude picker troubleshooting
+
+The agent runs `acq-edit skills check --agent claude --scope user` and confirms all six entries.
+If registration is missing, install them with the same scope and `--update-owned`. Preserve
+conflicting user skills; report their exact paths rather than replacing them. The user should
+see `/edit`, `/assembly-design`, `/horizontal-to-vertical`, `/caption-clips`, `/music`, `/monday`.
+Check the menu in the actual Claude Code session before claiming host discovery works.
+If files pass but the menu is empty, inspect active Claude settings for hidden skills or managed
+restrictions and confirm this is local Claude Code, not Cowork/cloud. Do not change policy or
+hidden-skill preferences silently. Refresh/reopen the app session; no CLI login is needed.
+
+Personal scope is local to that Mac; it does not install skills in cloud sessions.
