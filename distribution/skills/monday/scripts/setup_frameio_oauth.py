@@ -1,4 +1,4 @@
-"""Browser login for the user's own Adobe OAuth Web App credential."""
+"""Browser login to the user's own Adobe account through the shared team OAuth app."""
 import json, os, ssl, subprocess, sys, secrets, time, webbrowser, pathlib
 import urllib.parse, urllib.request, urllib.error
 import http.server

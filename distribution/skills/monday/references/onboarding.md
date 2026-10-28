@@ -20,18 +20,22 @@ record delivery pending/deferred and continue local work without claiming full s
 
 ## Connect Frame (browser sign-in)
 
-- Ask them to sign into their own **Frame.io V4** account using Adobe authentication.
-- Open [Adobe Developer Console](https://developer.adobe.com/console): **Create project → Add API
-  → Frame.io API → OAuth Web App** (user authentication). Set both redirect URI and redirect
-  pattern to `https://localhost:8000/callback`. Use that app's Client ID and Client Secret.
-  An existing team-managed app is fine if their admin supplies the credentials privately.
+- Tell them: **“Get the shared Adobe client ID and client secret from Maddex. You do not
+  need to create an Adobe app.”** Receive the values privately in the local credential form.
+  If they do not have them yet, keep Frame setup pending and direct them to Maddex;
+  do not send them to Developer Console or ask them to create an app.
+- These identify the team's OAuth app, not Maddex's personal Frame account. Each teammate
+  signs into their own **Frame.io V4** account using Adobe authentication. Never copy
+  another person's access/refresh token. The shared app uses `https://localhost:8000/callback`.
 - Run `acq-edit delivery credentials` (or this skill's `scripts/connect.py credentials`).
   It opens the local password form for the Monday token and Adobe client ID/secret. The agent
   runs the command; the user pastes values and clicks Save. Blank retains existing values.
   Keep the command alive in a background tool session. If the browser does not open, provide
   its localhost link. Never ask the user to edit JSON, open a credential file, or use a terminal.
 - Run `scripts/setup_frameio_oauth.py`, which opens Adobe login. They sign into their own account
-  and approve access. A certificate warning is expected **only at this helper's localhost URL**;
+  and approve access. Verify the returned name/email is theirs before selecting their intended
+  team workspace and destination; shared app credentials do not select a workspace. If the
+  browser chose the wrong account, repeat login with the intended account. A certificate warning is expected **only at this helper's localhost URL**;
   explain that this is its local callback. The helper waits up to ten minutes. If the Frame API
   is unavailable, have their admin enable V4/Adobe authentication; don't substitute legacy tokens.
 

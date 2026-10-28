@@ -63,6 +63,21 @@ class DeliveryOnboarding(unittest.TestCase):
         self.assertNotIn('id="assembly"', page)
         self.assertNotIn('fixture-secret', page)
 
+    def test_delivery_form_uses_shared_app_and_personal_login(self):
+        with patch.object(sys, 'argv', ['connect.py', 'credentials']), \
+             patch.object(credentials, 'run_browser') as browser, \
+             contextlib.redirect_stdout(io.StringIO()):
+            connect.main()
+        page = browser.call_args.args[1]
+        self.assertIn('from Maddex', page)
+        self.assertIn('your own Adobe', page)
+        self.assertIn('your own Monday token', page)
+        self.assertNotIn('developer.adobe.com/console', page)
+        self.assertNotIn('create one with your agent', page)
+        self.assertNotIn('href="None"', page)
+        self.assertEqual(page.count('type="password"'), 3)
+        self.assertIn('https://developer.monday.com/', page)
+
     def test_incomplete_entry_does_not_partially_save(self):
         with self.assertRaises(ValueError): connect.save_credentials(self.root, {'MONDAY_TOKEN': 'only-one'})
         self.assertFalse((self.root / 'monday.json').exists())

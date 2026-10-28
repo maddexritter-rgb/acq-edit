@@ -81,7 +81,9 @@ def form_page(title, introduction, fields):
     """Reuse one secret-entry UI for editing and delivery; field definitions are toolkit-owned."""
     markup = ''.join(f'<label for="{html.escape(key)}">{html.escape(label)}</label>'
                      f'<input id="{html.escape(key)}" name="{html.escape(key)}" type="password" autocomplete="off" spellcheck="false" maxlength="4096">'
-                     f'<small>{html.escape(help_text)} <a href="{html.escape(url, quote=True)}" target="_blank" rel="noreferrer">Open account page ↗</a></small>'
+                     f'<small>{html.escape(help_text)}'
+                     + (f' <a href="{html.escape(url, quote=True)}" target="_blank" rel="noreferrer">Open account page ↗</a>' if url else '')
+                     + '</small>'
                      for key, label, help_text, url in fields)
     page = PAGE.replace('Connect your editing tools', html.escape(title)).replace(
         'Paste your two keys below. They stay on this Mac and are not sent to your chat. No files to edit.', html.escape(introduction))
