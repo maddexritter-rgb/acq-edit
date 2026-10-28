@@ -258,6 +258,14 @@ def finish_delivery():
     finally: lock.unlink()
 
 
+def register_picker_skills(agent, bundle):
+    from agent_skills import default_scope
+    scope = default_scope(agent)
+    execute(['python3.11', 'scripts/agent_skills.py', 'install', '--agent', agent,
+             '--scope', scope, '--update-owned', '--assets', bundle])
+    execute(['python3.11', 'scripts/agent_skills.py', 'check', '--agent', agent, '--scope', scope])
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action',nargs='?',default='guide',choices=['guide','filmcraft','premiere','status','verify','premiere-panel','delivery'])
@@ -319,7 +327,7 @@ def main():
         bundle=stage('assets',lambda:assets(release))
         stage('fonts',lambda:install_fonts(bundle))
         brain=stage('brain',lambda:install_brain(bundle))
-        stage('skill-discovery',lambda:execute(['python3.11','scripts/agent_skills.py','install','--agent',a.agent,'--assets',bundle]))
+        stage('skill-discovery',lambda:register_picker_skills(a.agent,bundle))
         if not (ROOT/'dist/cli.js').exists():
             stage('service',lambda:(execute(['npm','ci','--ignore-scripts']),execute(['npm','run','build'])))
         if not (ROOT/'.local/venv/bin/python').exists() or state['steps'].get('shared')!='completed':

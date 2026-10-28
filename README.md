@@ -20,7 +20,8 @@ Agent panel. Do not use global Premiere MCP tools or another bridge for this wor
 
 Use the whole `edit` workflow or just `assembly-design`, `horizontal-to-vertical`,
 `caption-clips`, `music`, or `monday`. Normal onboarding registers skills in the toolkit
-project. Ask your agent to make them available in all chats, or install only selected skills.
+workspace for Codex, and personally across local projects for Claude Code. You can also
+install only selected skills.
 [Skill picker setup and standalone workflows](docs/SKILLS.md) explain both options.
 
 ## Start here

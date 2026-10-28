@@ -58,9 +58,11 @@ Do not remove or reconfigure the user's other bridges. Explain that they remain 
 ### Make the skills available
 
 Onboarding registers only six picker skills: edit, assembly-design, horizontal-to-vertical,
-caption-clips, music and monday. Other packaged owners stay internal.
+caption-clips, music and monday. Other packaged owners stay internal. Claude Code uses
+personal scope by default so skills appear in local chats outside the toolkit folder;
+Codex uses workspace scope. Verify the six entries with skills check, then check the actual menu.
 After installation, help the user reopen the project/session if its skill picker is stale.
-Offer to make them available in all chats: run `acq-edit skills install --agent codex --scope user`
+For Codex, offer to make them available in all chats: run `acq-edit skills install --agent codex --scope user`
 (or `claude`) when that scope is requested. For weekly updates add `--update-owned`; this
 retargets only previously registered toolkit links, never replaces unrelated personal skills.
 Registration also removes older receipt-owned internal picker entries, keeping their runtime
