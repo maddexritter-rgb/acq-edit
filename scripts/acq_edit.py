@@ -69,7 +69,7 @@ def main():
         print(json.loads((PACKAGE / 'release.json').read_text())['version']); return
     if args in ([], ['help'], ['--help'], ['-h']):
         print('ACQ Edit: onboard guide | onboard filmcraft|premiere codex|claude [--non-interactive] [--defer-delivery] | version')
-        print('Before setup: media-check [--install-missing]. After setup: --engine filmcraft|premiere doctor | agent-check PROJECT_ID [--smoke] | helper OWNER/scripts/HELPER.py ARGS | project TITLE | build PROJECT_ID REQUEST | help-runtime')
+        print('Before setup: media-check [--install-missing]. After setup: --engine filmcraft|premiere doctor | helper OWNER/scripts/HELPER.py ARGS | project TITLE | build PROJECT_ID REQUEST | help-runtime')
         return
     if args == ['help-runtime']: args = ['help']
     base = Path(os.environ.get('ACQ_EDIT_HOME',str(Path.home()/'.config/acq-edit')))

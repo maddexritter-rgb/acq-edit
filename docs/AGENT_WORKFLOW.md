@@ -1,5 +1,45 @@
 # Agent execution contract
 
+## Execute in the existing chat (default)
+
+The user already has an agent running. Do the work in that session. Do not install or
+log into another agent CLI, open a second terminal agent, run `agent-check`, or require
+saved permission rules for normal setup or editing. Normal command approvals remain in
+force; a one-time approval is not a setup failure.
+
+1. Import verified sources and create/register the selected editor's project as usual.
+2. `build PROJECT_ID REQUEST` prepares a durable **session** job and returns its packet
+   and instructions. No model process starts. `--export` preserves explicit Premiere
+   export requests; default Premiere completion remains editable-project.
+3. Read the returned packet, then run `session-start JOB_ID` once. It reserves this
+   project and refuses unsettled work or stale submitted versions. Execute the packaged
+   skills yourself in this chat. Set `ACQ_EDIT_JOB_ID=JOB_ID` on every native, brain and
+   publish command so receipts belong to this job. Use the same selected engine/home.
+4. Write result.json as described in the packet. Run `session-complete JOB_ID RESULT.json`.
+   It uses the same hash, native receipt and publication validation as the background
+   worker. A chat message or an MP4 path alone is never completion evidence.
+5. FilmCraft: `serve` opens the review room **without spawning an agent**. Apply revisions
+   captures exact versions/notes; Activity offers a request to copy into this chat.
+   Read it with `session-packet JOB_ID`, then follow steps 3–4. Later notes remain pending.
+   Premiere stops at its verified editable timeline, without automatically opening a room.
+
+Session jobs remain reserved if the chat disconnects. Inspect `open PROJECT_ID` and
+`native-operations PROJECT_ID` and follow NATIVE_RECOVERY to settle any native operation.
+After confirming the original chat and commands are stopped, save a project-owned inspection
+JSON with `jobId`, `noActiveWriter:true`, `processInspection` and `nativeInspection`.
+Run `session-interrupt JOB_ID INSPECTION.json` to reserve it for recovery, then `reconcile`
+with verified completion evidence or the failed-job inspection. Neither elapsed time nor
+reopening the room releases a session reservation. Do not rerun session-start for active work or blindly replay a native operation.
+Room startup/shutdown cannot claim or terminate a job owned by the current chat.
+
+`serve --no-worker` is explicit review-only mode: feedback saves, revision submission is
+disabled. Default `serve` instead enables current-chat handoffs. Only an explicit request
+for unattended editing permits `build --background` and `serve --worker` / `worker`.
+Background workers cannot claim session jobs. Existing jobs retain their original mode;
+missing execution metadata means historical background execution, never auto-conversion.
+Read CLAUDE_SETUP.md only for optional Claude background-worker setup. `doctor --background`
+checks that optional CLI; ordinary `doctor` does not require or probe an agent CLI.
+
 ## Direct skill requests
 
 A direct stage request runs only that packaged owner and its necessary prerequisites;
@@ -26,7 +66,7 @@ Every new split screen uses the framing owner’s [default seam-shadow contract]
 For a new editing job, ask FilmCraft or Premiere unless the user already chose. An installation
 default is not a new job choice. Existing projects keep their backend. Premiere normally ends
 with a saved, verified editable timeline open in Premiere: no automatic MP4, review room or
-Frame/Monday upload. FilmCraft normally exports, verifies and opens the room with its worker.
+Frame/Monday upload. FilmCraft normally exports, verifies and opens the room with current-chat revision handoffs.
 Use [NATIVE_COMPLETION.md](NATIVE_COMPLETION.md) for native-only completion and
 [EDITOR_HANDOFF.md](EDITOR_HANDOFF.md) for an explicitly requested change of editor.
 
@@ -120,11 +160,11 @@ Use the versioned installed asset bundle for fonts, profiles and approved music.
 
 Follow [NATIVE_RECOVERY.md](NATIVE_RECOVERY.md) for each native command's durable operation record. List `native-operations PROJECT_ID` after an interruption. Settle the exact operation only after process and native-host inspection; unresolved operations block publication, job reconciliation and further edits. `native-reconcile` releases a verified terminal operation without claiming render success. If the explicit launch phase is still `not-started`, follow the shared not-dispatched recovery in `NATIVE_RECOVERY.md`; verify the dead owner and absence of command/result/child records instead of requiring a host operation that never occurred. Do not infer this outcome from null PIDs or legacy records. For an uncertain Premiere lifecycle operation that reached dispatch, supply the explicit observed outcome from [PREMIERE_STATE.md](PREMIERE_STATE.md); recovery must verify the original Lab lock release before settling the outer operation. Then reconcile the owning job using its existing verified versions or explicit failed-job evidence. Never clear a job with an arbitrary file or rerun an uncertain export packet.
 
-Agent completion must match the exact Codex thread and turn, or a successful Claude result from the exact session. Exit code alone is insufficient. JSONL logs are flushed before the worker checks published artifacts. Missing results, errors, disconnects and interactive input requests leave the job in reconciliation.
+For optional background workers, agent completion must match the exact Codex thread and turn, or a successful Claude result from the exact session. Exit code alone is insufficient. JSONL logs are flushed before the worker checks published artifacts. Missing results, errors, disconnects and interactive input requests leave the job in reconciliation.
 
 The default agent deadline is six hours; `agentTimeoutMs` in local configuration can set another positive duration in milliseconds. Protocol requests time out after 60 seconds. A deadline does not authorize replay. Native subprocess timeouts likewise terminate the owned command before returning failure.
 
-Ctrl-C or SIGTERM on `serve` stops dispatch, interrupts the owned agent process group, waits for exit (escalating after five seconds), saves reconciliation state and then releases the service lock. The standalone `worker` uses the same lock and shutdown path; stop `serve` before running it. Do not interpret process termination as proof that an editor-host render or remote task stopped. Inspect the selected host and its receipts before resolving an uncertain job. A hard OS kill still requires native-state reconciliation after restart.
+Ctrl-C or SIGTERM on `serve --worker` stops dispatch, interrupts the owned agent process group, waits for exit (escalating after five seconds), saves reconciliation state and then releases the service lock. The standalone `worker` uses the same lock and shutdown path; stop `serve` before running it. Do not interpret process termination as proof that an editor-host render or remote task stopped. Inspect the selected host and its receipts before resolving an uncertain job. A hard OS kill still requires native-state reconciliation after restart.
 
 The installed Claude CLI may emit `subtype: success` together with `is_error: true` for an account failure. The toolkit treats that as failure. Fix the operator's account configuration before retrying; do not change accounts or credentials automatically.
 

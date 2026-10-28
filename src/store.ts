@@ -197,7 +197,7 @@ export class Store {
     });
   }
 
-  enqueue(projectId: string, versionIds: string[]): Job {
+  enqueue(projectId: string, versionIds: string[], execution: 'session'|'background' = 'background'): Job {
     return this.transaction(() => {
       this.project(projectId);
       invariant(versionIds.length > 0 && new Set(versionIds).size === versionIds.length, 'Select one or more distinct clip versions');
@@ -214,15 +214,15 @@ export class Store {
         // Never rewrite their frozen packet or replay them after an upgrade.
         || this.jobs(projectId).find(j=>j.kind==='revision'&&revisionKey(projectId,j.snapshot)===dedupe);
       if (old) return old;
-      const j: Job = { id: randomUUID(), projectId, state: 'queued', kind: 'revision', snapshot, request: '', dedupe, createdAt: now(), updatedAt: now(), error: null, agentSession: null };
+      const j: Job = { execution, id: randomUUID(), projectId, state: 'queued', kind: 'revision', snapshot, request: '', dedupe, createdAt: now(), updatedAt: now(), error: null, agentSession: null };
       this.insertJob(j); return j;
     });
   }
-  enqueueBuild(projectId: string, request: string, completion?:'editable-project'|'rendered-review') {
+  enqueueBuild(projectId: string, request: string, completion?:'editable-project'|'rendered-review', execution:'session'|'background'='background') {
     const project=this.project(projectId); invariant(request.trim(), 'Build request required');
     completion=completion||(project.backend==='premiere'?'editable-project':'rendered-review');
     invariant(completion==='rendered-review'||project.backend==='premiere','Editable completion requires Premiere');
-    const j: Job = { id: randomUUID(), projectId, state: 'queued', kind: 'build', completion, snapshot: [], request, dedupe: randomUUID(), createdAt: now(), updatedAt: now(), error: null, agentSession: null };
+    const j: Job = { execution, id: randomUUID(), projectId, state: 'queued', kind: 'build', completion, snapshot: [], request, dedupe: randomUUID(), createdAt: now(), updatedAt: now(), error: null, agentSession: null };
     this.insertJob(j); return j;
   }
   private insertJob(j: Job) {
@@ -234,14 +234,14 @@ export class Store {
     invariant(j, 'Job not found'); return j;
   }
   jobs(id: string) { return this.db.prepare('SELECT data FROM jobs WHERE project_id=? ORDER BY rowid DESC').all(id).map(r => parse<Job>(r)!); }
-  claim(): Job | undefined {
+  claim(sessionId?:string): Job | undefined {
     return this.transaction(() => {
-      const row = this.db.prepare(`SELECT data FROM jobs j WHERE state='queued' AND NOT EXISTS
+      const row = this.db.prepare(`SELECT data FROM jobs j WHERE state='queued' AND ((? IS NULL AND COALESCE(json_extract(j.data,'$.execution'),'background')='background') OR (j.id=? AND json_extract(j.data,'$.execution')='session')) AND NOT EXISTS
         (SELECT 1 FROM jobs b WHERE b.project_id=j.project_id AND b.state IN ('editing','rendering','reconciliation_required'))
         AND NOT EXISTS (SELECT 1 FROM intakes i WHERE i.project_id=j.project_id AND i.state NOT IN ('ready','failed'))
         AND NOT EXISTS (SELECT 1 FROM drive_batches d WHERE d.project_id=j.project_id AND d.state NOT IN ('ready','abandoned'))
         AND NOT EXISTS (SELECT 1 FROM native_operations n WHERE n.project_id=j.project_id AND n.state IN ('running','reconciliation_required'))
-        ORDER BY rowid LIMIT 1`).get();
+        ORDER BY rowid LIMIT 1`).get(sessionId??null,sessionId??null);
       const j = parse<Job>(row); if (!j) return;
       if (j.snapshot.some(s => this.clip(s.clipId).currentVersionId !== s.version.id)) {
         this.setJob(j.id, 'failed', 'Submitted version is no longer current. Later feedback remains pending on the latest clip; review and apply it there.');
@@ -280,9 +280,9 @@ export class Store {
     this.db.prepare('UPDATE jobs SET state=?,data=? WHERE id=?').run(state, JSON.stringify(j), id);
     this.event(j.projectId, { type: 'job.state', jobId: id, state, error }); return j;
   }
-  recover() {
+  recover(backgroundOnly=false) {
     for (const r of this.db.prepare("SELECT id FROM jobs WHERE state IN ('editing','rendering')").all())
-      this.setJob(String(r.id), 'reconciliation_required', 'Service stopped during native work. Inspect native state and receipts before resolving this job.');
+      if(!backgroundOnly||this.job(String(r.id)).execution!=='session')this.setJob(String(r.id), 'reconciliation_required', 'Service stopped during native work. Inspect native state and receipts before resolving this job.');
   }
   event(projectId: string, data: unknown) {
     this.db.prepare('INSERT INTO events(project_id,created_at,data) VALUES (?,?,?)').run(projectId, now(), JSON.stringify(data));

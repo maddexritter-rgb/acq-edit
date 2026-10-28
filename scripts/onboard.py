@@ -259,7 +259,7 @@ def main():
     if a.action=='verify': sys.exit(0 if verify_connections() else 1)
     if a.action=='premiere-panel': panel_install(); return
     if sys.platform!='darwin': raise ValueError('This release requires macOS')
-    for command in ['node','npm','python3.11','ffmpeg','ffprobe','fc-scan',a.agent]:
+    for command in ['node','npm','python3.11','ffmpeg','ffprobe','fc-scan']:
         if not shutil.which(command): raise ValueError('Missing '+command+'; see docs/ONBOARDING.md')
     ROOT.joinpath('.local').mkdir(exist_ok=True)
     lock=ROOT/'.local/onboarding.lock'

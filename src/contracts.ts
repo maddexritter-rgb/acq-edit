@@ -44,7 +44,7 @@ export interface DeferredFeedback {
   originatingJobId:string; createdAt:string;
 }
 export interface Submission { clipId:string; version:Version; feedback:Feedback; owners:string[]; deferred?:DeferredFeedback[] }
-export interface Job { id:string; projectId:string; state:JobState; kind:'revision'|'build'; completion?:'editable-project'|'rendered-review'; nativeCompletions?:unknown[]; snapshot:Submission[]; request:string; dedupe:string; createdAt:string; updatedAt:string; error:string|null; agentSession:string|null }
+export interface Job { execution?:'session'|'background'; id:string; projectId:string; state:JobState; kind:'revision'|'build'; completion?:'editable-project'|'rendered-review'; nativeCompletions?:unknown[]; snapshot:Submission[]; request:string; dedupe:string; createdAt:string; updatedAt:string; error:string|null; agentSession:string|null }
 export const now=()=>new Date().toISOString();
 export const hash=(value:unknown)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 export function invariant(value:unknown,message:string):asserts value {if(!value) throw new Error(message)}

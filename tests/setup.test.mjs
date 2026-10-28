@@ -46,11 +46,11 @@ test('changing defaults preserves engine paths, custom agent routing and exact p
  const store=new Store(path.join(f.home,'state.sqlite'));const p={id:'old',root:f.root,title:'Existing',backend:'filmcraft',agent:'codex',createdAt:''};store.addProject(p);store.close();
  const current=await readSetup(f.home);await saveSetup(f.home,current,{...next,port:17901});const reopened=new Store(path.join(f.home,'state.sqlite'));assert.deepEqual(reopened.project('old'),p);reopened.close();
 });
-test('agent-specific commands avoid reusing a foreign protocol and can be explicitly reset',async t=>{
+test('normal setup preserves optional agent commands without asking for a second CLI',async t=>{
  const f=await fixture(t),old={...initial(f),agentCommand:'/custom/codex',agentCommands:{claude:'/custom/claude'}};await existing(f,old);
  assert.equal(agentExecutable(old,'claude'),'/custom/claude');assert.equal(agentExecutable({...old,agentCommands:undefined},'claude'),'claude');
- const c=await collectSetup(await readSetup(f.home),['resolve','claude'],async q=>q.startsWith('Agent executable')?'-':'',f.toolkit,f.userHome);
- assert.equal(agentExecutable(c,'codex'),'/custom/codex');assert.equal(agentExecutable(c,'claude'),'claude');
+ const c=await collectSetup(await readSetup(f.home),['resolve','claude'],async q=>{assert(!q.startsWith('Agent executable'));return ''},f.toolkit,f.userHome);
+ assert.equal(agentExecutable(c,'codex'),'/custom/codex');assert.equal(agentExecutable(c,'claude'),'/custom/claude');
 });
 test('cancelled prompts, malformed configuration and symlinks preserve existing files',async t=>{
  const f=await fixture(t);let questions=0;

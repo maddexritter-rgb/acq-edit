@@ -8,7 +8,7 @@ import {invariant} from './contracts.js';
 interface Issue {check:string;repair:string}
 interface DoctorTools {
  execute?:typeof run; secrets?:typeof secretEnv; storage?:(folder:string)=>Promise<void>;
- platform?:string; node?:string; env?:NodeJS.ProcessEnv;
+ background?:boolean; platform?:string; node?:string; env?:NodeJS.ProcessEnv;
 }
 async function checkStorage(folder:string){
  invariant(path.isAbsolute(folder),'Storage root must be absolute');
@@ -30,7 +30,7 @@ export async function doctor(c:Config,tools:DoctorTools={}){
   {id:'youtube',binary:path.join(ROOT,'.local/venv/bin/yt-dlp'),args:['--version'],required:false,repair:'Install yt-dlp before importing YouTube footage.'},
   {id:'drive',binary:'rclone',args:['--version'],required:false,repair:'Install rclone and configure your Drive remote before importing Drive footage.'},
   {id:'python',binary:c.python,args:['--version'],required:true,repair:'Run scripts/install_shared.sh, then select its Python environment in setup.'},
-  {id:'agent',binary:agentExecutable(c,c.agent),args:['--version'],required:true,repair:'Install the selected agent CLI and sign in; check agentCommands (or the legacy agentCommand) if customized.'},
+  ...(tools.background?[{id:'agent',binary:agentExecutable(c,c.agent),args:['--version'],required:true,repair:'Optional background editing requires a separately configured agent CLI. Continue in the current chat if unavailable.'}]:[]),
  ];
  const availability=await Promise.all(entries.map(async item=>{
   try{return {available:true,version:(await execute(item.binary,item.args,{env,timeout:15000,outputLimit:64000})).split('\n')[0]}}
@@ -41,7 +41,7 @@ export async function doctor(c:Config,tools:DoctorTools={}){
   checks.dependencies[item.id]=availability[i];checks[item.binary]=availability[i];
   if(!availability[i]?.available)issue(item.id,item.repair,item.required);
  }
- if(c.agent==='claude'&&checks.dependencies.agent.available){
+ if(tools.background&&c.agent==='claude'&&checks.dependencies.agent?.available){
   checks.agentReadiness=await agentReadiness(c,c.agent,execute,env);
   for(const repair of checks.agentReadiness.problems)issue('agent-readiness',repair);
  }

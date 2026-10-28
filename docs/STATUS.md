@@ -1,3 +1,22 @@
+## Current-chat editing default — preview.13
+
+Normal onboarding, doctor, builds and review revisions no longer require a second
+agent CLI login or saved command approvals. Builds prepare durable session jobs;
+the existing chat claims and completes them with the same native/publication evidence.
+Default review rooms capture feedback for a chat handoff and never spawn an agent.
+Background execution requires explicit `--background` / `--worker` opt-in; legacy jobs
+retain their execution mode. Interrupted chats remain reserved for evidence-backed recovery.
+
+Drive links now auto-route files/folders, with remembered connections and guided browser
+OAuth. Homebrew/Workbrew already includes rclone. Provider login on a fresh teammate Mac
+remains to be tested; live local connection discovery and an authenticated read check passed on the development
+Mac. Those checks do not prove a new remote download or a fresh Google OAuth grant.
+
+Regression coverage includes missing CLI installations, setup without an agent executable,
+current-chat revision snapshots and duplicate clicks, late notes, worker isolation, interruption
+recovery, and native-only completion without an MP4. These are software/HTTP/CLI tests;
+no new real-editor qualification or teammate-machine acceptance is claimed by this change.
+
 ## Teammate installation and worker repairs — preview.12
 
 See [TEAM_SESSION_REPAIR_LEDGER.md](TEAM_SESSION_REPAIR_LEDGER.md) for evidence,

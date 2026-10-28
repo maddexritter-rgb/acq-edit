@@ -90,3 +90,11 @@ test('missing framing runtime blocks readiness without leaking child diagnostics
  assert(report.readiness.blocking.some(x=>x.check==='framing'));
  assert(!JSON.stringify(report).includes('fixture-secret'));
 });
+
+test('normal doctor never probes a missing or signed-out agent; background diagnostics are explicit',async()=>{
+ const h=harness('filmcraft'),c={...config('filmcraft'),agent:'claude',agentCommand:'/missing/claude'};
+ h.tools.execute=async(command,...rest)=>{if(command===c.agentCommand)throw Error('not installed');return h.base(command,...rest)};
+ const normal=await doctor(c,h.tools);assert.equal(normal.readiness.ready,true);assert.equal(normal.dependencies.agent,undefined);assert.equal(normal.agentReadiness,undefined);
+ const background=await doctor(c,{...h.tools,background:true});assert.equal(background.readiness.ready,false);assert(background.readiness.blocking.some(x=>x.check==='agent'));
+ assert(!h.calls.some(x=>x.command===c.agentCommand));
+});

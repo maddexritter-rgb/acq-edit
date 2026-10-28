@@ -9,10 +9,9 @@ PROJECT_ID="$1"
 URL="$2"
 TOOLKIT="__ACQ_TOOLKIT__"
 case "$URL" in
-  https://drive.google.com/drive/folders/*) COMMAND=drive-folder ;;
-  https://drive.google.com/file/d/*|https://drive.google.com/open\?*) COMMAND=drive ;;
-  *) echo 'Provide an explicit Google Drive file or folder URL; bare IDs are ambiguous.' >&2; exit 2 ;;
+  https://drive.google.com/*) ;;
+  *) echo 'Provide a Google Drive file or folder URL; bare IDs are ambiguous.' >&2; exit 2 ;;
 esac
-ARGS=("$TOOLKIT/dist/cli.js" "$COMMAND" "$PROJECT_ID" "$URL")
+ARGS=("$TOOLKIT/dist/cli.js" drive "$PROJECT_ID" "$URL")
 if [[ $# -eq 3 ]]; then ARGS+=("$3"); fi
 exec node "${ARGS[@]}"

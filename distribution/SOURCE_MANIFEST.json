@@ -2443,8 +2443,8 @@
       "path": "footage-fetch/SKILL.md",
       "source": "canonical-skills/footage-fetch/SKILL.md",
       "source_sha256": "08d4da787c764b7f060fbe2a22f74fb9c97debdec0084cf892c5bcf0208d4fdf",
-      "distribution_sha256": "01e2afe1b855d623991d1eee510139439895f468b35656b8ba386e148d7cc429",
-      "bytes": 1844,
+      "distribution_sha256": "39a70ff25b45ed13233f8d946013ea8a85ffff78b89156713b18160570fa30d6",
+      "bytes": 2414,
       "transforms": [
         {
           "from": "canonical-root",
@@ -2461,7 +2461,10 @@
         {
           "patch": "portable-execution-owner",
           "replacement": "scripts/portable_overrides/footage-fetch/SKILL.md",
-          "replacementSha256": "01e2afe1b855d623991d1eee510139439895f468b35656b8ba386e148d7cc429"
+          "replacementSha256": "39a70ff25b45ed13233f8d946013ea8a85ffff78b89156713b18160570fa30d6"
+        },
+        {
+          "patch": "pasted-drive-links-and-guided-connection"
         }
       ]
     },
@@ -2469,13 +2472,16 @@
       "path": "footage-fetch/scripts/gdrive_pull.sh",
       "source": "canonical-skills/footage-fetch/scripts/gdrive_pull.sh",
       "source_sha256": "d9a0cac3c455c40f79641d25c5a2db92e84feef9ecf5f0f7ad3c63b7e8dd14a0",
-      "distribution_sha256": "2abc737eb35824848a7d5eaa7601f86ee41b8b72355033c49a68414698bc75f0",
-      "bytes": 692,
+      "distribution_sha256": "4daf60271a2dd073007feb3b4597857cbdaa813805bbd61992ed682da1c725be",
+      "bytes": 555,
       "transforms": [
         {
           "patch": "portable-execution-owner",
           "replacement": "scripts/portable_overrides/footage-fetch/scripts/gdrive_pull.sh",
-          "replacementSha256": "2abc737eb35824848a7d5eaa7601f86ee41b8b72355033c49a68414698bc75f0"
+          "replacementSha256": "4daf60271a2dd073007feb3b4597857cbdaa813805bbd61992ed682da1c725be"
+        },
+        {
+          "patch": "pasted-drive-links-and-guided-connection"
         }
       ]
     },
