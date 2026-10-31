@@ -3,7 +3,7 @@
 
 This is the canonical horizontal-to-vertical implementation. It never renders or
 imports replacement video. It duplicates the active sequence, analyzes every
-source-linked picture item at its exact source in/out, writes sparse Motion >
+source-linked picture item at its exact source in/out, writes per-frame Motion >
 Anchor Point keys in media time, saves, verifies, and leaves the review sequence
 open in Premiere.
 
@@ -16,6 +16,9 @@ from __future__ import annotations
 
 import argparse
 import json
+from fractions import Fraction
+import sys
+import subprocess
 import math
 import re
 import time
@@ -27,6 +30,9 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 MODEL = Path("__ACQ_TOOLKIT__/assets/models/yunet/yunet.onnx")
+sys.path.insert(0, str(HERE))
+from filmcraft_smooth_x import dense_subject_x, smooth_x
+
 LAB_SESSION = None
 TICKS_PER_SECOND = 254_016_000_000
 
@@ -269,78 +275,120 @@ def track_item(item: dict, preset: dict, sample_seconds: float, cache_dir: Path 
     sys.path.insert(0, str(HERE))
     from tracking_cache import get_or_compute
     data, receipt = get_or_compute(item, preset, sample_seconds, cache_dir,
-                                  _track_item_uncached, [Path(__file__), MODEL])
+                                  _track_item_uncached, [Path(__file__), HERE / "filmcraft_smooth_x.py", MODEL])
     return {**data, 'cache_receipt': receipt}
 
 
+def source_clock(path):
+    probe = json.loads(subprocess.check_output(['ffprobe', '-v', 'error', '-select_streams', 'v:0',
+        '-show_entries', 'stream=r_frame_rate,avg_frame_rate,sample_aspect_ratio', '-of', 'json', path], text=True))
+    stream = probe['streams'][0]
+    rate, average = Fraction(stream['r_frame_rate']), Fraction(stream['avg_frame_rate'])
+    if rate <= 0 or rate != average or stream.get('sample_aspect_ratio', '1:1') not in ('1:1','N/A'):
+        raise ValueError('Dense tracking needs constant-frame-rate square-pixel source media; reconcile frame mapping first')
+    return rate
+
+
 def _track_item_uncached(item: dict, preset: dict, sample_seconds: float) -> dict:
-    path = item["media_path"]
-    cap = cv2.VideoCapture(path)
-    if not cap.isOpened():
-        raise RuntimeError(f"Cannot open source media: {path}")
-    fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
-    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    detector, detect_w, detect_h = detector_for(width, height)
-    duration = max(0.0, item["source_out"] - item["source_in"])
-    final_rel = max(0.0, duration - 1 / fps)
-    rel_times = list(np.arange(0.0, final_rel, sample_seconds))
-    if not rel_times or final_rel - rel_times[-1] > 1 / fps:
-        rel_times.append(final_rel)
-    previous = None
-    points = []
-    misses = 0
-    for rel in rel_times:
-        cap.set(cv2.CAP_PROP_POS_MSEC, (item["source_in"] + rel) * 1000)
-        ok, frame = cap.read()
-        if not ok:
-            points.append(None)
-            misses += 1
-            continue
-        small = cv2.resize(frame, (detect_w, detect_h))
-        _, faces = detector.detect(small)
-        chosen = select_face(faces, previous, preset["roi"], detect_w, detect_h, preset.get("min_face_height720", 15))
-        if chosen is None:
-            points.append(None)
-            misses += 1
+    """Decode every source frame once. Sparse sampling is never a tracking mode."""
+    cap = cv2.VideoCapture(item["media_path"])
+    try:
+        if not cap.isOpened():
+            raise RuntimeError(f"Cannot open source media: {item['media_path']}")
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        if not math.isfinite(fps) or fps <= 0:
+            raise ValueError("Verified source frame rate required")
+        rate = source_clock(item['media_path'])
+        if abs(fps - float(rate)) > 1e-4:
+            raise ValueError('Decoder and verified source frame rates differ')
+        ft = Fraction(TICKS_PER_SECOND, 1) / rate
+        if ft.denominator != 1:
+            raise ValueError("Source rate is not on a supported native frame grid")
+        start = round(item['source_in'] * fps)
+        count = round((item['source_out'] - item['source_in']) * fps)
+        if count <= 0 or any(abs(v - round(v)) > 1e-4 for v in
+                             (item['source_in'] * fps, item['source_out'] * fps)):
+            raise ValueError("Frame-aligned source boundaries required")
+        if item.get('speed') != 1 or item.get('speed_reversed', False):
+            raise ValueError("Dense tracking requires forward unit-speed media")
+        if abs((item['end'] - item['start']) - count / fps) > 1e-6:
+            raise ValueError("Source and timeline frame clocks differ")
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)); height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        detector, dw, dh = detector_for(width, height)
+        cap.set(cv2.CAP_PROP_POS_FRAMES, start)
+        if abs(cap.get(cv2.CAP_PROP_POS_FRAMES) - start) > .01:
+            raise RuntimeError("Decoder did not seek to the exact source frame")
+        faces, previous = [], None
+        for frame_index in range(count):
+            ok, frame = cap.read()
+            if not ok:
+                raise RuntimeError(f"Source decode ended before displayed frame {frame_index}/{count}")
+            if abs(cap.get(cv2.CAP_PROP_POS_FRAMES) - (start + frame_index + 1)) > .01:
+                raise RuntimeError("Decoder frame clock drift")
+            _, found = detector.detect(cv2.resize(frame, (dw, dh)))
+            face = select_face(found, previous, preset['roi'], dw, dh, preset.get('min_face_height720', 15))
+            if face is None:
+                faces.append(None)
+            else:
+                previous = face[0]
+                faces.append([face[0]/dw, face[1]/dh, face[2]/dw, face[3]/dh, face[4]])
+    finally:
+        cap.release()
+    evidence = {'denseFaces': faces, 'denseFrameIndices': list(range(count))}
+    xs, origins = dense_subject_x(evidence, count)
+    if any(abs(a-b) > .20 for a,b in zip(xs,xs[1:])):
+        raise ValueError('Abrupt subject switch; inspect camera boundary and intended-subject ROI')
+    valid = [i for i,f in enumerate(faces) if f is not None]
+    ys = np.interp(np.arange(count), valid, [faces[i][1] for i in valid]).tolist()
+    return {'width':width, 'height':height, 'fps':float(rate), 'frame_ticks':int(ft),
+            'relative_times':[i / float(rate) for i in range(count)],
+            'face_x':smooth_x(xs).tolist(), 'face_y':ys, 'face_y_median':float(np.median(ys)),
+            'detections':len(valid), 'samples':count, 'fallback':False,
+            'edge_face_seen':[faces[0] is not None, faces[-1] is not None],
+            'miss_rate':1-len(valid)/count, 'evidence':evidence, 'origins':origins}
+
+
+def dense_tracking_runs(items, presets, cache_dir=None):
+    """Smooth a continuous source/camera/layout run before slicing native items."""
+    groups = []
+    for i, item in enumerate(items):
+        if item.get('speed') != 1 or item.get('speed_reversed', False) or abs((item['end']-item['start'])-(item['source_out']-item['source_in'])) > 1e-7:
+            raise ValueError('Dense tracking requires forward unit-speed source/timeline ranges')
+        previous = items[i-1] if i else None
+        continuous = previous is not None and all(item.get(k) == previous.get(k) for k in
+            ('media_path','camera_id','layout_id','track_index','speed','speed_reversed'))
+        continuous = continuous and presets[i] == presets[i-1] and abs(item['start']-previous['end']) < 1e-7 and abs(item['source_in']-previous['source_out']) < 1e-7
+        if continuous:
+            groups[-1].append(i)
         else:
-            previous = chosen[0]
-            points.append((chosen[0] / detect_w, chosen[1] / detect_h))
-    cap.release()
-    valid = [point for point in points if point is not None]
-    fallback = not valid
-    if fallback:
-        rx0, ry0, rx1, ry1 = preset["roi"]
-        default = ((rx0 + rx1) / 2, preset.get("fallback_y", (ry0 + ry1) / 2))
-    else:
-        default = (float(np.median([p[0] for p in valid])), float(np.median([p[1] for p in valid])))
-    xs, ys, last = [], [], default
-    first = valid[0] if valid else default
-    for point in points:
-        if point is not None:
-            last = point
-        elif not xs:
-            last = first
-        xs.append(last[0])
-        ys.append(last[1])
-    xs = rolling_median(xs)
-    ys = rolling_median(ys, radius=2)
-    if max(abs(x - float(np.median(xs))) for x in xs) < 8 / max(width, 1):
-        xs = [float(np.median(xs))] * len(xs)
-    return {
-        "width": width,
-        "height": height,
-        "fps": fps,
-        "relative_times": [float(x) for x in rel_times],
-        "face_x": xs,
-        "face_y": ys,
-        "face_y_median": float(np.median(ys)),
-        "detections": len(valid),
-        "samples": len(points),
-        "fallback": fallback,
-        "edge_face_seen": [points[0] is not None, points[-1] is not None],
-        "miss_rate": misses / max(1, len(points)),
-    }
+            groups.append([i])
+    tracked = [None] * len(items)
+    for indices in groups:
+        first, last = items[indices[0]], items[indices[-1]]
+        run = {**first, 'end':last['end'], 'source_out':last['source_out']}
+        data = track_item(run, presets[indices[0]], 0, cache_dir)
+        if data.get('frame_ticks', 0) <= 0 or len(data['face_x']) != data['samples'] or len(data['origins']) != data['samples']:
+            raise ValueError('Dense tracking cache has incomplete evidence')
+        offset = 0
+        for i in indices:
+            n = round((items[i]['source_out']-items[i]['source_in']) * data['fps'])
+            if n <= 0 or offset+n > data['samples']:
+                raise ValueError('Incomplete dense source run')
+            sliced = {**data, 'samples':n, 'relative_times':[f/data['fps'] for f in range(n)]}
+            for key in ('face_x','face_y','origins'):
+                sliced[key] = data[key][offset:offset+n]
+            raw = data['evidence']['denseFaces'][offset:offset+n]
+            sliced.update(evidence={'denseFaces':raw, 'denseFrameIndices':list(range(n))},
+                          detections=sum(f is not None for f in raw),
+                          face_y_median=float(np.median(sliced['face_y'])),
+                          miss_rate=sum(f is None for f in raw)/n,
+                          edge_face_seen=[raw[0] is not None, raw[-1] is not None],
+                          continuous_run=indices)
+            tracked[i] = sliced
+            offset += n
+        if offset != data['samples']:
+            raise ValueError('Dense source run coverage mismatch')
+    return tracked
 
 
 def content_groups(items: list[dict]) -> list[list[int]]:
@@ -390,8 +438,11 @@ def discrete_y_values(data: dict, item_order: int, allow_y_first_items: int) -> 
     transition = int(np.argmin(np.abs(ys - midpoint)))
     # Two locked plateaus with only a short authored move between them. This is
     # a stand/sit reframe, not continuous vertical face tracking.
-    before = max(0, transition - 1)
-    after = min(len(ys) - 1, transition + 1)
+    # Preserve the authored one-second transition when observations become
+    # per-frame; a fixed two-sample ramp would now snap in roughly 70 ms.
+    half_span = max(1, round(float(data.get('fps', 2)) * 0.5))
+    before = max(0, transition - half_span)
+    after = min(len(ys) - 1, transition + half_span)
     result = [start_y] * len(ys)
     for j in range(before, after + 1):
         u = 0.0 if after == before else (j - before) / (after - before)
@@ -445,18 +496,14 @@ def build_plan(
         if fallback_y_first_items is not None and i < allow_y_first_items:
             item_preset["fallback_y"] = fallback_y_first_items
         presets.append(item_preset)
-    tracked = []
-    for number, item in enumerate(items, 1):
-        data = track_item(item, presets[number - 1], sample_seconds, cache_dir)
-        if any(abs(a-b) > 0.20 for a,b in zip(data['face_x'],data['face_x'][1:])):
-            raise RuntimeError('Abrupt subject switch inside a tracking run; review the camera boundary or tighten the intended-subject ROI')
-        tracked.append(data)
-        print(
-            f"[{number:02d}/{len(items):02d}] T{item['track_index'] + 1} item {item['item_index']} "
-            f"detections={data['detections']}/{data['samples']}"
-            + (" FALLBACK" if data["fallback"] else ""),
-            flush=True,
-        )
+    tracked = dense_tracking_runs(items, presets, cache_dir)
+    for item, data in zip(items, tracked):
+        timeline_ft = inspection.get('frame_ticks')
+        if 'bridge_baseline' in inspection and timeline_ft is None:
+            raise ValueError('Fresh ACQ Edit Agent frame-clock inspection required')
+        if timeline_ft is not None and int(timeline_ft) != data['frame_ticks']:
+            raise ValueError('Mixed source/sequence frame rates require explicit frame mapping')
+        print(f"Dense tracking item {item['item_index']}: {data['detections']}/{data['samples']} detections", flush=True)
     records = []
     groups = content_groups(items)
     group_for = {index: group_no for group_no, group in enumerate(groups) for index in group}
@@ -486,13 +533,9 @@ def build_plan(
         anchor_xs = [max(x_margin, min(1.0 - x_margin, x)) for x in data["face_x"]]
         anchor_ys = [max(y_margin, min(1.0 - y_margin, face_y + y_offset)) for face_y in y_values]
         dense = [
-            [round(t, 6), round(x, 8), round(anchor_y, 8)]
+            [t, round(x, 8), round(anchor_y, 8)]
             for t, x, anchor_y in zip(data["relative_times"], anchor_xs, anchor_ys)
         ]
-        tolerance_normalized = pixel_tolerance / max(1.0, data["width"] * scale_factor)
-        sparse = rdp(dense, tolerance_normalized)
-        if len(sparse) == 1:
-            sparse.append([round(max(0, item["source_out"] - item["source_in"] - 1 / data["fps"]), 6), sparse[0][1], sparse[0][2]])
         records.append(
             {
                 **{key: item[key] for key in ("track_index", "item_index", "name", "media_path", "start", "end", "source_in", "source_out", "speed")},
@@ -501,7 +544,11 @@ def build_plan(
                 "baseline_motion": item["motion"],
                 "position": [0.5, 0.5],
                 "scale_percent": scale_percent,
-                "anchor_keys": sparse,
+                "anchor_keys": dense,
+                "frame_ticks": data["frame_ticks"],
+                "tracking_evidence": data["evidence"],
+                "tracking_origins": data["origins"],
+                "continuous_run": data["continuous_run"],
                 "tracking": {
                     **{key: data[key] for key in ("detections", "samples", "fallback", "miss_rate", "width", "height", "fps")},
                     "y_mode": "tracked_stand_sit" if y_tracking else "locked",
@@ -509,7 +556,7 @@ def build_plan(
                 },
             }
         )
-    seam_report = reconcile_new_plan_x(items, records, tracked, inspection["width"], pixel_tolerance)
+    seam_report = [{"items": d["continuous_run"], "status": "source_continuous_dense_curve"} for d in tracked]
     return {
         "schema": "premiere-native-reframe/v1",
         **({"bridge_baseline": inspection["bridge_baseline"]} if "bridge_baseline" in inspection else {}),
@@ -518,7 +565,7 @@ def build_plan(
         "sequence_id": inspection["sequence_id"],
         "sequence_dimensions": [inspection["width"], inspection["height"]],
         "preset": preset_name,
-        "pixel_tolerance": pixel_tolerance,
+        "tracking_mode": "dense-yunet-shared-smoothing/v1",
         "allow_y_first_items": allow_y_first_items,
         "preset_after_item": preset_after_item,
         "after_preset": after_preset_name,
@@ -784,6 +831,7 @@ def bind_reviewed_shots(inspection: dict, shot_map: dict) -> dict:
                 raise ValueError('Reviewed camera and supported layout required')
             if r['layout'] == 'portrait':
                 c['camera_id'] = r['camera_id']
+                c['layout_id'] = r.get('layout_id', r['layout'])
                 c['framing_override'] = r.get('framing_override', {})
                 kept.append(c)
         track['clips'] = kept
@@ -797,8 +845,8 @@ def main() -> None:
     parser.add_argument("--project-copy", type=Path, help="Optional fresh .prproj destination; default keeps the active project")
     parser.add_argument("--sequence-name", help="Review sequence name; default appends _NATIVE_VERTICAL_REVIEW")
     parser.add_argument("--work-dir", type=Path, help="Plan/report directory; default is beside the active project or explicit copy")
-    parser.add_argument("--sample-seconds", type=float, default=0.5)
-    parser.add_argument("--pixel-tolerance", type=float, default=8.0)
+    parser.add_argument("--sample-seconds", type=float, default=0, help="Legacy argument; ignored. Every displayed frame is always analyzed.")
+    parser.add_argument("--pixel-tolerance", type=float, default=0, help="Legacy argument; ignored. Per-frame keys are never simplified.")
     parser.add_argument(
         "--allow-y-first-items",
         type=int,

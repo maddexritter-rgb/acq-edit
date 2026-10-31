@@ -12,7 +12,7 @@ import type { ToolOperationalOverride } from "../tool-capability-report.js";
 export const motionHelpers = `
 function nativeFlag(v){if(v===false||v===0){return false;}if(v===true||v===1){return true;}return null;}
 function motionProp(c,name){var found=null;for(var i=0;i<c.components.numItems;i++){var fx=c.components[i];if(fx.displayName!=='Motion')continue;for(var j=0;j<fx.properties.numItems;j++){var p=fx.properties[j];if(p.displayName===name){if(found)throw new Error('AMBIGUOUS_MOTION_PROPERTY');found=p;}}}if(!found)throw new Error('MOTION_PROPERTY_UNAVAILABLE '+name);return found;}
-function anchorKeys(p){var out=[],keys=p.isTimeVarying()?p.getKeys():[];if(!keys)keys=[];if(keys.length>1000)throw new Error('KEY_LIMIT');for(var k=0;k<keys.length;k++)out.push({ticks:String(keys[k].ticks),value:p.getValueAtKey(keys[k])});return out;}
+function anchorKeys(p){var out=[],keys=p.isTimeVarying()?p.getKeys():[];if(!keys)keys=[];if(keys.length>10000)throw new Error('KEY_LIMIT');for(var k=0;k<keys.length;k++)out.push({ticks:String(keys[k].ticks),value:p.getValueAtKey(keys[k])});return out;}
 function pair(a,b){return a&&b&&a.length===2&&b.length===2&&Math.abs(a[0]-b[0])<=0.0000001&&Math.abs(a[1]-b[1])<=0.0000001;}
 `;
 export const capability = {
@@ -122,7 +122,7 @@ export function getLabReframeTools(options: BridgeOptions) {
             tracks.push({index:t,name:String(track.name),clips:clips});
           }
           if(JSON.stringify(before)!==JSON.stringify(__labSnapshot()))return __error('REFRAME_STATE_CHANGED_DURING_INSPECTION');
-          return __result({inspection:{project_path:app.project.path,sequence_name:s.name,sequence_id:s.sequenceID,width:st.videoFrameWidth,height:st.videoFrameHeight,video_tracks:tracks,inactive_picture_items:inactive},snapshot:before});
+          return __result({inspection:{project_path:app.project.path,sequence_name:s.name,sequence_id:s.sequenceID,width:st.videoFrameWidth,height:st.videoFrameHeight,frame_ticks:String(s.timebase),video_tracks:tracks,inactive_picture_items:inactive},snapshot:before});
         `), options);
         if (!result.success) return result;
         const data: any = result.data;
@@ -140,7 +140,7 @@ export function getLabReframeTools(options: BridgeOptions) {
         properties: { items: { type: "array", minItems: 1, maxItems: 512, items: {
           type: "object", additionalProperties: false, required: ["node_id", "keys"],
           properties: { node_id: { type: "string", minLength: 1, maxLength: 512 },
-            keys: { type: "array", minItems: 1, maxItems: 1000, items: {
+            keys: { type: "array", minItems: 1, maxItems: 10000, items: {
               type: "object", additionalProperties: false, required: ["ticks", "before", "after"],
               properties: { ticks: { type: "string", pattern: "^(0|[1-9][0-9]{0,18})$" },
                 before: { type: "array", minItems: 2, maxItems: 2, items: { type: "number" } },
@@ -158,7 +158,7 @@ export function getLabReframeTools(options: BridgeOptions) {
           for (const item of args.items) {
             if (typeof item.node_id !== "string" || !item.node_id || item.node_id.length > 512 || ids.has(item.node_id)) throw new Error("Invalid/duplicate item identity");
             ids.add(item.node_id);
-            if (!Array.isArray(item.keys) || !item.keys.length || item.keys.length > 1000) throw new Error("Invalid key count");
+            if (!Array.isArray(item.keys) || !item.keys.length || item.keys.length > 10000) throw new Error("Invalid key count");
             let previous = -1n;
             for (const key of item.keys) {
               if (typeof key.ticks !== "string" || !/^(0|[1-9]\d{0,18})$/.test(key.ticks)) throw new Error("Invalid exact key time");

@@ -17,6 +17,15 @@ SPEC.loader.exec_module(MODULE)
 
 class ProjectModeTests(unittest.TestCase):
     def setUp(self):
+        # The shipped CLI now always constructs the isolated typed session.
+        # Mock that boundary as well as the stage calls; offline tests must
+        # neither load a real installation nor retain another test's client.
+        session_patch = patch('premiere_reframe_bridge.ReframeSession')
+        session_patch.start()
+        self.addCleanup(session_patch.stop)
+        state_patch = patch.object(MODULE, 'LAB_SESSION', None)
+        state_patch.start()
+        self.addCleanup(state_patch.stop)
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         home_patch = patch.object(Path, "home", return_value=Path(self.temp.name))

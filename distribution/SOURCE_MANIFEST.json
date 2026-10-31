@@ -2492,8 +2492,8 @@
       "path": "horizontal-to-vertical/SKILL.md",
       "source": "canonical-skills/horizontal-to-vertical/SKILL.md",
       "source_sha256": "93b9ec3d5d0e4b027da78890100c6a961f2d1ac773ac628d2f69c75355ae5a5c",
-      "distribution_sha256": "cd26c4d82afbd41e71c0a89975c4b463c928fc4c8da2867c406668bdca93ec4c",
-      "bytes": 18607,
+      "distribution_sha256": "57284c586e19628c1e3f131193f39841124d0f99cb78389368788456b40558b2",
+      "bytes": 19184,
       "transforms": [
         {
           "from": "canonical-root",
@@ -2508,6 +2508,9 @@
         },
         {
           "patch": "dense-native-tracking-defaults"
+        },
+        {
+          "patch": "premiere-dense-native-tracking"
         }
       ]
     },
@@ -2515,9 +2518,13 @@
       "path": "horizontal-to-vertical/references/advanced-native-reframe.md",
       "source": "canonical-skills/horizontal-to-vertical/references/advanced-native-reframe.md",
       "source_sha256": "70c917e9a528705822b90fa2d50ece220750588aed2ebdeba3db342e6d438381",
-      "distribution_sha256": "70c917e9a528705822b90fa2d50ece220750588aed2ebdeba3db342e6d438381",
-      "bytes": 7133,
-      "transforms": []
+      "distribution_sha256": "ebd0bd0c41bee737673f7813c471f98d899e3b028622378672a3eb6b3f003baf",
+      "bytes": 7199,
+      "transforms": [
+        {
+          "patch": "premiere-dense-native-tracking"
+        }
+      ]
     },
     {
       "path": "horizontal-to-vertical/references/filmcraft-smooth-x.md",
@@ -2557,11 +2564,14 @@
       "path": "horizontal-to-vertical/references/native-split-setup.md",
       "source": "canonical-skills/horizontal-to-vertical/references/native-split-setup.md",
       "source_sha256": "628912489b2f0b5923aa79d4b13ddeea7f05e385a5d643fc1541ec14931c3187",
-      "distribution_sha256": "5c79d4d7ddf466d26483f934734704a0353018ea37aa1706d88de2e293f31dec",
-      "bytes": 8613,
+      "distribution_sha256": "3be37fae45a94dabe48d3c77a80674633ea3db0707bdc731eca299cd7cfc85ec",
+      "bytes": 8622,
       "transforms": [
         {
           "patch": "default-split-shadow"
+        },
+        {
+          "patch": "premiere-dense-native-tracking"
         }
       ]
     },
@@ -2613,9 +2623,13 @@
       "path": "horizontal-to-vertical/scripts/premiere_native_reframe.py",
       "source": "canonical-skills/horizontal-to-vertical/scripts/premiere_native_reframe.py",
       "source_sha256": "a240059d97f58b7c47e345b56fba6c75b18f7675adf8f7cecdcf9fa3ca9556d2",
-      "distribution_sha256": "dad98bab6f3b797f9078b4e893b7eaf7817567ed0487a3dee7ffc307e80f0392",
-      "bytes": 52019,
-      "transforms": [],
+      "distribution_sha256": "cf513df4c5ecda6b09065ff015202b645984ec58c959f11d87d55b6d21888a3f",
+      "bytes": 56554,
+      "transforms": [
+        {
+          "patch": "premiere-dense-native-tracking"
+        }
+      ],
       "portable_patches": [
         {
           "patch": "packaged-yunet-model"
@@ -2626,9 +2640,13 @@
       "path": "horizontal-to-vertical/scripts/premiere_reframe_bridge.py",
       "source": "canonical-skills/horizontal-to-vertical/scripts/premiere_reframe_bridge.py",
       "source_sha256": "d309c1a465fa1f420e8014095c5c6d314ae247db3dc3e20dca68e464711746d1",
-      "distribution_sha256": "d309c1a465fa1f420e8014095c5c6d314ae247db3dc3e20dca68e464711746d1",
-      "bytes": 19325,
-      "transforms": []
+      "distribution_sha256": "3a281370f08e54e63b9e375d7b84c97f2f4d399ec6452d571e6e278f950afdd4",
+      "bytes": 20242,
+      "transforms": [
+        {
+          "patch": "premiere-dense-native-tracking"
+        }
+      ]
     },
     {
       "path": "horizontal-to-vertical/scripts/qa_reframe_v2.py",
@@ -2666,9 +2684,13 @@
       "path": "horizontal-to-vertical/scripts/simplify_native_keyframes.py",
       "source": "canonical-skills/horizontal-to-vertical/scripts/simplify_native_keyframes.py",
       "source_sha256": "213b86b4eb4d46054bedc78070b938d8072f6ae02d821bf9855d967a66ecd69b",
-      "distribution_sha256": "213b86b4eb4d46054bedc78070b938d8072f6ae02d821bf9855d967a66ecd69b",
-      "bytes": 3734,
-      "transforms": []
+      "distribution_sha256": "35ea5e85896d3a2e36f552654d679bdf5a3dc112af2cd56d6c146b7feb886527",
+      "bytes": 3961,
+      "transforms": [
+        {
+          "patch": "premiere-dense-native-tracking"
+        }
+      ]
     },
     {
       "path": "horizontal-to-vertical/scripts/split_facetracked.py",
@@ -2682,9 +2704,13 @@
       "path": "horizontal-to-vertical/scripts/test_premiere_native_reframe.py",
       "source": "canonical-skills/horizontal-to-vertical/scripts/test_premiere_native_reframe.py",
       "source_sha256": "753e4d1590bdd75f454b6a538f030e0561f0264800f655693fd0471a580c3a52",
-      "distribution_sha256": "753e4d1590bdd75f454b6a538f030e0561f0264800f655693fd0471a580c3a52",
-      "bytes": 13396,
-      "transforms": []
+      "distribution_sha256": "ab8575f8e021e6d99ca0c6037a1785cdf952e9105a7e46430851033250a5b376",
+      "bytes": 12318,
+      "transforms": [
+        {
+          "patch": "premiere-dense-native-tracking"
+        }
+      ]
     },
     {
       "path": "horizontal-to-vertical/scripts/test_reviewed_shots.py",
@@ -2706,17 +2732,25 @@
       "path": "horizontal-to-vertical/scripts/tracking_cache.py",
       "source": "canonical-skills/horizontal-to-vertical/scripts/tracking_cache.py",
       "source_sha256": "a903a2c0ec46fc5f0477ecb2e73962d5f79596d198ec8c3121e06b27b255fed2",
-      "distribution_sha256": "a903a2c0ec46fc5f0477ecb2e73962d5f79596d198ec8c3121e06b27b255fed2",
-      "bytes": 3942,
-      "transforms": []
+      "distribution_sha256": "feb914bfa52ad95db9bd2224b6f2ade89073a2f51eae063892de0f70c0618d0f",
+      "bytes": 3941,
+      "transforms": [
+        {
+          "patch": "premiere-dense-native-tracking"
+        }
+      ]
     },
     {
       "path": "horizontal-to-vertical/tests/test_filmcraft_smooth_x.py",
       "source": "canonical-skills/horizontal-to-vertical/tests/test_filmcraft_smooth_x.py",
       "source_sha256": "f6e04c4e6ef0da79ad8ca3f9b0cf9a33432c1b02d646f3a921f093a998224473",
-      "distribution_sha256": "f6e04c4e6ef0da79ad8ca3f9b0cf9a33432c1b02d646f3a921f093a998224473",
-      "bytes": 4112,
-      "transforms": []
+      "distribution_sha256": "e5634b08db426570b0045aed776cb0ecef0d25bfe9faa2e7fee45d67465031c2",
+      "bytes": 4413,
+      "transforms": [
+        {
+          "patch": "premiere-dense-native-tracking"
+        }
+      ]
     },
     {
       "path": "horizontal-to-vertical/tests/test_picture_policy.py",
@@ -2730,9 +2764,13 @@
       "path": "horizontal-to-vertical/tests/test_premiere_native_reframe_project_mode.py",
       "source": "canonical-skills/horizontal-to-vertical/tests/test_premiere_native_reframe_project_mode.py",
       "source_sha256": "a6e9747a4cdede1895cf28eb14b012b1cd05638701c36de77df1c6663db4e48c",
-      "distribution_sha256": "a6e9747a4cdede1895cf28eb14b012b1cd05638701c36de77df1c6663db4e48c",
-      "bytes": 5730,
-      "transforms": []
+      "distribution_sha256": "9d100b2be91161468add777f5df9a9ddbe3d276608af3e9c5ac3446cb27d3d64",
+      "bytes": 6239,
+      "transforms": [
+        {
+          "patch": "premiere-dense-native-tracking"
+        }
+      ]
     },
     {
       "path": "horizontal-to-vertical/tests/test_tracking_cache.py",

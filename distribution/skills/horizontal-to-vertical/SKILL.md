@@ -1,6 +1,6 @@
 ---
 name: horizontal-to-vertical
-description: Convert footage already cut in Premiere Pro or Filmcraft into an editable native 9:16 sequence. Implements Assembly Design camera shots and split intervals from retained multicamera coverage. Uses fixed crops when stable and source-local tracking when needed. Use for reframe, vertical reframe, 16:9 to 9:16, face tracking, camera switching, or split screen. Never renders and re-imports replacement video.
+description: Convert footage already cut in Premiere Pro or Filmcraft into an editable native 9:16 sequence. Implements Assembly Design camera shots and split intervals from retained multicamera coverage. Uses dense source-local face tracking and editable per-frame keys. Use for reframe, vertical reframe, 16:9 to 9:16, face tracking, camera switching, or split screen. Never renders and re-imports replacement video.
 ---
 
 # Horizontal to vertical — editable native framing
@@ -10,7 +10,7 @@ description: Convert footage already cut in Premiere Pro or Filmcraft into an ed
 → Load [scoped production policy](../edit/references/scoped-brand-policy.md), including on direct invocation; consume the `reframe` stage and assembly-owned mirror intent.
 Implement only the current picture plan and verify the composed eyeline/top clearance; return unusable coverage to Assembly Design.
 
-For any Premiere access, follow [Premiere Agent startup and advanced stage routing](../edit/references/premiere_start_here.md). Use the configured new bridge by default; if MCP tools are missing in this chat, use its CLI. Keep this skill’s existing creative scope and read-only limits.
+For any Premiere access, follow [Premiere Agent startup and advanced stage routing](../edit/references/premiere_start_here.md). Use only this installation’s verified ACQ Edit Agent integration; if MCP tools are missing in this chat, the agent runs the repository helper in the current chat. Keep this skill’s existing creative scope and read-only limits.
 
 
 This skill turns footage already cut in Premiere or Filmcraft into an editable 9:16
@@ -21,8 +21,13 @@ coverage return to Assembly Design. It never redesigns the spoken cut. It also p
 
 ## Backend mode
 
-- **Premiere:** follow the native bridge route below; its sparse-key and per-item
-  tracking rules remain unchanged.
+- **Premiere:** follow the native bridge route below. Analyze every visible source
+  frame with YuNet, using the same `dense_subject_x` gap policy and `smooth_x`
+  filter as Filmcraft. Write one native Linear Anchor Point key per displayed frame.
+  Smooth continuous source/camera/layout runs before slicing items. Reset at source
+  jumps; never offset an incoming curve merely to match a removed passage.
+  Sparse contact sheets are review evidence, never detector input or tracking curves.
+  Keep calibrated Y and Scale locked. Detect each split panel independently.
 - **Filmcraft:** read [Filmcraft framing mode](references/filmcraft-smooth-x.md).
   Default every visible subject, including both split panels, to dense YuNet analysis
   and one native Linear Anchor-X key per displayed frame. Fixed crops require an
@@ -44,7 +49,7 @@ For a fresh Premiere conversion, the output is:
 - Original source-linked dialogue cuts preserved; unused synchronized picture
   angles retained as editable coverage in the same project.
 - Native `Motion > Anchor Point` keys on each individual picture item.
-- Static Position and Y by default; sparse horizontal tracking keys in media time. For a specifically identified opening range with real stand/sit movement, Y tracking may be threshold-enabled only for that range.
+- Static Position and Y by default; dense per-frame horizontal tracking keys in media time. For a specifically identified opening range with real stand/sit movement, Y tracking may be threshold-enabled only for that range.
 - The resulting sequence opened in Premiere for review.
 
 In Premiere, an explicitly requested seam repair on an already keyed 9:16 sequence is a
@@ -81,7 +86,7 @@ the first camera.
 For a normal full-frame timeline, run the canonical native driver:
 
 ```bash
-python3 __ACQ_SKILLS__/horizontal-to-vertical/scripts/premiere_native_reframe.py \
+__ACQ_TOOLKIT__/.local/venv/bin/python __ACQ_SKILLS__/horizontal-to-vertical/scripts/premiere_native_reframe.py \
   --preset alex-stage \
   --work-dir /absolute/path/to/native_reframe
 ```
@@ -96,7 +101,7 @@ Before running a mixed batch, inspect representative full source frames for ever
 - Standing and seated face-center Y values for wide locked cameras.
 - Whether a distant intended face falls below the detector's reliable size.
 
-For a first range whose distant seated face may be undetectable, pass the visually measured normalized face-center with `--fallback-y-first-items <0..1>`. This value is footage calibration, never a universal preset constant. The option requires `--allow-y-first-items N` and applies only to detector failures inside that range.
+A distant or obscured subject must still have dense detector coverage. Tighten the reviewed ROI or improve source coverage when detection fails. A static Y calibration is not evidence for missing X observations; do not fabricate face detections.
 
 If only the first `N` ordered picture items contain genuine stand/sit movement, add `--allow-y-first-items N`. Each allowed item gets its own static posture-aware Y; do not share a seated median with an adjacent standing item merely because the camera and edit seam match. An eligible item that changes posture receives two stable Y holds joined only across the detected stand/sit transition. It must never become continuous vertical face tracking; all ordinary movement remains Y-locked.
 
@@ -107,7 +112,7 @@ Choose the preset that matches the footage:
 | Preset | Use |
 |---|---|
 | `alex-stage` | Wide stage, workshop, or Q&A camera with audience/set distractions |
-| `center-stage` | Locked wide workshop/roundtable camera whose intended speaker position is centered; excludes larger foreground audience faces. Supply a measured fallback Y when the distant face is undetectable. |
+| `center-stage` | Locked wide workshop/roundtable camera whose intended speaker position is centered; excludes larger foreground audience faces. Calibrate the ROI and detector size floor for distant subjects; missing X coverage must still be repaired. |
 | `alex-listicle` | Single desk or direct-to-camera shot |
 | `guest` | Single guest camera |
 | `podcast` | Already-tight produced podcast angle |
@@ -120,9 +125,9 @@ The driver performs the complete native workflow:
    copy is optional for recovery, never the active weekly default.
 3. Changes only the duplicate to 1080×1920.
 4. Reconciles every source-linked picture item by track, item index, media path, source in/out, and timeline in/out.
-5. Detects the face inside each item’s exact source range.
-6. Locks Y per item. In an explicitly allowed range, standing and seated items keep separate static posture-aware Y values; a genuine stand/sit change inside one item gets one short Y reframe between locked plateaus—never a bobbing continuous Y track. Camera/content-run changes reset X tracking. Across an eligible butt cut from the same camera and panel, match outgoing and incoming crop X while preserving each item's relative keyframed motion. Measure the boundary-frame subject X too: if the source person physically shifted, flag the remaining visible jump for rendered review instead of claiming key agreement solved it. Report crop-limited or no-face seams.
-7. Simplifies the curve to a bounded rendered-pixel tolerance.
+5. Sequentially detects every frame in each continuous source/camera/layout run. Preserves raw missing detections; only interior gaps of at most six frames may interpolate. Longer or edge gaps stop for inspected coverage repair, never silently hold or center the crop.
+6. Locks Y by compatible framing group; an explicitly allowed stand/sit range retains the existing bounded posture transition. Smooth X over the entire continuous run using the shared Filmcraft filter, then slice item-local curves. Source-time gaps, camera/layout changes and timeline gaps start new runs.
+7. Retains one key per displayed frame, even for a steady subject. Legacy `--sample-seconds` and `--pixel-tolerance` arguments cannot reduce density. Source/sequence frame rates must match; unsupported frame mapping stops before writing.
 8. Clamps every X/Y Anchor value to the scale-dependent source-safe crop region so no key can reveal black outside the source frame.
 9. Rechecks the inherited Motion baseline before writing anything.
 10. Writes item-local Anchor Point keys at `item.inPoint + relative_time`, then saves and reads the keys back.
@@ -160,11 +165,11 @@ Generate review sheets in timeline order and retain them with the plan/report. A
 ## Camera switching — Premiere
 
 For Filmcraft fixed crops and tracking-run boundaries, use [Filmcraft framing mode](references/filmcraft-smooth-x.md).
-Each existing Premiere item is an independent tracking run. Never interpolate across an edit.
+Contiguous items share a tracking run only when source time, media, camera, panel/layout, calibration and timeline are continuous. Fit that run before slicing items. Never interpolate across removed source time.
 
 - A different source path, track, camera angle, or non-butt timeline boundary starts a new framing group.
 - Adjacent butt-cut items from the same camera may share Y only when their posture/framing state matches. Standing and seated items must retain separate static Y values.
-- Adjacent butt-cut items from the same camera/panel must have continuous visible X unless source content, layout, or crop limits make that impossible; record those exceptions and check rendered frames. Keep their keys item-local and retain each shot's intended within-item movement.
+- At source-continuous item splits, retain the shared smooth curve. At source jumps, independently track the incoming subject; inspect the cut rather than shifting its entire curve to the outgoing crop.
 - A different camera, panel, scale/layout, or non-butt join starts a new X run; do not force a match across it.
 - Tracking keys use media time so later trims and razors retain the correct source motion.
 - Position, rotation, speed, source range, and edit boundaries must remain unchanged unless the user separately requests an editorial change.

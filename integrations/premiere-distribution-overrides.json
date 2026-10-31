@@ -49,6 +49,27 @@
       "originalSourceSha256": "d1dbb845014c4dc6783480203823970f8d31005d277b62ccf01ed572069ac5df",
       "distributionSha256": "32df871828dfb2e7a45daeb72d246fb657067b2aad11db91544a46c6eb4328a8",
       "reason": "Add bounded native PNG placement under exact project/stage scope"
+    },
+    {
+      "path": "src/lab/context.ts",
+      "originalSourceSha256": "84075c5d441c0fac094b93cbc50b063f220e939cad1fa63096522b47ba0931b1",
+      "distributionSha256": "02c4a6b7d55b9bb62cb9b371e8e55eddbcf4ab96fffbaa2f54f229c76dbca169"
+    },
+    {
+      "path": "src/lab/reframe.ts",
+      "originalSourceSha256": "90dab5bf09e567e68a49b6f22a32ecca37b63a5297ce8c2159243dd41add8985",
+      "distributionSha256": "db3b052b00835fc3437ea8b1853a64538fa446e646e65572dde27032e503140f"
+    },
+    {
+      "path": "src/lab/reframe-apply.ts",
+      "originalSourceSha256": "4cf6249c69cff738c9a0536874bdaa4381d6cb27d5d450b6054cfc43f77adafa",
+      "distributionSha256": "24ac32358078c08770ecf32b97dc49530e789074108cc328bbc958db3c58e549"
+    },
+    {
+      "path": "src/bridge/file-bridge.ts",
+      "originalSourceSha256": "246e7ba3e5d84e44a2a63d57e323b0a3eed5b2ee9ad64c0d73ab89d624994e0a",
+      "distributionSha256": "8f471d0cb64d93449e93316a4aefdeb5a1933c384f2f4073447ae58bda51dac0",
+      "reason": "Keep disconnected-panel recovery on the isolated ACQ Edit Agent; do not direct teammates to a legacy bridge"
     }
   ]
 }

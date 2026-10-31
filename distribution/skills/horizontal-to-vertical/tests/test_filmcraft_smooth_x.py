@@ -40,8 +40,14 @@ class FramingContinuityTests(unittest.TestCase):
         return make_plan(self.project, self.inspection, self.tracking,
                          1100., 100., 10., **kw)
 
-    def test_default_is_static_and_recentered_per_cut(self):
-        p = self.plan()
+    def test_default_tracks_every_frame_and_resets_at_source_cut(self):
+        p = self.plan(single_run=True)
+        self.assertEqual(p['motion_mode'], 'track')
+        self.assertEqual(p['key_count'], 24)
+        self.assertEqual(p['runs'], [[0], [1]])
+
+    def test_explicit_fixed_exception_is_recentered_per_cut(self):
+        p = self.plan(motion_mode='fixed')
         self.assertEqual(p['motion_mode'], 'fixed')
         self.assertEqual(p['key_count'], 0)
         self.assertEqual([i['anchor'] for i in p['items']],
@@ -65,7 +71,7 @@ class FramingContinuityTests(unittest.TestCase):
         c[1]['sourceIn'] = c[0]['sourceOut']
         c[1]['sourceOut'] = c[1]['sourceIn'] + c[1]['duration']
         self.tracking['items'][1].update(sourceIn=c[1]['sourceIn'], sourceOut=c[1]['sourceOut'])
-        p = self.plan()
+        p = self.plan(motion_mode='fixed')
         self.assertEqual(p['runs'], [[0, 1]])
         self.assertEqual(p['key_count'], 0)
         self.assertEqual([i['anchor'] for i in p['items']], [[2000., 1100.], [2000., 1100.]])

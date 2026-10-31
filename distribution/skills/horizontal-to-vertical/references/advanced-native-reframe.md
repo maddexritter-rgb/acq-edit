@@ -1,6 +1,6 @@
 # Upgraded native reframe route
 
-The canonical runner and `premiere_reframe_bridge.ReframeSession` use the configured Premiere Agent Lab connector. `~/.config/premiere-agent/default.json` is the local default when present; `--bridge-profile` overrides it. Do not retry a failure through the retired mailbox, another bridge, UI automation, or Premiere Beta.
+The canonical runner and `premiere_reframe_bridge.ReframeSession` use the configured Premiere Agent Lab connector. `__ACQ_TOOLKIT__/.local/premiere-profile.json` is the local default when present; `--bridge-profile` overrides it. Do not retry a failure through the retired mailbox, another bridge, UI automation, or Premiere Beta.
 
 ## Scope and ownership
 
@@ -38,6 +38,6 @@ The upgraded connector has bounded large-snapshot paging and file-backed mutatio
 
 ## Printed-face and set-object traps
 
-A confidence score does not establish subject identity. Review the intended subject region for every camera family, including apparently single-person podcasts with posters or face-like set objects. The podcast preset excludes detections below 48 pixels high on a 720-high analysis frame; distant subjects require a visually calibrated override. Abrupt horizontal jumps over 20 percent of source width inside a shot stop plan generation. Tighten the ROI or split a confirmed camera switch; do not smooth a wrong-person selection into a pan. Check first-frame framing as well as the middle. For a static seated shot, a reviewed stable X hold can be preferable to chasing small motion.
+A confidence score does not establish subject identity. Review the intended subject region for every camera family, including apparently single-person podcasts with posters or face-like set objects. The podcast preset excludes detections below 48 pixels high on a 720-high analysis frame; distant subjects require a visually calibrated override. Abrupt horizontal jumps over 20 percent of source width inside a shot stop plan generation. Tighten the ROI or split a confirmed camera switch; do not smooth a wrong-person selection into a pan. Check first-frame framing as well as the middle. Dense tracking remains the default for seated subjects. A fixed crop requires an explicit reviewed exception; never substitute it for failed detections.
 
 For a previously constructed static panel whose split boundary needs correction, use `lab_update_static_panel_geometry` via `ReframeSession.picture_operation`. Supply exact item IDs and reviewed Anchor/Position/Scale plus Crop Left/Right; the tool refuses animated properties and compares all unrelated state. Inspect native exports afterward.

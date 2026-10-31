@@ -30,8 +30,9 @@ separately from the warm-source target. Never substitute an old finished render.
    A forced-alignment disagreement requires source reconciliation; it cannot be
    turned into listening approval. Keep necessary repairs in the original clock.
 4. `scripts/sample_composition.py` gathers source-bound evidence in one decode per
-   camera view. Use sparse review samples for fixed shots and `tracking: true`
-   only for actual movement needing a dense curve. The view packet specifies
+   camera view. Use `tracking: true` for every visible subject, including both split panels.
+   Sparse samples support visual review only; they never replace dense detection.
+   A fixed crop needs an explicit inspected exception and `fixedCropReason`. The view packet specifies
    cut ID, role, source ID, source in-frame, source dimensions and reviewed ROI.
    Detection produces evidence, not crop decisions or complete-head approval.
 5. Caption-clips owns explicit semantic groups and style intent.

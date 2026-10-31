@@ -475,14 +475,14 @@ function heartbeatFailure(liveness: BridgeLiveness): CommandResult | null {
     return {
       success: false,
       error:
-        "The CEP connector is open but not running. In Premiere Pro, open Window > Extensions > MCP Bridge, wait for it to finish starting, then retry once.",
+        "The CEP connector is open but not running. In Premiere Pro, open Window > Extensions > ACQ Edit Agent, wait for it to finish starting, then retry once.",
     };
   }
   if (liveness.state === "stale") {
     return {
       success: false,
       error:
-        "The CEP connector heartbeat is stale. Reopen Window > Extensions > MCP Bridge in Premiere Pro, dismiss any blocking dialog, and retry once after it reports running.",
+        "The ACQ Edit Agent heartbeat is stale. Unlock the Mac if locked. Reopen Window > Extensions > ACQ Edit Agent in Premiere Pro, dismiss any blocking dialog, and retry once after it reports running.",
     };
   }
   return null;

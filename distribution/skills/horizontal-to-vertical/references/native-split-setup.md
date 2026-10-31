@@ -26,7 +26,7 @@ Recommended relative order in the edit, top to bottom (absolute track numbers ne
 
 The duplicate shadow and image must share nest identity, source in/out, speed, and timeline boundaries. Editing the camera framing inside the panel then updates both. Do not duplicate into an unrelated nest for the shadow, and do not flatten either panel into a movie. Nest video only or explicitly suppress duplicated nest audio; maintain one deliberate dialogue mix.
 
-Inside each panel keep actual source clips, sparse item-local Motion/Transform keys, and editable crop/mask geometry. A panel crop must create transparency outside the panel, not an opaque black fill that blocks the other camera. Preserve effect order. Camera-named adjustment layers are not additional camera footage. Do not copy a reference's crop/rotation/scale numbers to differently sized media without checking the composed frame.
+Inside each panel keep actual source clips, dense per-frame item-local Motion/Transform keys, and editable crop/mask geometry. A panel crop must create transparency outside the panel, not an opaque black fill that blocks the other camera. Preserve effect order. Camera-named adjustment layers are not additional camera footage. Do not copy a reference's crop/rotation/scale numbers to differently sized media without checking the composed frame.
 
 Lock content cuts first, then key each source item. When a bottom-panel camera changes, cut/reframe that panel without disturbing the top panel's timing or motion. A shared clean/shadow nest is intentional linkage; different split occurrences should not share editable source geometry accidentally. Finishing captions stay outside the panel/shadow nests.
 
