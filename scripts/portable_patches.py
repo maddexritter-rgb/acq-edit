@@ -6,7 +6,7 @@ OVERRIDES = {'footage-fetch/SKILL.md', 'footage-fetch/scripts/gdrive_pull.sh', '
 
 def dense_tracking_patch(text, relative):
  changes=[]
- for filename,label in [('dense-tracking-patch.json','dense-native-tracking-defaults'),('premiere-dense-tracking-patch.json','premiere-dense-native-tracking')]:
+ for filename,label in [('dense-tracking-patch.json','dense-native-tracking-defaults'),('premiere-dense-tracking-patch.json','premiere-dense-native-tracking'),('premiere-camera-split-patch.json','premiere-native-camera-split')]:
   patch=json.loads((Path(__file__).with_name('portable_snippets')/filename).read_text()).get(relative)
   if not patch:continue
   if hashlib.sha256(text.encode()).hexdigest()!=patch['beforeSha256']:raise ValueError('Dense tracking patch needs upstream reconciliation: '+relative)

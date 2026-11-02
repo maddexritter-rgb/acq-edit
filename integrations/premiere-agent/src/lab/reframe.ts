@@ -1,4 +1,6 @@
+import {getCameraShotTools} from './camera-shot.js';
 import {getPanelGeometryTools} from './reframe-panel-repair.js';
+import {getCameraSplitTools} from './camera-split.js';
 import {getReframeFrameTools} from './reframe-frames.js';
 import {getEmbeddedPanelTools} from './reframe-panels.js';
 import {getReframeShotTools} from './reframe-shots.js';
@@ -26,6 +28,8 @@ type Repair = { node_id: string; keys: Key[] };
 
 export function getLabReframeTools(options: BridgeOptions) {
   return {
+    ...getCameraSplitTools(options),
+    ...getCameraShotTools(options),
     ...getLabFreshReframeTools(options),
     ...getReframeShotTools(options),
     ...getEmbeddedPanelTools(options), ...getReframeFrameTools(options), ...getPanelGeometryTools(options),

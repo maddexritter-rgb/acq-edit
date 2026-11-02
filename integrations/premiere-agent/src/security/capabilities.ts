@@ -142,9 +142,14 @@ const FILESYSTEM_TOOL_NAMES = new Set([
 // inferred safely from their names. Keep them explicit: a preview reads an
 // approved folder, authoring mutates a saved AE project and exports a file.
 const TOOL_CAPABILITY_REQUIREMENTS: Readonly<Record<string, readonly Capability[]>> = {
+  lab_apply_dialogue_effect: ["edit"],
   lab_relink_media_batch: ["edit", "filesystem"],
   lab_import_prepared_caption_sequence: ["edit", "filesystem"],
   lab_place_graphic_asset: ["edit", "filesystem"],
+  lab_prepare_camera_source: ["edit", "filesystem"],
+  lab_place_camera_split: ["edit"],
+  lab_place_tracked_camera_shot: ["edit"],
+  inspect_camera_panel_sources: ["inspect"],
   lab_inspect_export_state: ["inspect"],
   lab_export_exact_range: ["export", "filesystem"],
   lab_import_compiled_assembly: ["edit", "filesystem"],

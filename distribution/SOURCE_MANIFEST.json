@@ -258,8 +258,8 @@
       "path": "_shared/premiere_bridge.py",
       "source": "canonical-skills/_shared/premiere_bridge.py",
       "source_sha256": "02d16a0125a32880b5db46856cb31ab958962bb7b24301877123d80160cb3784",
-      "distribution_sha256": "5a3a6ccec7cc65faa2311b8ae9f6558f4491fcc42919b7643a2fb5ad423abd3b",
-      "bytes": 22022,
+      "distribution_sha256": "29f02d519bda2f43b73210d8e5651d5bae7541ebc8ea3658227ee92fdc8ee5db",
+      "bytes": 22440,
       "transforms": [
         {
           "patch": "bounded-native-graphic-asset-scope"
@@ -271,6 +271,9 @@
         },
         {
           "patch": "enable-exact-premiere-26-5-2"
+        },
+        {
+          "patch": "premiere-native-camera-split"
         }
       ]
     },
@@ -1291,11 +1294,14 @@
       "path": "edit/scripts/pp_export_clips.py",
       "source": "canonical-skills/edit/scripts/pp_export_clips.py",
       "source_sha256": "8175b2e74ae36c97784b5a9523d17eca3e0e3fc61eef5fdeef798ca59a684477",
-      "distribution_sha256": "d0b0ccb8ee4ab40f91cef507820c3866f90f888f59ccbe28f171c808118373cc",
-      "bytes": 10272,
+      "distribution_sha256": "cb73883f1d26d638e5a311a54debc0462c935e98f9575a78c37931fb06f8ba2e",
+      "bytes": 10280,
       "transforms": [
         {
           "patch": "whole-sequence-export-preserves-unset-marks"
+        },
+        {
+          "patch": "premiere-native-camera-split"
         }
       ]
     },
@@ -1303,14 +1309,17 @@
       "path": "edit/scripts/premiere_agent.py",
       "source": "canonical-skills/edit/scripts/premiere_agent.py",
       "source_sha256": "86306e64d705af8e7e2dd48ff4e898e7066a1128224a3283d256758028ed495e",
-      "distribution_sha256": "5454f05f761b862d736021f7ede61ebbfbebb1a0d60c087f7d1914d5b592e2d5",
-      "bytes": 8293,
+      "distribution_sha256": "3855f490a78829a850b9d4f94466a23a6740932937506097815bdc4f73f72fa8",
+      "bytes": 8406,
       "transforms": [
         {
           "patch": "bounded-native-graphic-asset-scope"
         },
         {
           "patch": "acq-edit-agent-panel-name"
+        },
+        {
+          "patch": "premiere-native-camera-split"
         }
       ]
     },
@@ -1475,9 +1484,13 @@
       "path": "edit/scripts/sync_audio.py",
       "source": "canonical-skills/edit/scripts/sync_audio.py",
       "source_sha256": "41de5f6d5d4c7d58b459f61f329bbf629d266105672b83bc5dd25ed16cdf3413",
-      "distribution_sha256": "41de5f6d5d4c7d58b459f61f329bbf629d266105672b83bc5dd25ed16cdf3413",
-      "bytes": 3299,
-      "transforms": []
+      "distribution_sha256": "6773a8c3bc97de7dd4e3c027f92dee98cd224f2dd12a7459a87b8d1be01c0d9e",
+      "bytes": 5048,
+      "transforms": [
+        {
+          "patch": "premiere-native-camera-split"
+        }
+      ]
     },
     {
       "path": "edit/scripts/tam_pipeline.py",
@@ -2492,8 +2505,8 @@
       "path": "horizontal-to-vertical/SKILL.md",
       "source": "canonical-skills/horizontal-to-vertical/SKILL.md",
       "source_sha256": "93b9ec3d5d0e4b027da78890100c6a961f2d1ac773ac628d2f69c75355ae5a5c",
-      "distribution_sha256": "57284c586e19628c1e3f131193f39841124d0f99cb78389368788456b40558b2",
-      "bytes": 19184,
+      "distribution_sha256": "9856111d5f11bd065bb32d9080df12aa380724e51e74e3ad91c02b85c71eba07",
+      "bytes": 19762,
       "transforms": [
         {
           "from": "canonical-root",
@@ -2511,6 +2524,9 @@
         },
         {
           "patch": "premiere-dense-native-tracking"
+        },
+        {
+          "patch": "premiere-native-camera-split"
         }
       ]
     },
@@ -2518,11 +2534,14 @@
       "path": "horizontal-to-vertical/references/advanced-native-reframe.md",
       "source": "canonical-skills/horizontal-to-vertical/references/advanced-native-reframe.md",
       "source_sha256": "70c917e9a528705822b90fa2d50ece220750588aed2ebdeba3db342e6d438381",
-      "distribution_sha256": "ebd0bd0c41bee737673f7813c471f98d899e3b028622378672a3eb6b3f003baf",
-      "bytes": 7199,
+      "distribution_sha256": "916389fed7b3446556eed2b99ce25805c686f37b8b691531344339b0bb7039cf",
+      "bytes": 7597,
       "transforms": [
         {
           "patch": "premiere-dense-native-tracking"
+        },
+        {
+          "patch": "premiere-native-camera-split"
         }
       ]
     },
@@ -2564,14 +2583,17 @@
       "path": "horizontal-to-vertical/references/native-split-setup.md",
       "source": "canonical-skills/horizontal-to-vertical/references/native-split-setup.md",
       "source_sha256": "628912489b2f0b5923aa79d4b13ddeea7f05e385a5d643fc1541ec14931c3187",
-      "distribution_sha256": "3be37fae45a94dabe48d3c77a80674633ea3db0707bdc731eca299cd7cfc85ec",
-      "bytes": 8622,
+      "distribution_sha256": "4e5c82bb1f9ce3d19250f8b480a2591060dbc4eaf88b8919b80abd30ba71591b",
+      "bytes": 11056,
       "transforms": [
         {
           "patch": "default-split-shadow"
         },
         {
           "patch": "premiere-dense-native-tracking"
+        },
+        {
+          "patch": "premiere-native-camera-split"
         }
       ]
     },
@@ -2587,11 +2609,14 @@
       "path": "horizontal-to-vertical/scripts/filmcraft_smooth_x.py",
       "source": "canonical-skills/horizontal-to-vertical/scripts/filmcraft_smooth_x.py",
       "source_sha256": "d1786b0bb074620b6eb8c116cb558fbb450ecee7ace10bf2b029e605a567d6a7",
-      "distribution_sha256": "a0cb9059c5a45fdbbc629f8d1132d324c1f069913d7c4e9732cbd84848633609",
-      "bytes": 12938,
+      "distribution_sha256": "f39761438161a24c45d42710c757644b694c03b1d5abecef2ec4b9c539965b7b",
+      "bytes": 14976,
       "transforms": [
         {
           "patch": "dense-native-tracking-defaults"
+        },
+        {
+          "patch": "premiere-native-camera-split"
         }
       ]
     },
@@ -2623,11 +2648,14 @@
       "path": "horizontal-to-vertical/scripts/premiere_native_reframe.py",
       "source": "canonical-skills/horizontal-to-vertical/scripts/premiere_native_reframe.py",
       "source_sha256": "a240059d97f58b7c47e345b56fba6c75b18f7675adf8f7cecdcf9fa3ca9556d2",
-      "distribution_sha256": "cf513df4c5ecda6b09065ff015202b645984ec58c959f11d87d55b6d21888a3f",
-      "bytes": 56554,
+      "distribution_sha256": "9cfebf8f014c67ad7f1b8dea11658f4350e5a43d8575d0eb1f03e315c3355617",
+      "bytes": 62809,
       "transforms": [
         {
           "patch": "premiere-dense-native-tracking"
+        },
+        {
+          "patch": "premiere-native-camera-split"
         }
       ],
       "portable_patches": [
@@ -3672,12 +3700,15 @@
       "path": "caption-clips/scripts/resolve_cards.py",
       "source": "canonical-skills/caption-clips/scripts/resolve_cards.py",
       "source_sha256": "4f1df35ec7633d0dbc79585ece8f95bfeb7e327c272288dfc9f0be768573edc0",
-      "distribution_sha256": "6a5beaf95a464de14869f19144f04d941a7b079a80d0f8352f01893a08cd0f74",
-      "bytes": 47355,
+      "distribution_sha256": "797aa3349d04915dbcfef39524264b2091291f43f2907331f9bb65f9ffc82266",
+      "bytes": 47835,
       "transforms": [
         {
           "from": "repository-caption-density-patch",
           "to": "single-line-density-and-measured-fit-gates"
+        },
+        {
+          "patch": "premiere-native-camera-split"
         }
       ]
     },
@@ -6308,9 +6339,9 @@
     {
       "path": "horizontal-to-vertical/references/split-shadow-default.md",
       "source": "scripts/portable_snippets/split-shadow-default.md",
-      "source_sha256": "71f83f3e61dc9f7fce93aeeca0b8e643ce3dfd33d4ac8f1f3c993afcd9404152",
-      "distribution_sha256": "71f83f3e61dc9f7fce93aeeca0b8e643ce3dfd33d4ac8f1f3c993afcd9404152",
-      "bytes": 2450,
+      "source_sha256": "f7b663183a22052b2ed06bb13fd5346f49d21076eb801c5aa931458f9e97cf8c",
+      "distribution_sha256": "f7b663183a22052b2ed06bb13fd5346f49d21076eb801c5aa931458f9e97cf8c",
+      "bytes": 2522,
       "transforms": []
     },
     {

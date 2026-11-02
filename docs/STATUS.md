@@ -1,3 +1,9 @@
+## Premiere dense tracking and camera switching — preview.18
+
+The packaged reframing route uses dense source-bound native Motion keys and independent camera nests, with bounded transitions to source-linked single-camera shots. Conflicting sparse/manual reframe guidance is superseded by the packaged native route. Real 26.3 camera-stage construction, native export and UI save/reopen passed on a 111.903-second Q&A; see [native camera evidence and limits](NATIVE_PANELS.md#premiere-real-qa-camera-test--2026-11-02). Human approval, full-job completion and 26.5.2 native qualification remain separate.
+
+Graphics without a project item no longer break camera-source inspection. Whole-project dense-key reads have a bounded 300-second timeout without automatic resubmission. Regression tests also cover camera source clocks, protected captions/tracks, missing keys, caption style transport and source sync.
+
 ## Premiere 26.5.2 enabled — preview.14
 
 Premiere 26.5.2 is enabled for normal scoped editing at the owner's request. It no longer

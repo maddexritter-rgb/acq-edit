@@ -25,23 +25,38 @@ except ImportError:
 
 
 def find_offset(mp4: Path, wav: Path, sr: int, wav_probe_start: float,
-                wav_probe_len: float, mp4_scan_len: float) -> tuple[float, float]:
+                wav_probe_len: float, mp4_scan_len: float,
+                mp4_scan_start: float = 0.0) -> tuple[float, float]:
+    parameters = [sr, wav_probe_start, wav_probe_len, mp4_scan_len, mp4_scan_start]
+    if not all(np.isfinite(v) for v in parameters) or sr <= 0 or min(wav_probe_start, mp4_scan_start) < 0 or wav_probe_len <= 0 or mp4_scan_len < wav_probe_len:
+        raise ValueError("Use positive finite rates/durations, nonnegative starts, and a scan at least as long as the probe.")
     wav_probe, _ = librosa.load(str(wav), sr=sr, mono=True,
                                  offset=wav_probe_start, duration=wav_probe_len)
     mp4_scan, _ = librosa.load(str(mp4), sr=sr, mono=True,
-                                offset=0.0, duration=mp4_scan_len)
+                                offset=mp4_scan_start, duration=mp4_scan_len)
     if len(wav_probe) == 0 or len(mp4_scan) == 0:
         raise RuntimeError("One of the audio loads returned zero samples.")
+    if len(mp4_scan) < len(wav_probe):
+        raise ValueError("Use nonnegative starts and a scan at least as long as the probe.")
+    wav_probe = wav_probe - np.mean(wav_probe)
     wav_probe = wav_probe / (np.max(np.abs(wav_probe)) + 1e-9)
     mp4_scan = mp4_scan / (np.max(np.abs(mp4_scan)) + 1e-9)
 
     corr = correlate(mp4_scan, wav_probe, mode="valid")
+    # Normalize every candidate window, not just the entire recording. A loud
+    # unrelated passage must not beat the matching, quieter microphone spill.
+    count = len(wav_probe)
+    sums = np.concatenate(([0.0], np.cumsum(mp4_scan, dtype=np.float64)))
+    squares = np.concatenate(([0.0], np.cumsum(mp4_scan.astype(np.float64) ** 2)))
+    energy = squares[count:] - squares[:-count] - (sums[count:] - sums[:-count]) ** 2 / count
+    denominator = np.sqrt(np.maximum(energy, 0) * float(np.dot(wav_probe, wav_probe)))
+    corr = np.divide(corr, denominator, out=np.zeros_like(corr), where=denominator > 1e-10)
     lags = correlation_lags(len(mp4_scan), len(wav_probe), mode="valid")
     peak_idx = int(np.argmax(np.abs(corr)))
     peak_lag_samples = int(lags[peak_idx])
     peak_val = float(corr[peak_idx])
 
-    peak_seconds = peak_lag_samples / sr
+    peak_seconds = mp4_scan_start + peak_lag_samples / sr
     offset_wav_start_in_mp4 = peak_seconds - wav_probe_start
 
     # Confidence: peak vs median absolute correlation.
@@ -59,19 +74,26 @@ def main() -> int:
     ap.add_argument("--wav-probe-start", type=float, default=5.0)
     ap.add_argument("--wav-probe-len", type=float, default=60.0)
     ap.add_argument("--mp4-scan-len", type=float, default=300.0,
-                    help="How much of the MP4 to scan from the start")
+                    help="Length of the scan window")
+    ap.add_argument("--mp4-scan-start", type=float, default=0.0,
+                    help="Explicit scan start for local validation of a previously measured offset")
     ap.add_argument("--out", type=Path, default=Path("sync.json"))
     args = ap.parse_args()
 
     offset, confidence = find_offset(
         args.mp4, args.wav, args.sr,
-        args.wav_probe_start, args.wav_probe_len, args.mp4_scan_len,
+        args.wav_probe_start, args.wav_probe_len, args.mp4_scan_len, args.mp4_scan_start,
     )
     result = {
         "mp4": str(args.mp4),
         "wav": str(args.wav),
         "wav_start_in_mp4_seconds": round(offset, 3),
         "confidence": round(confidence, 2),
+        "probe_start": args.wav_probe_start,
+        "probe_duration": args.wav_probe_len,
+        "scan_start": args.mp4_scan_start,
+        "scan_duration": args.mp4_scan_len,
+        "qualification": "Correlation candidate only; peak-to-median ratio is not probability or sync approval. Verify another speech anchor and native lip sync.",
     }
     args.out.write_text(json.dumps(result, indent=2))
     print(f"WAV start aligns to MP4 time: {offset:.3f}s  (confidence {confidence:.2f})")

@@ -4,12 +4,32 @@
   "files": [
     {
       "path": "src/lab/toolkit-projects.ts",
-      "sha256": "18ddf459b3cba47634d34f790679a68365e456ea8e5bed4701805a9f13521abb"
+      "sha256": "18ddf459b3cba47634d34f790679a68365e456ea8e5bed4701805a9f13521abb",
+      "distributionSha256": "18ddf459b3cba47634d34f790679a68365e456ea8e5bed4701805a9f13521abb"
     },
     {
       "path": "src/lab/graphic-asset.ts",
       "sha256": "ff27721c25688964ecb5f722119bcf2af12f390ef2e0c48f487f586d5f5432c0",
-      "reason": "Guarded static native graphic source placement"
+      "reason": "Guarded static native graphic source placement",
+      "distributionSha256": "ff27721c25688964ecb5f722119bcf2af12f390ef2e0c48f487f586d5f5432c0"
+    },
+    {
+      "path": "src/lab/camera-split.ts",
+      "sha256": "e90f5c8de5b99376be4f2e9c7223afd378bbe3e69390218d7d6820a534e3d1e0",
+      "reason": "Guarded independent-camera panel construction; native qualification pending",
+      "distributionSha256": "e90f5c8de5b99376be4f2e9c7223afd378bbe3e69390218d7d6820a534e3d1e0"
+    },
+    {
+      "path": "src/lab/dialogue.ts",
+      "reason": "Bounded native dialogue effect transport with exact readback; rendered qualification recorded separately",
+      "sha256": "0f6ccf6ecdf05d7557e9c9db019e882419111010b7f91b807247c28ed7473af0",
+      "distributionSha256": "0f6ccf6ecdf05d7557e9c9db019e882419111010b7f91b807247c28ed7473af0"
+    },
+    {
+      "path": "src/lab/camera-shot.ts",
+      "reason": "Source-linked dense camera switching with protected residual intervals",
+      "sha256": "295be412e2ab8287b47f257e8e0bea65cb7238ef1a6c00fa035a9f129a5e9b55",
+      "distributionSha256": "295be412e2ab8287b47f257e8e0bea65cb7238ef1a6c00fa035a9f129a5e9b55"
     }
   ]
 }

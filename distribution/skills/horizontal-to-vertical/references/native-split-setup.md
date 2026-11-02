@@ -2,6 +2,36 @@
 
 Use this for editable Premiere deliverables. Camera choice and keyframe decisions remain in [native-camera-decisions.md](native-camera-decisions.md). This skill never substitutes a headless stacked render for the native split-screen master.
 
+## Toolkit native construction
+
+Use the repository `python/premiere_panels.py:request` to translate the frozen
+`panel-layout` decision into `lab_place_camera_split`. Submit through the verified
+ACQ Edit Agent stage helper with an exact project scope and fresh native baseline.
+Each camera must already be imported from its verified original source. The current
+route supports two 1080×960 panels in a 1080×1920 master, with dense source-frame
+Anchor Point curves and a linked upper-panel shadow. It retains the original
+source-linked V1/A1 assembly under the panels. Captions and music remain separate.
+
+The handler corrects newly created panel items to exact tick boundaries, checks
+all keys, removes only silent audio nests introduced by its own insertions, and
+verifies protected sequences and existing dialogue. Preserve partial artifacts and
+reconcile the original operation after any failure; never replay a failed build.
+Store each request and native result as `{cutId, request, result}` in the framing
+handoff's `panelSplits` array. Native completion uses the independent panel verifier,
+including original source paths, clocks, keys, panel graph and shadow controls.
+This transport does not choose sync, supply missing detections or approve composition.
+
+For planned single-camera intervals between splits, use the repository
+`scripts/apply_premiere_camera_shots.py` and guarded `lab_place_tracked_camera_shot`
+on a duplicate master. Supply the Assembly Design source/timeline ranges and the
+framing owner's dense curve and calibrated full-frame geometry. The tool replaces
+only the selected picture-track interval, preserving residual source clocks,
+captions, dialogue, lower camera coverage and original sequences. Do not stretch a
+960-high panel to imitate a full-frame source shot. Verify the original-camera
+paths, every native key, uninterrupted picture coverage and protected tracks with
+`scripts/verify_premiere_camera_test.py`; then inspect native pixels and save/reopen.
+This is a camera-stage test route, not an automatic full-job completion receipt.
+
 ## Project organization
 
 Keep original media and reference projects untouched. In a working project, separate `RAW/FOOTAGE`, `RAW/AUDIO`, `SEQ`, and `ASSETS`. These bin roles and a source/edit/finishing sequence hierarchy were observed in a verified final's dependency graph. The descriptive names below are a recommended reusable convention, not a claim that every reference uses them.
@@ -72,9 +102,17 @@ By default, use the bundled [split-screen-shadow.prfpset](../assets/split-screen
 
 Important: this one preset contains **two constituent controls**, Drop Shadow (`AE.ADBE Drop Shadow`) and intrinsic Motion (`AE.ADBE Motion`). Motion is part of the approved shadow setup, not a separate color/look preset. Apply the complete named preset only to the dedicated shadow duplicate, never to an already-keyframed visible source clip or the full finishing nest.
 
-Saved static values include Shadow Only=true, Direction=180, Distance=49.700008392334, Softness=150, and Motion Scale=115 with centered Position/Anchor and zero rotation/crop. Opacity is serialized as249.899993896484 on a0–255 range; this is **not249.9%**. Import the preset rather than guessing UI-unit conversions. Several `CurrentValue` fields differ from `StartKeyframe`; do not reconstruct from `CurrentValue` (for example Scale1105 and Shadow Only=false are not the saved static settings).
+Saved static values include Shadow Only=true, Direction=180, Distance=49.700008392334, Softness=150, and Motion Scale=115 with centered Position/Anchor and zero rotation/crop. Opacity is serialized as249.899993896484 on a0–255 range; this is **not249.9%**. The native-controls route uses the explicit conversion 249.9/255 × 100 = 98%; never pass 249.9 as a percent. Several `CurrentValue` fields differ from `StartKeyframe`; do not reconstruct from `CurrentValue` (for example Scale1105 and Shadow Only=false are not the saved static settings).
 
-Import only this isolated asset through Premiere's preset import. Apply once to TOP SHADOW. Read back the resulting controls, Shadow Only state and static scale; ensure no new color effects or duplicate shadow instances. If native import fails, stop preset application and report it—do not silently substitute a gaussian seam or claim the native preset was applied. Keep the supplied original bundle untouched.
+The toolkit's native constructor writes the measured native controls directly to
+TOP SHADOW: Opacity 98%, Direction 180, Distance 49.700008392334, Softness 150,
+Shadow Only true, and parent Motion Scale 115. It verifies their stored values.
+This is a native-controls implementation, not a claim that Premiere imported the
+preset file. The clean TOP IMAGE stays at Scale 100 and shares the same panel nest.
+Do not apply the preset again on top of that treatment. If explicitly using the
+preset-import route instead, import only the isolated asset and read back the same
+controls. Preserve the original bundle. In either route, inspect actual seam pixels;
+matching values alone do not establish a match to the approved look.
 
 ## Revision and visual acceptance test
 

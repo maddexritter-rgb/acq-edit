@@ -20,8 +20,8 @@ final export. Use its guarded revision/export route from
 The agent performs this step automatically as part of finishing; it must not ask
 whether to add the default. Inspect existing native state before applying it.
 
-For Premiere, follow [native-split-setup.md](native-split-setup.md): use the named
-native preset on the linked shadow-only duplicate, beneath the clean image.
+For Premiere, follow [native-split-setup.md](native-split-setup.md): use the toolkit native-controls constructor on the linked shadow-only duplicate,
+beneath the clean image, or the explicit preset-import route. Do not stack both.
 Missing packaged presets or unavailable native controls are explicit limitations,
 never permission to load global skills or switch editing engines.
 

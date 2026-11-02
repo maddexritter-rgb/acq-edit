@@ -106,13 +106,13 @@ class DensePremiereTests(unittest.TestCase):
             def isOpened(self):return True
             def get(self,p):return {native.cv2.CAP_PROP_FPS:30,native.cv2.CAP_PROP_FRAME_WIDTH:1920,native.cv2.CAP_PROP_FRAME_HEIGHT:1080,native.cv2.CAP_PROP_POS_FRAMES:self.pos}.get(p,0)
             def set(self,p,value):self.seeks.append((p,value));self.pos=value
-            def read(self):self.pos+=1;self.reads+=1;return True,np.zeros((10,10,3),np.uint8)
+            def read(self):self.pos+=1;self.reads+=1;return True,np.zeros((1080,1920,3),np.uint8)
             def release(self):pass
         class Detector:
             def detect(self,frame):return None,None
         for missing in (False,True):
             cap=Capture();choices=[(500+i,400,100,100,.9) for i in range(30)]
-            if missing:choices[0]=None
+            if missing:choices[:1]=[None,None] # full-frame and ROI retry both miss frame zero
             with patch.object(native,'source_clock',return_value=Fraction(30)),patch.object(native.cv2,'VideoCapture',return_value=cap),patch.object(native,'detector_for',return_value=(Detector(),1920,1080)),patch.object(native,'select_face',side_effect=choices):
                 if missing:
                     with self.assertRaisesRegex(ValueError,'Unresolved detector gap'):native._track_item_uncached(item(),native.PRESETS['podcast'],.5)

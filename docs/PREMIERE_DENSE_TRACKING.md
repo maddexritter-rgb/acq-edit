@@ -52,11 +52,13 @@ edge remains present. The complete MP4 decodes to 1,080 frames at 1080x1920 with
 approval or a listening assessment. Interpolation was requested but is not exposed
 by the native readback API.
 
-**Still pending:** saved-project reopen verification. The saved test project closed,
-then the development Mac locked and the CEP heartbeat stopped before reopening.
-No claim of successful reopen, complete Q&A acceptance, split-panel native acceptance
-for this change, or Premiere 26.5.2 qualification is made here. The release remains
-pending this final persistence check.
+**Follow-up on 2026-11-02:** a full 111.903-second Q&A camera test now passes
+native construction, export and UI save/close/reopen with all 15 sequence snapshots
+unchanged. Independent panels and eight dense-keyed single-camera shots retain
+original camera links. See [camera-stage evidence](NATIVE_PANELS.md#premiere-real-qa-camera-test--2026-11-02).
+The dedicated empty-workspace lifecycle endpoint remains unqualified, as do full-job
+completion, Premiere 26.5.2 native acceptance and human visual approval. Preview.18
+ships the verified camera operations with these limits stated explicitly.
 
 For an installed update, refresh the owned integration and skills in the existing
 chat. Close and reopen the ACQ Edit Agent panel so it loads the new runtime; a

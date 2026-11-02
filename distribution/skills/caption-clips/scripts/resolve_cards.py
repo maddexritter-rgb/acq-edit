@@ -85,14 +85,14 @@ LADDER_FACES = {
 
 # Declarative only: nothing downstream has to change to honour these.
 PROFILE_DESCRIPTIVE = frozenset({'id', 'display_name', 'shadow_profile',
-                                 'premiere_text_style_preset', 'vendored_font'})
+                                 'premiere_text_style_preset', 'vendored_font', 'filmcraft_caption_motion'})
 # Honoured by THIS resolver.
 PROFILE_HONOURED = frozenset({'normalization', 'max_lines', 'allow_weight_variation',
                               'default_y_pct', 'body_font_postscript',
                               'italic_font_postscript', 'emphasis_font_postscript',
                               'max_words_per_card',
                               'font_size_px', 'max_text_width_pct', 'frame_width_px', 'frame_height_px',
-                              'progressive_reveal',
+                              'progressive_reveal', 'guest_turn_italics', 'allow_quote_italics',
                               # Shared with the other grouper: both honour these.
                               'caption_hold_through_seconds',
                               'caption_trailing_hold_seconds'})
@@ -101,7 +101,7 @@ PROFILE_OTHER_GROUPER = frozenset({'min_words_per_card', 'max_words_per_quote_ca
                                    'reveal_mode', 'line_reveal_min_delay_seconds',
                                    'word_reveal_min_seconds_per_word',
                                    'word_reveal_min_interword_gap_seconds',
-                                   'max_chars_per_line', 'allow_quote_italics',
+                                   'max_chars_per_line',
                                    })
 
 
@@ -180,6 +180,10 @@ def style_from_profile(profile, overrides=None, target_canvas=None):
     target canvas is given: it re-declares profile fields the profile owns.
     """
     style = dict(overrides or {})
+    if 'guest_turn_italics' in profile:
+        style['voices'] = {k:dict(v) for k,v in style.get('voices',{}).items()}
+        if 'guest' in style['voices']:
+            style['voices']['guest']['italic'] = bool(profile['guest_turn_italics'])
     scale = 1.0
     width_px, height_px = profile.get('frame_width_px'), profile.get('frame_height_px')
     hand_sized = [k for k in ('font_size_px', 'max_text_width_px') if k in style]
@@ -544,6 +548,8 @@ def resolve(words, cuts, style, editorial, uniform_request):
     profile = style.get('_profile')
     if profile:
         check_profile_contract(profile, style, words)
+        if profile.get('allow_quote_italics') is False and (italic_entries or italic_spans):
+            raise ValueError('The selected profile does not permit requested quote italics')
 
     voices = style['voices']
     fonts = style.get('fonts') or {}

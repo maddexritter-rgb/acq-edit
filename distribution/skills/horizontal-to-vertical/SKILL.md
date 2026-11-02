@@ -45,7 +45,7 @@ Do not switch backends or flatten panels to bypass an unsupported operation.
 
 For a fresh Premiere conversion, the output is:
 
-- A duplicated 1080×1920 review sequence in the active weekly Premiere project.
+- A duplicated 1080×1920 review sequence in the job's dedicated Premiere project.
 - Original source-linked dialogue cuts preserved; unused synchronized picture
   angles retained as editable coverage in the same project.
 - Native `Motion > Anchor Point` keys on each individual picture item.
@@ -125,7 +125,7 @@ The driver performs the complete native workflow:
    copy is optional for recovery, never the active weekly default.
 3. Changes only the duplicate to 1080×1920.
 4. Reconciles every source-linked picture item by track, item index, media path, source in/out, and timeline in/out.
-5. Sequentially detects every frame in each continuous source/camera/layout run. Preserves raw missing detections; only interior gaps of at most six frames may interpolate. Longer or edge gaps stop for inspected coverage repair, never silently hold or center the crop.
+5. Sequentially detects every frame in each continuous source/camera/layout run. Retry missing wide-camera detections inside the reviewed subject ROI. Preserve raw missing detections; interior gaps of at most six frames may interpolate automatically. A separately inspected brief occlusion may use the shared `dense_subject_x` reviewed-occlusion route: at most 18 interior frames, pinned source-frame evidence, detected endpoints of the same nearby subject, and explicitly labeled interpolated frames. This does not fabricate detections or hold a crop. Edge gaps, subject changes and longer gaps require different source coverage.
 6. Locks Y by compatible framing group; an explicitly allowed stand/sit range retains the existing bounded posture transition. Smooth X over the entire continuous run using the shared Filmcraft filter, then slice item-local curves. Source-time gaps, camera/layout changes and timeline gaps start new runs.
 7. Retains one key per displayed frame, even for a steady subject. Legacy `--sample-seconds` and `--pixel-tolerance` arguments cannot reduce density. Source/sequence frame rates must match; unsupported frame mapping stops before writing.
 8. Clamps every X/Y Anchor value to the scale-dependent source-safe crop region so no key can reveal black outside the source frame.
@@ -137,7 +137,7 @@ Do not reconstruct these mechanics ad hoc when the driver is available.
 
 ## Review boundary
 
-Stop after the reframed sequence is open. The user reviews framing before captions, graphics, or other finishing begins.
+For a direct reframing-only request, stop with the reframed sequence open. During an authorized end-to-end `/edit` job, inspect framing and continue through captions, music and final native completion; do not insert another approval stop.
 
 Report:
 
@@ -205,7 +205,7 @@ When overlapping source-linked picture tracks are detected, the canonical driver
 2. Run `premiere_native_reframe.py` inside each panel’s source sequence with the appropriate preset.
 3. Keep each panel’s keys item-local inside that panel sequence.
 4. Assemble the panels in the finishing sequence with native Motion/Crop controls.
-5. Keep the approved linked shadow duplicate beneath the clean panel; apply the supplied [split-screen-shadow.prfpset](assets/split-screen-shadow.prfpset) only to that shadow duplicate.
+5. Keep the linked shadow duplicate beneath the clean panel. Follow the native-controls or preset-import route in [native-split-setup.md](references/native-split-setup.md); never stack both treatments.
 6. Preserve hard resets when either panel changes cameras.
 7. Open the composed finishing sequence for review.
 
@@ -228,7 +228,7 @@ Stop without writing when:
 - Premiere does not create and activate the fresh 1080×1920 sequence duplicate.
 - Native key readback does not cover every planned source item.
 
-A no-face fallback may be written only when it is recorded in the report and the resulting framing is visibly reviewed. Never describe a fallback as tracked framing.
+Preserve missing detections. Only bounded internal gaps of at most six frames may interpolate; longer or edge gaps require inspected coverage repair before native writes. Never substitute a static or fabricated curve and call it tracked framing.
 
 ## Maintained implementation
 

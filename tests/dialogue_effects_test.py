@@ -28,7 +28,7 @@ class DialogueEffectsTests(unittest.TestCase):
   with self.assertRaisesRegex(RuntimeError,'membership'):self.check()
  def test_backend_cut_coverage_and_evidence_refused(self):
   effects.validate(self.project,self.spec);self.spec['backend']='premiere'
-  with self.assertRaisesRegex(RuntimeError,'FilmCraft-only'):effects.validate(self.project,self.spec)
+  with self.assertRaisesRegex(RuntimeError,'Explicit Premiere'):effects.validate(self.project,self.spec)
   self.spec['backend']='filmcraft';self.spec['cuts'].append({'id':'two'})
   with self.assertRaisesRegex(RuntimeError,'exact cuts'):effects.validate(self.project,self.spec)
   self.spec['cuts'].pop();(self.root/'mix.json').write_text('changed')
@@ -36,5 +36,12 @@ class DialogueEffectsTests(unittest.TestCase):
  def test_unknown_missing_and_nonfinite_params_refused(self):
   for params in [{'gain':25},{'gain':float('nan')},{'gain':True},{},{'gain':20,'extra':0}]:
    self.chain[0]['params']=params
+   with self.assertRaises(RuntimeError):effects.validate(self.project,self.spec)
+ def test_premiere_requires_separate_native_chain_and_exact_coverage(self):
+  self.spec['backend']='premiere';t=self.spec['audio']['dialogueEffects'];t['schema']='acq-edit/premiere-dialogue-effects-v1'
+  chain=[{'name':'Single-band Compressor','matchName':'native-id','properties':[{'name':'Threshold','value':.4},{'name':'','value':False}]}]
+  t['cuts']={'one':chain};effects.validate(self.project,self.spec)
+  for mutate in [lambda c:c[0]['properties'][0].update(value=float('nan')),lambda c:c.append(copy.deepcopy(c[0])),lambda c:c[0].update(name='Unknown'),lambda c:c[0]['properties'][0].update(keys=[1])]:
+   bad=copy.deepcopy(chain);mutate(bad);t['cuts']['one']=bad
    with self.assertRaises(RuntimeError):effects.validate(self.project,self.spec)
 if __name__=='__main__':unittest.main()

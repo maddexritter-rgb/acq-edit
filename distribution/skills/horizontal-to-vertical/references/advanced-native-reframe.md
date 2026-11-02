@@ -6,6 +6,12 @@ The canonical runner and `premiere_reframe_bridge.ReframeSession` use the config
 
 The `scoped-edit` profile permits only the exact project named in its expiring `project_authorization` file. The connector independently checks the same project, exclusive lease, tool allowlist, output root and current revision. Never widen `fixture_root` to production. A new authorized job requires an exact new project scope, not a permanent all-project exemption. Inspect capabilities from the running connector; the pinned catalog may predate these operations.
 
+For Q&A original-camera switches and independent splits, use the
+[source-linked camera construction route](native-split-setup.md#toolkit-native-construction).
+It accepts exact rational frame clocks and writes the frozen dense curve natively.
+The static-item QE splitting operation below is a separate, limited route; its
+integer-FPS limitation must not block the source-linked camera constructor.
+
 The local authorization schema is `premiere-agent/edit-project-authorization-v1`: `projectPath`, ISO `expiresAt`, `tools`, exact source `readPaths`, and one `writeRoot`. Preserve other sessions' ownership. Unknown operations remain quarantined under their original IDs; no blind replay.
 
 ## Mixed-camera preparation

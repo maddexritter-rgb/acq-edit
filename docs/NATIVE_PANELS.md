@@ -46,7 +46,15 @@ Saved-native verification checks the master and nested clocks, source paths, dim
 
 Caption-only revisions retain and reverify the complete layout. `fixed-framing` and `tracking-framing` cannot edit a panel target. Existing panel crop/tracking/rectangle changes use the guarded `panel-framing` route below; unsupported camera replacement or count/mode changes must not rebuild the user's timeline or change dialogue. Review text mentioning panels/layouts routes to both Assembly Design and horizontal-to-vertical without automatically requesting a spoken recut.
 
-Premiere explicitly rejects this shared panel-layout transport before native mutation. Its native implementation remains required for the pilot. Do not substitute another engine, a converter or a flattened panel file.
+Premiere has a guarded two-camera construction path through `lab_place_camera_split`
+and `python/premiere_panels.py`, owned by horizontal-to-vertical. It creates two
+1080×960 source-linked sequences and three master occurrences: lower image,
+upper shadow, upper image. The upper occurrences share one nest; each camera
+retains dense native keys. Requests come from the frozen camera/framing plan.
+Native completion requires `panelSplits` evidence and checks the actual reopened
+graph and camera media. Construction, native readback and a save/reopen regression
+have run on 26.3. Real-Q&A camera-stage evidence is recorded below; full editing-job qualification and human approval remain separate.
+Unsupported layouts still stop explicitly. Do not flatten or change editors.
 
 ## Resolve construction and inspection
 
@@ -119,3 +127,13 @@ FilmCraft exercised the same swap/crop/tracking revision and unequal-height resi
 These direct native-adapter fixtures do not establish real multicamera synchronization, headroom/phone composition, automatic panel planning, both-agent acceptance, Premiere panel support or human approval.
 
 A separate real Codex/FilmCraft run executed the frozen 75-frame panel build, then a browser-submitted swap/crop/curve revision through Apply revisions. Both jobs published immutable versions and reached ready. The independent checker passed exact plan/receipt/owner routing, all native clocks/geometry, protected saved-project comparison and byte-identical decoded audio. All 100 panel-frames per version passed, with maximum marker-edge error 0.75 pixels. V2 required fresh review, late feedback stayed pending and its timestamp opened read-only V1. This qualifies only synthetic execution of specified geometry; see `LIVE_AGENT_LOOP.md` for reproduction and limits.
+
+## Premiere real-Q&A camera test — 2026-11-02
+
+Premiere 26.3 constructed and exported a 2,683-frame (111.903 seconds), 1080×1920, 24000/1001 fps Q&A from original camera media. Twelve independent panel nests retained 5,366 dense native tracking keys. A separate editable test sequence added eight source-linked single-camera shots with 1,337 keys and 15 visible split/single-camera boundaries. The original sequence, dialogue cuts and editable captions were preserved.
+
+`lab_place_tracked_camera_shot` replaces only an explicitly planned picture interval and verifies retained fragments, source clocks, every new key, other tracks and other sequences. The packaged `apply_premiere_camera_shots.py` helper retains each operation and result; `verify_premiere_camera_test.py` independently checks live source links, dense curves, protected tracks and continuous visible coverage. Assembly Design supplies camera choices; horizontal-to-vertical implements them.
+
+The native export decoded all 2,683 frames. Forty-one rendered frames around boundaries, shot midpoints and endpoints were inspected: the planned camera choices were visible, complete heads stayed inside the sampled frames and no sampled boundary was blank. This is sampled visual inspection, not continuous playback approval.
+
+A real UI save/close/reopen preserved the complete snapshots of all 15 sequences exactly, including native keys. The dedicated empty-workspace lifecycle endpoint did not pass because its panel heartbeat was unavailable; the UI reopen evidence is not substituted for that endpoint's completion receipt. This camera-stage test does not complete the full editing-job receipt, qualify 26.5.2, or claim audio QA, human approval or clean-Mac acceptance.

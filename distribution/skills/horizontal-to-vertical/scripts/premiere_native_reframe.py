@@ -33,6 +33,56 @@ MODEL = Path("__ACQ_TOOLKIT__/assets/models/yunet/yunet.onnx")
 sys.path.insert(0, str(HERE))
 from filmcraft_smooth_x import dense_subject_x, smooth_x
 
+
+def reviewed_feature_track(media, source_start, count, rectangle, initial_x, evidence):
+    """Track visible head texture through a reviewed face occlusion, never invent faces."""
+    from filmcraft_smooth_x import digest
+    if not evidence or any(digest(e['path']) != e['sha256'] for e in evidence):
+        raise ValueError('Feature tracking requires pinned inspected source frames')
+    if type(count) is not int or not 2 <= count <= 240 or type(source_start) is not int or source_start < 0:
+        raise ValueError('Bounded exact source frames required for feature tracking')
+    cap=cv2.VideoCapture(str(media))
+    try:
+        cap.set(cv2.CAP_PROP_POS_FRAMES,source_start);ok,frame=cap.read()
+        if not ok or abs(cap.get(cv2.CAP_PROP_POS_FRAMES)-source_start-1)>.01:
+            raise ValueError('Feature tracker source seek failed')
+        height,width=frame.shape[:2];factor=1.0
+        gray=cv2.cvtColor(cv2.resize(frame,None,fx=factor,fy=factor),cv2.COLOR_BGR2GRAY)
+        x0,y0,x1,y1=rectangle
+        if not 0<=x0<x1<=width or not 0<=y0<y1<=height:raise ValueError('Visible subject feature rectangle invalid')
+        mask=np.zeros_like(gray);mask[round(y0*factor):round(y1*factor),round(x0*factor):round(x1*factor)]=255
+        points=cv2.goodFeaturesToTrack(gray,maxCorners=80,qualityLevel=.015,minDistance=3,mask=mask)
+        if points is None or len(points)<8:raise ValueError('Insufficient visible subject features')
+        xs=[float(initial_x)];rows=[{'frame':source_start,'features':len(points),'dx':0.0}];offset=np.zeros(2)
+        for i in range(1,count):
+            ok,frame=cap.read()
+            if not ok:raise ValueError('Feature tracking source ended early')
+            current=cv2.cvtColor(cv2.resize(frame,None,fx=factor,fy=factor),cv2.COLOR_BGR2GRAY)
+            forward,valid,_=cv2.calcOpticalFlowPyrLK(gray,current,points,None,winSize=(21,21),maxLevel=3)
+            if forward is None:raise ValueError('Feature tracking failed')
+            backward,back_valid,_=cv2.calcOpticalFlowPyrLK(current,gray,forward,None,winSize=(21,21),maxLevel=3)
+            if backward is None:raise ValueError('Feature tracking reverse check failed')
+            keep=(valid.ravel()==1)&(back_valid.ravel()==1)&(np.linalg.norm(backward-points,axis=2).ravel()<1.0)
+            old=points[keep].reshape(-1,2);new=forward[keep].reshape(-1,2)
+            if len(old)<8:raise ValueError(f'Insufficient consistent head features at frame {source_start+i}; inspect occlusion')
+            delta=new-old;median=np.median(delta,axis=0);inliers=np.linalg.norm(delta-median,axis=1)<2.0
+            if inliers.sum()<8:raise ValueError('Inconsistent head motion; inspect occlusion')
+            dx=float(np.median(delta[inliers,0]));value=xs[-1]+dx/(width*factor)
+            if not 0<=value<=1 or abs(dx)>width*factor*.025:raise ValueError('Feature tracking jumped subjects')
+            xs.append(value);rows.append({'frame':source_start+i,'features':int(inliers.sum()),'dx':dx})
+            points=new[inliers].reshape(-1,1,2);offset+=np.median(delta[inliers],axis=0);gray=current
+            if len(points)<40:
+                mask=np.zeros_like(gray)
+                left,top=round(x0*factor+offset[0]),round(y0*factor+offset[1])
+                right,bottom=round(x1*factor+offset[0]),round(y1*factor+offset[1])
+                if not 0<=left<right<=gray.shape[1] or not 0<=top<bottom<=gray.shape[0]:raise ValueError('Tracked head rectangle left source')
+                mask[top:bottom,left:right]=255
+                for point in points:cv2.circle(mask,tuple(np.rint(point[0]).astype(int)),4,0,-1)
+                extra=cv2.goodFeaturesToTrack(gray,maxCorners=80-len(points),qualityLevel=.015,minDistance=3,mask=mask)
+                if extra is not None:points=np.concatenate([points,extra])
+        return {'x':xs,'observations':rows,'method':'forward-backward-head-feature-flow','sourceStartFrame':source_start,'rectangle':rectangle,'evidence':evidence,'faceDetections':False}
+    finally:cap.release()
+
 LAB_SESSION = None
 TICKS_PER_SECOND = 254_016_000_000
 
@@ -318,7 +368,16 @@ def _track_item_uncached(item: dict, preset: dict, sample_seconds: float) -> dic
         cap.set(cv2.CAP_PROP_POS_FRAMES, start)
         if abs(cap.get(cv2.CAP_PROP_POS_FRAMES) - start) > .01:
             raise RuntimeError("Decoder did not seek to the exact source frame")
-        faces, previous = [], None
+        faces, methods, previous = [], [], None
+        # Wide Q&A cameras can shrink the intended face below useful detector
+        # resolution. Retry actual missing detections in the reviewed subject ROI;
+        # never turn a missing observation into a held or invented face position.
+        rx0, ry0, rx1, ry1 = preset['roi']
+        left, top = int(rx0 * width), int(ry0 * height)
+        right, bottom = math.ceil(rx1 * width), math.ceil(ry1 * height)
+        if not 0 <= left < right <= width or not 0 <= top < bottom <= height:
+            raise ValueError('Subject ROI must be a nonempty source rectangle')
+        rescue_detector, rw, rh = detector_for(right-left, bottom-top)
         for frame_index in range(count):
             ok, frame = cap.read()
             if not ok:
@@ -327,6 +386,18 @@ def _track_item_uncached(item: dict, preset: dict, sample_seconds: float) -> dic
                 raise RuntimeError("Decoder frame clock drift")
             _, found = detector.detect(cv2.resize(frame, (dw, dh)))
             face = select_face(found, previous, preset['roi'], dw, dh, preset.get('min_face_height720', 15))
+            method = 'full-frame-yunet'
+            if face is None:
+                _, candidates = rescue_detector.detect(cv2.resize(frame[top:bottom, left:right], (rw, rh)))
+                translated = None if candidates is None else candidates.copy()
+                if translated is not None:
+                    translated[:, 0] = (translated[:, 0] / rw * (right-left) + left) / width * dw
+                    translated[:, 1] = (translated[:, 1] / rh * (bottom-top) + top) / height * dh
+                    translated[:, 2] *= (right-left) / rw / width * dw
+                    translated[:, 3] *= (bottom-top) / rh / height * dh
+                face = select_face(translated, previous, preset['roi'], dw, dh, preset.get('min_face_height720', 15))
+                method = 'subject-roi-yunet' if face is not None else 'missing'
+            methods.append(method)
             if face is None:
                 faces.append(None)
             else:
@@ -334,8 +405,15 @@ def _track_item_uncached(item: dict, preset: dict, sample_seconds: float) -> dic
                 faces.append([face[0]/dw, face[1]/dh, face[2]/dw, face[3]/dh, face[4]])
     finally:
         cap.release()
-    evidence = {'denseFaces': faces, 'denseFrameIndices': list(range(count))}
-    xs, origins = dense_subject_x(evidence, count)
+    evidence = {'denseFaces': faces, 'denseFrameIndices': list(range(count)), 'detectionMethods': methods}
+    feature_tracks=[]
+    for decision in preset.get('occluded_head_tracks', []):
+        a,b=decision['startFrame'],decision['endFrame']
+        if type(a)!=int or type(b)!=int or not 0<=a<b<=count or faces[a] is None or faces[b-1] is None:
+            raise ValueError('Occlusion feature track needs detected source endpoints')
+        flow=reviewed_feature_track(item['media_path'],start+a,b-a,decision['rectangle'],faces[a][0],decision['evidence'])
+        feature_tracks.append({**flow,'startFrame':a,'endFrame':b,'reason':decision['reason']})
+    xs, origins = dense_subject_x(evidence, count, reviewed_occlusions=preset.get('reviewed_occlusions', ()),feature_tracks=feature_tracks)
     if any(abs(a-b) > .20 for a,b in zip(xs,xs[1:])):
         raise ValueError('Abrupt subject switch; inspect camera boundary and intended-subject ROI')
     valid = [i for i,f in enumerate(faces) if f is not None]
@@ -345,7 +423,7 @@ def _track_item_uncached(item: dict, preset: dict, sample_seconds: float) -> dic
             'face_x':smooth_x(xs).tolist(), 'face_y':ys, 'face_y_median':float(np.median(ys)),
             'detections':len(valid), 'samples':count, 'fallback':False,
             'edge_face_seen':[faces[0] is not None, faces[-1] is not None],
-            'miss_rate':1-len(valid)/count, 'evidence':evidence, 'origins':origins}
+            'miss_rate':1-len(valid)/count, 'evidence':evidence, 'origins':origins,'featureTracks':feature_tracks}
 
 
 def dense_tracking_runs(items, presets, cache_dir=None):

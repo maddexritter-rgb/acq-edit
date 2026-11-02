@@ -207,7 +207,10 @@ class StdioMcp:
                 raise TransportUncertain(str(exc), request_id) from exc
 
     def call(self, name, arguments):
-        return self.request('tools/call', {'name': name, 'arguments': arguments})
+        # Whole-project dense-key readback includes every nested camera. Keep one
+        # bounded request alive long enough; never turn a slow read into retries.
+        timeout = max(self.timeout, 300.0) if name == 'inspect_project_sequences' else None
+        return self.request('tools/call', {'name': name, 'arguments': arguments}, timeout=timeout)
 
     def _close_pipes(self):
         self.process.stdin.close()
@@ -240,7 +243,7 @@ class PremiereBridge:
         return json.loads(blocks[0]['text']), envelope.get('isError', False)
 
     def inspect(self, name, args):
-        if name not in {'lab_snapshot', 'lab_search_capabilities', 'lab_get_operation', 'lab_get_job', 'ping', 'inspect_reframe_state', 'inspect_music_state', 'inspect_project_sequences', 'inspect_assembly_links', 'get_full_sequence_info','lab_inspect_export_state'}:
+        if name not in {'lab_snapshot', 'lab_search_capabilities', 'lab_get_operation', 'lab_get_job', 'ping', 'inspect_reframe_state', 'inspect_music_state', 'inspect_project_sequences', 'inspect_assembly_links', 'inspect_camera_panel_sources', 'get_full_sequence_info','lab_inspect_export_state'}:
             capability = self.capability(name)
             if capability.get('authority', {}).get('required') != 'inspect' or capability.get('targetVersionEligible') is not True or capability.get('authorityPermitted') is not True:
                 raise BridgeError('Use the guarded submit path for stage operations')
@@ -291,9 +294,9 @@ class PremiereBridge:
                 raise BridgeError('Target must be inside the selected disposable fixture root')
             from datetime import datetime
             auth = json.loads(Path(self.profile.project_authorization).read_text())
-            allowed = {'lab_update_static_panel_geometry','lab_export_reframe_frames','lab_reframe_embedded_panels','lab_split_reframe_shots', 'lab_duplicate_vertical_sequence', 'lab_apply_reframe_motion', 'lab_repair_anchor_x_keys', 'save_project', 'set_active_sequence', 'export_frame'}
+            allowed = {'lab_prepare_camera_source','lab_place_tracked_camera_shot','lab_place_camera_split','lab_update_static_panel_geometry','lab_export_reframe_frames','lab_reframe_embedded_panels','lab_split_reframe_shots', 'lab_duplicate_vertical_sequence', 'lab_apply_reframe_motion', 'lab_repair_anchor_x_keys', 'save_project', 'set_active_sequence', 'export_frame'}
             if self.profile.mode == 'scoped-edit':
-                allowed |= {'lab_import_compiled_assembly','lab_import_prepared_caption_sequence','lab_place_graphic_asset','lab_prepare_music_source','lab_place_music_item','lab_apply_music_envelope','lab_apply_assembly_audio_edges','export_sequence','lab_export_exact_range'}
+                allowed |= {'lab_import_compiled_assembly','lab_import_prepared_caption_sequence','lab_place_graphic_asset','lab_prepare_music_source','lab_place_music_item','lab_apply_music_envelope','lab_apply_dialogue_effect','lab_apply_assembly_audio_edges','export_sequence','lab_export_exact_range'}
             schema = 'premiere-agent/edit-project-authorization-v1' if self.profile.mode == 'scoped-edit' else 'premiere-agent/reframe-project-authorization-v1'
             if (auth.get('schema') != schema or
                     auth.get('projectPath') != str(project.resolve()) or

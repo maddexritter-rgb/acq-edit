@@ -30,8 +30,7 @@
     {
       "path": "src/lab/server.ts",
       "originalSourceSha256": "3d43c5f9449b895c3da142d436141cb0575544e3e6bcabb9fe21c9e3ff0f21e9",
-      "distributionSha256": "b14501539ad69863f9250673008f489f0a10bcfb699983fe45f2f8c4a7107f1c",
-      "reason": "Add bounded native PNG placement under exact project/stage scope"
+      "distributionSha256": "b14501539ad69863f9250673008f489f0a10bcfb699983fe45f2f8c4a7107f1c"
     },
     {
       "path": "src/lab/assembly-links.ts",
@@ -41,14 +40,12 @@
     {
       "path": "src/lab/runtime.ts",
       "originalSourceSha256": "77c3e18abc43c95a6b5602359a14a241c67d71ac5f62e89b66fa6a245d18cf65",
-      "distributionSha256": "49e575edae5d84adb5bd93609d9bfb2dc54bc21d737b78ca5f4c1e6dd80e128c",
-      "reason": "Add bounded native PNG placement under exact project/stage scope"
+      "distributionSha256": "486b52276c5813e16bd78645ad299c2e2fc1d64d1e3cf499b54a0d7012a2477f"
     },
     {
       "path": "src/security/capabilities.ts",
       "originalSourceSha256": "d1dbb845014c4dc6783480203823970f8d31005d277b62ccf01ed572069ac5df",
-      "distributionSha256": "32df871828dfb2e7a45daeb72d246fb657067b2aad11db91544a46c6eb4328a8",
-      "reason": "Add bounded native PNG placement under exact project/stage scope"
+      "distributionSha256": "312d4465fa5b88918ba1bc778e5378f04e97761e77e4d228bb566fdf41dbdf37"
     },
     {
       "path": "src/lab/context.ts",
@@ -58,7 +55,7 @@
     {
       "path": "src/lab/reframe.ts",
       "originalSourceSha256": "90dab5bf09e567e68a49b6f22a32ecca37b63a5297ce8c2159243dd41add8985",
-      "distributionSha256": "db3b052b00835fc3437ea8b1853a64538fa446e646e65572dde27032e503140f"
+      "distributionSha256": "c06182e99b8c243f6d4c9a46fcee29f6bfaa3fbd21ad9dd371ff0b20a56b6308"
     },
     {
       "path": "src/lab/reframe-apply.ts",
@@ -68,8 +65,12 @@
     {
       "path": "src/bridge/file-bridge.ts",
       "originalSourceSha256": "246e7ba3e5d84e44a2a63d57e323b0a3eed5b2ee9ad64c0d73ab89d624994e0a",
-      "distributionSha256": "8f471d0cb64d93449e93316a4aefdeb5a1933c384f2f4073447ae58bda51dac0",
-      "reason": "Keep disconnected-panel recovery on the isolated ACQ Edit Agent; do not direct teammates to a legacy bridge"
+      "distributionSha256": "8f471d0cb64d93449e93316a4aefdeb5a1933c384f2f4073447ae58bda51dac0"
+    },
+    {
+      "path": "src/lab/music.ts",
+      "originalSourceSha256": "66da26d09e10c06b5b0d2cf459c60bf4bd3792209b730b9f1d8e215fd0cea9ba",
+      "distributionSha256": "aa654dbaf4755eb9c83cf6bd9c9a7f7217a1ff9bff136296e8b0372a6536c1eb"
     }
   ]
 }
