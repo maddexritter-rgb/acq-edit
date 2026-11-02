@@ -14,7 +14,15 @@ def validate(project, spec):
     treatment = spec.get('audio', {}).get('dialogueEffects')
     if treatment is None:
         return None
-    require(spec['backend'] == 'filmcraft', 'Native dialogue effect transport is currently FilmCraft-only; implement the selected editor route explicitly')
+    if spec['backend']=='premiere':
+        require(set(treatment)=={'schema','receiptPath','receiptSha256','cuts'} and treatment['schema']=='acq-edit/premiere-dialogue-effects-v1','Explicit Premiere dialogue treatment required')
+        receipt=inside(project['root'],treatment['receiptPath'])
+        require(sha(receipt)==treatment['receiptSha256'],'Premiere dialogue treatment evidence changed')
+        require(set(treatment['cuts'])=={c['id'] for c in spec['cuts']},'Dialogue treatment must cover exact cuts')
+        for chain in treatment['cuts'].values():
+            validate_premiere_chain(chain)
+        return treatment
+    require(spec['backend'] == 'filmcraft', 'Native dialogue effect transport unavailable for this editor')
     require(set(treatment) == {'schema', 'receiptPath', 'receiptSha256', 'cuts'} and
             treatment['schema'] == 'acq-edit/dialogue-effects-v1', 'Unknown dialogue treatment')
     receipt = inside(project['root'], treatment['receiptPath'])
@@ -33,6 +41,18 @@ def validate(project, spec):
                 require(type(value) in (int, float) and math.isfinite(value) and low <= value <= high,
                         'Dialogue effect parameter outside native range: ' + name)
     return treatment
+
+
+def validate_premiere_chain(chain):
+    require(isinstance(chain,list) and 1<=len(chain)<=4,'Bounded Premiere dialogue effect chain required')
+    names=[e.get('name') for e in chain]
+    require(len(set(names))==len(names),'Duplicate Premiere dialogue effect')
+    for effect in chain:
+        require(set(effect)=={'name','matchName','properties'} and effect['name'] in ['Amplify','Single-band Compressor','Hard Limiter','Highpass'] and isinstance(effect['matchName'],str) and effect['matchName'],'Unknown Premiere dialogue effect')
+        props=effect['properties'];require(isinstance(props,list) and 1<=len(props)<=16 and len({p['name'] for p in props})==len(props),'Exact unique native dialogue properties required')
+        for p in props:
+            require(set(p)=={'name','value'} and isinstance(p['name'],str),'Unsupported dialogue automation')
+            require(type(p['value']) is bool or type(p['value']) in (int,float) and math.isfinite(p['value']) and abs(p['value'])<=20000,'Invalid native dialogue value')
 
 def apply(client, spec, clips):
     treatment = spec.get('audio', {}).get('dialogueEffects')

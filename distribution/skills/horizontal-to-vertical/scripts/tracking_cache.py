@@ -26,7 +26,7 @@ def fingerprint(path):
 
 def binding(item,preset,sample_seconds,dependencies):
     a,b=float(item['source_in']),float(item['source_out'])
-    if not all(math.isfinite(x) for x in (a,b,sample_seconds)) or not 0<=a<b or sample_seconds<=0:
+    if not all(math.isfinite(x) for x in (a,b,sample_seconds)) or not 0<=a<b or sample_seconds<0:
         raise ValueError('Invalid source range/sample interval')
     return json.loads(canonical({'schema':'edit.tracking-cache/v1','source':fingerprint(item['media_path']),
         'source_in':a,'source_out':b,'preset':preset,'sample_seconds':sample_seconds,

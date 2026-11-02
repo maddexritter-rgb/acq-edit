@@ -19,6 +19,9 @@ open projects; if a safe reopen needs their owner to save/close them, report tha
 - `captionBuild: {path, sha256}`: caption-clips native Graphics build receipt.
 - `motionPlan: {path, sha256}`: reframe owner's native motion plan, including final
   `sharedPlanSha256`. The verifier checks the frozen per-frame curve and actual native keys.
+  For two-camera splits, include `panelSplits: [{cutId, request, result}]` from the
+  guarded constructor. The verifier checks original camera paths, exact panel clocks,
+  dense keys, linked clean/shadow nests and absence of duplicated panel audio.
 - `audioPlans: [{path, sha256}]`: one calibrated music-owner operation plan for every
   dialogue/music item. The dialogue helper saves `item-NN-verification-plan.json`.
 - `audioSharedPlanSha256`: final source plan hash used by those owner plans.
@@ -37,7 +40,8 @@ no rendered review version is fabricated. Existing versions and feedback stay in
 ## Qualification boundary
 
 This new completion route needs real host acceptance. Its initial framing verifier covers
-source-linked V1/A1 clips with dense tracked crops. Multi-panel construction, unsupported
-processing and additional effects need their own native verifier; stop with the limitation
+source-linked V1/A1 clips with dense tracked crops and the explicit two-camera
+split verifier. Full real-Q&A acceptance remains pending. Unsupported layouts,
+processing and additional effects still require their own native verifier; stop with the limitation
 instead of claiming completion or dropping layers. The existing 26.3 execution scope remains;
 26.5.2 is explicitly unqualified. Passing fixture tests is not native acceptance.

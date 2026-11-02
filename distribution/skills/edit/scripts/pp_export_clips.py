@@ -20,7 +20,7 @@ SNAPSHOT=r'''
 function exportState(s){var tracks=[];
  for(var k=0;k<2;k++){var ts=k?s.audioTracks:s.videoTracks;
   for(var t=0;t<ts.numTracks;t++){var tr=ts[t],items=[];
-   for(var c=0;c<tr.clips.numItems;c++){var x=tr.clips[c];items.push({id:String(x.nodeId),name:x.name,start:String(x.start.ticks),end:String(x.end.ticks),sourceIn:String(x.inPoint.ticks),sourceOut:String(x.outPoint.ticks),disabled:!!x.disabled,path:x.projectItem?x.projectItem.getMediaPath():null});}
+   for(var c=0;c<tr.clips.numItems;c++){var x=tr.clips[c];items.push({id:String(x.nodeId),name:x.name,start:String(x.start.ticks),end:String(x.end.ticks),sourceIn:String(x.inPoint.ticks),sourceOut:String(x.outPoint.ticks),disabled:!!x.disabled,path:x.projectItem?(x.projectItem.getMediaPath()||null):null});}
    tracks.push({kind:k,index:t,muted:tr.isMuted(),clips:items});}}
  return {tracks:tracks,settings:s.getSettings()};}
 '''

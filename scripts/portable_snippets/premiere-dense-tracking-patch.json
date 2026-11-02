@@ -1,0 +1,252 @@
+{
+  "horizontal-to-vertical/SKILL.md": {
+    "beforeSha256": "cd26c4d82afbd41e71c0a89975c4b463c928fc4c8da2867c406668bdca93ec4c",
+    "afterSha256": "57284c586e19628c1e3f131193f39841124d0f99cb78389368788456b40558b2",
+    "changes": [
+      {
+        "start": 2,
+        "end": 3,
+        "replacement": "description: Convert footage already cut in Premiere Pro or Filmcraft into an editable native 9:16 sequence. Implements Assembly Design camera shots and split intervals from retained multicamera coverage. Uses dense source-local face tracking and editable per-frame keys. Use for reframe, vertical reframe, 16:9 to 9:16, face tracking, camera switching, or split screen. Never renders and re-imports replacement video.\n"
+      },
+      {
+        "start": 12,
+        "end": 13,
+        "replacement": "For any Premiere access, follow [Premiere Agent startup and advanced stage routing](../edit/references/premiere_start_here.md). Use only this installation\u2019s verified ACQ Edit Agent integration; if MCP tools are missing in this chat, the agent runs the repository helper in the current chat. Keep this skill\u2019s existing creative scope and read-only limits.\n"
+      },
+      {
+        "start": 23,
+        "end": 25,
+        "replacement": "- **Premiere:** follow the native bridge route below. Analyze every visible source\n  frame with YuNet, using the same `dense_subject_x` gap policy and `smooth_x`\n  filter as Filmcraft. Write one native Linear Anchor Point key per displayed frame.\n  Smooth continuous source/camera/layout runs before slicing items. Reset at source\n  jumps; never offset an incoming curve merely to match a removed passage.\n  Sparse contact sheets are review evidence, never detector input or tracking curves.\n  Keep calibrated Y and Scale locked. Detect each split panel independently.\n"
+      },
+      {
+        "start": 46,
+        "end": 47,
+        "replacement": "- Static Position and Y by default; dense per-frame horizontal tracking keys in media time. For a specifically identified opening range with real stand/sit movement, Y tracking may be threshold-enabled only for that range.\n"
+      },
+      {
+        "start": 83,
+        "end": 84,
+        "replacement": "__ACQ_TOOLKIT__/.local/venv/bin/python __ACQ_SKILLS__/horizontal-to-vertical/scripts/premiere_native_reframe.py \\\n"
+      },
+      {
+        "start": 98,
+        "end": 99,
+        "replacement": "A distant or obscured subject must still have dense detector coverage. Tighten the reviewed ROI or improve source coverage when detection fails. A static Y calibration is not evidence for missing X observations; do not fabricate face detections.\n"
+      },
+      {
+        "start": 109,
+        "end": 110,
+        "replacement": "| `center-stage` | Locked wide workshop/roundtable camera whose intended speaker position is centered; excludes larger foreground audience faces. Calibrate the ROI and detector size floor for distant subjects; missing X coverage must still be repaired. |\n"
+      },
+      {
+        "start": 122,
+        "end": 125,
+        "replacement": "5. Sequentially detects every frame in each continuous source/camera/layout run. Preserves raw missing detections; only interior gaps of at most six frames may interpolate. Longer or edge gaps stop for inspected coverage repair, never silently hold or center the crop.\n6. Locks Y by compatible framing group; an explicitly allowed stand/sit range retains the existing bounded posture transition. Smooth X over the entire continuous run using the shared Filmcraft filter, then slice item-local curves. Source-time gaps, camera/layout changes and timeline gaps start new runs.\n7. Retains one key per displayed frame, even for a steady subject. Legacy `--sample-seconds` and `--pixel-tolerance` arguments cannot reduce density. Source/sequence frame rates must match; unsupported frame mapping stops before writing.\n"
+      },
+      {
+        "start": 162,
+        "end": 163,
+        "replacement": "Contiguous items share a tracking run only when source time, media, camera, panel/layout, calibration and timeline are continuous. Fit that run before slicing items. Never interpolate across removed source time.\n"
+      },
+      {
+        "start": 166,
+        "end": 167,
+        "replacement": "- At source-continuous item splits, retain the shared smooth curve. At source jumps, independently track the incoming subject; inspect the cut rather than shifting its entire curve to the outgoing crop.\n"
+      }
+    ]
+  },
+  "horizontal-to-vertical/references/advanced-native-reframe.md": {
+    "beforeSha256": "70c917e9a528705822b90fa2d50ece220750588aed2ebdeba3db342e6d438381",
+    "afterSha256": "ebd0bd0c41bee737673f7813c471f98d899e3b028622378672a3eb6b3f003baf",
+    "changes": [
+      {
+        "start": 2,
+        "end": 3,
+        "replacement": "The canonical runner and `premiere_reframe_bridge.ReframeSession` use the configured Premiere Agent Lab connector. `__ACQ_TOOLKIT__/.local/premiere-profile.json` is the local default when present; `--bridge-profile` overrides it. Do not retry a failure through the retired mailbox, another bridge, UI automation, or Premiere Beta.\n"
+      },
+      {
+        "start": 40,
+        "end": 41,
+        "replacement": "A confidence score does not establish subject identity. Review the intended subject region for every camera family, including apparently single-person podcasts with posters or face-like set objects. The podcast preset excludes detections below 48 pixels high on a 720-high analysis frame; distant subjects require a visually calibrated override. Abrupt horizontal jumps over 20 percent of source width inside a shot stop plan generation. Tighten the ROI or split a confirmed camera switch; do not smooth a wrong-person selection into a pan. Check first-frame framing as well as the middle. Dense tracking remains the default for seated subjects. A fixed crop requires an explicit reviewed exception; never substitute it for failed detections.\n"
+      }
+    ]
+  },
+  "horizontal-to-vertical/references/native-split-setup.md": {
+    "beforeSha256": "5c79d4d7ddf466d26483f934734704a0353018ea37aa1706d88de2e293f31dec",
+    "afterSha256": "3be37fae45a94dabe48d3c77a80674633ea3db0707bdc731eca299cd7cfc85ec",
+    "changes": [
+      {
+        "start": 28,
+        "end": 29,
+        "replacement": "Inside each panel keep actual source clips, dense per-frame item-local Motion/Transform keys, and editable crop/mask geometry. A panel crop must create transparency outside the panel, not an opaque black fill that blocks the other camera. Preserve effect order. Camera-named adjustment layers are not additional camera footage. Do not copy a reference's crop/rotation/scale numbers to differently sized media without checking the composed frame.\n"
+      }
+    ]
+  },
+  "horizontal-to-vertical/scripts/premiere_native_reframe.py": {
+    "beforeSha256": "dad98bab6f3b797f9078b4e893b7eaf7817567ed0487a3dee7ffc307e80f0392",
+    "afterSha256": "cf513df4c5ecda6b09065ff015202b645984ec58c959f11d87d55b6d21888a3f",
+    "changes": [
+      {
+        "start": 5,
+        "end": 6,
+        "replacement": "source-linked picture item at its exact source in/out, writes per-frame Motion >\n"
+      },
+      {
+        "start": 18,
+        "end": 18,
+        "replacement": "from fractions import Fraction\nimport sys\nimport subprocess\n"
+      },
+      {
+        "start": 29,
+        "end": 29,
+        "replacement": "sys.path.insert(0, str(HERE))\nfrom filmcraft_smooth_x import dense_subject_x, smooth_x\n\n"
+      },
+      {
+        "start": 271,
+        "end": 272,
+        "replacement": "                                  _track_item_uncached, [Path(__file__), HERE / \"filmcraft_smooth_x.py\", MODEL])\n"
+      },
+      {
+        "start": 275,
+        "end": 275,
+        "replacement": "def source_clock(path):\n    probe = json.loads(subprocess.check_output(['ffprobe', '-v', 'error', '-select_streams', 'v:0',\n        '-show_entries', 'stream=r_frame_rate,avg_frame_rate,sample_aspect_ratio', '-of', 'json', path], text=True))\n    stream = probe['streams'][0]\n    rate, average = Fraction(stream['r_frame_rate']), Fraction(stream['avg_frame_rate'])\n    if rate <= 0 or rate != average or stream.get('sample_aspect_ratio', '1:1') not in ('1:1','N/A'):\n        raise ValueError('Dense tracking needs constant-frame-rate square-pixel source media; reconcile frame mapping first')\n    return rate\n\n\n"
+      },
+      {
+        "start": 276,
+        "end": 305,
+        "replacement": "    \"\"\"Decode every source frame once. Sparse sampling is never a tracking mode.\"\"\"\n    cap = cv2.VideoCapture(item[\"media_path\"])\n    try:\n        if not cap.isOpened():\n            raise RuntimeError(f\"Cannot open source media: {item['media_path']}\")\n        fps = cap.get(cv2.CAP_PROP_FPS)\n        if not math.isfinite(fps) or fps <= 0:\n            raise ValueError(\"Verified source frame rate required\")\n        rate = source_clock(item['media_path'])\n        if abs(fps - float(rate)) > 1e-4:\n            raise ValueError('Decoder and verified source frame rates differ')\n        ft = Fraction(TICKS_PER_SECOND, 1) / rate\n        if ft.denominator != 1:\n            raise ValueError(\"Source rate is not on a supported native frame grid\")\n        start = round(item['source_in'] * fps)\n        count = round((item['source_out'] - item['source_in']) * fps)\n        if count <= 0 or any(abs(v - round(v)) > 1e-4 for v in\n                             (item['source_in'] * fps, item['source_out'] * fps)):\n            raise ValueError(\"Frame-aligned source boundaries required\")\n        if item.get('speed') != 1 or item.get('speed_reversed', False):\n            raise ValueError(\"Dense tracking requires forward unit-speed media\")\n        if abs((item['end'] - item['start']) - count / fps) > 1e-6:\n            raise ValueError(\"Source and timeline frame clocks differ\")\n        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)); height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))\n        detector, dw, dh = detector_for(width, height)\n        cap.set(cv2.CAP_PROP_POS_FRAMES, start)\n        if abs(cap.get(cv2.CAP_PROP_POS_FRAMES) - start) > .01:\n            raise RuntimeError(\"Decoder did not seek to the exact source frame\")\n        faces, previous = [], None\n        for frame_index in range(count):\n            ok, frame = cap.read()\n            if not ok:\n                raise RuntimeError(f\"Source decode ended before displayed frame {frame_index}/{count}\")\n            if abs(cap.get(cv2.CAP_PROP_POS_FRAMES) - (start + frame_index + 1)) > .01:\n                raise RuntimeError(\"Decoder frame clock drift\")\n            _, found = detector.detect(cv2.resize(frame, (dw, dh)))\n            face = select_face(found, previous, preset['roi'], dw, dh, preset.get('min_face_height720', 15))\n            if face is None:\n                faces.append(None)\n            else:\n                previous = face[0]\n                faces.append([face[0]/dw, face[1]/dh, face[2]/dw, face[3]/dh, face[4]])\n    finally:\n        cap.release()\n    evidence = {'denseFaces': faces, 'denseFrameIndices': list(range(count))}\n    xs, origins = dense_subject_x(evidence, count)\n    if any(abs(a-b) > .20 for a,b in zip(xs,xs[1:])):\n        raise ValueError('Abrupt subject switch; inspect camera boundary and intended-subject ROI')\n    valid = [i for i,f in enumerate(faces) if f is not None]\n    ys = np.interp(np.arange(count), valid, [faces[i][1] for i in valid]).tolist()\n    return {'width':width, 'height':height, 'fps':float(rate), 'frame_ticks':int(ft),\n            'relative_times':[i / float(rate) for i in range(count)],\n            'face_x':smooth_x(xs).tolist(), 'face_y':ys, 'face_y_median':float(np.median(ys)),\n            'detections':len(valid), 'samples':count, 'fallback':False,\n            'edge_face_seen':[faces[0] is not None, faces[-1] is not None],\n            'miss_rate':1-len(valid)/count, 'evidence':evidence, 'origins':origins}\n\n\ndef dense_tracking_runs(items, presets, cache_dir=None):\n    \"\"\"Smooth a continuous source/camera/layout run before slicing native items.\"\"\"\n    groups = []\n    for i, item in enumerate(items):\n        if item.get('speed') != 1 or item.get('speed_reversed', False) or abs((item['end']-item['start'])-(item['source_out']-item['source_in'])) > 1e-7:\n            raise ValueError('Dense tracking requires forward unit-speed source/timeline ranges')\n        previous = items[i-1] if i else None\n        continuous = previous is not None and all(item.get(k) == previous.get(k) for k in\n            ('media_path','camera_id','layout_id','track_index','speed','speed_reversed'))\n        continuous = continuous and presets[i] == presets[i-1] and abs(item['start']-previous['end']) < 1e-7 and abs(item['source_in']-previous['source_out']) < 1e-7\n        if continuous:\n            groups[-1].append(i)\n"
+      },
+      {
+        "start": 306,
+        "end": 343,
+        "replacement": "            groups.append([i])\n    tracked = [None] * len(items)\n    for indices in groups:\n        first, last = items[indices[0]], items[indices[-1]]\n        run = {**first, 'end':last['end'], 'source_out':last['source_out']}\n        data = track_item(run, presets[indices[0]], 0, cache_dir)\n        if data.get('frame_ticks', 0) <= 0 or len(data['face_x']) != data['samples'] or len(data['origins']) != data['samples']:\n            raise ValueError('Dense tracking cache has incomplete evidence')\n        offset = 0\n        for i in indices:\n            n = round((items[i]['source_out']-items[i]['source_in']) * data['fps'])\n            if n <= 0 or offset+n > data['samples']:\n                raise ValueError('Incomplete dense source run')\n            sliced = {**data, 'samples':n, 'relative_times':[f/data['fps'] for f in range(n)]}\n            for key in ('face_x','face_y','origins'):\n                sliced[key] = data[key][offset:offset+n]\n            raw = data['evidence']['denseFaces'][offset:offset+n]\n            sliced.update(evidence={'denseFaces':raw, 'denseFrameIndices':list(range(n))},\n                          detections=sum(f is not None for f in raw),\n                          face_y_median=float(np.median(sliced['face_y'])),\n                          miss_rate=sum(f is None for f in raw)/n,\n                          edge_face_seen=[raw[0] is not None, raw[-1] is not None],\n                          continuous_run=indices)\n            tracked[i] = sliced\n            offset += n\n        if offset != data['samples']:\n            raise ValueError('Dense source run coverage mismatch')\n    return tracked\n"
+      },
+      {
+        "start": 392,
+        "end": 394,
+        "replacement": "    # Preserve the authored one-second transition when observations become\n    # per-frame; a fixed two-sample ramp would now snap in roughly 70 ms.\n    half_span = max(1, round(float(data.get('fps', 2)) * 0.5))\n    before = max(0, transition - half_span)\n    after = min(len(ys) - 1, transition + half_span)\n"
+      },
+      {
+        "start": 447,
+        "end": 459,
+        "replacement": "    tracked = dense_tracking_runs(items, presets, cache_dir)\n    for item, data in zip(items, tracked):\n        timeline_ft = inspection.get('frame_ticks')\n        if 'bridge_baseline' in inspection and timeline_ft is None:\n            raise ValueError('Fresh ACQ Edit Agent frame-clock inspection required')\n        if timeline_ft is not None and int(timeline_ft) != data['frame_ticks']:\n            raise ValueError('Mixed source/sequence frame rates require explicit frame mapping')\n        print(f\"Dense tracking item {item['item_index']}: {data['detections']}/{data['samples']} detections\", flush=True)\n"
+      },
+      {
+        "start": 488,
+        "end": 489,
+        "replacement": "            [t, round(x, 8), round(anchor_y, 8)]\n"
+      },
+      {
+        "start": 491,
+        "end": 495,
+        "replacement": ""
+      },
+      {
+        "start": 503,
+        "end": 504,
+        "replacement": "                \"anchor_keys\": dense,\n                \"frame_ticks\": data[\"frame_ticks\"],\n                \"tracking_evidence\": data[\"evidence\"],\n                \"tracking_origins\": data[\"origins\"],\n                \"continuous_run\": data[\"continuous_run\"],\n"
+      },
+      {
+        "start": 511,
+        "end": 512,
+        "replacement": "    seam_report = [{\"items\": d[\"continuous_run\"], \"status\": \"source_continuous_dense_curve\"} for d in tracked]\n"
+      },
+      {
+        "start": 520,
+        "end": 521,
+        "replacement": "        \"tracking_mode\": \"dense-yunet-shared-smoothing/v1\",\n"
+      },
+      {
+        "start": 786,
+        "end": 786,
+        "replacement": "                c['layout_id'] = r.get('layout_id', r['layout'])\n"
+      },
+      {
+        "start": 799,
+        "end": 801,
+        "replacement": "    parser.add_argument(\"--sample-seconds\", type=float, default=0, help=\"Legacy argument; ignored. Every displayed frame is always analyzed.\")\n    parser.add_argument(\"--pixel-tolerance\", type=float, default=0, help=\"Legacy argument; ignored. Per-frame keys are never simplified.\")\n"
+      }
+    ]
+  },
+  "horizontal-to-vertical/scripts/premiere_reframe_bridge.py": {
+    "beforeSha256": "d309c1a465fa1f420e8014095c5c6d314ae247db3dc3e20dca68e464711746d1",
+    "afterSha256": "3a281370f08e54e63b9e375d7b84c97f2f4d399ec6452d571e6e278f950afdd4",
+    "changes": [
+      {
+        "start": 111,
+        "end": 112,
+        "replacement": "        frame_ticks = record.get('frame_ticks')\n        if str(plan.get('tracking_mode', '')).startswith('dense-') and frame_ticks is None:\n            raise BridgeError('Dense tracking requires an exact frame tick grid')\n        if frame_ticks is not None:\n            if type(frame_ticks) is not int or frame_ticks <= 0:\n                raise BridgeError('Invalid dense frame tick grid')\n            duration = int(row['source_out_ticks']) - int(row['source_in_ticks'])\n            if duration % frame_ticks or len(record['anchor_keys']) != duration // frame_ticks:\n                raise BridgeError('Dense keys must cover every displayed frame exactly')\n        for frame, (relative, x, y) in enumerate(record['anchor_keys']):\n"
+      },
+      {
+        "start": 114,
+        "end": 115,
+        "replacement": "            if frame_ticks is not None and abs(relative - frame * frame_ticks / 254016000000) > 1e-8:\n                raise BridgeError('Dense key time differs from frame grid')\n            offset = Fraction(frame * frame_ticks) if frame_ticks is not None else Fraction(str(relative)) * 254016000000\n"
+      }
+    ]
+  },
+  "horizontal-to-vertical/scripts/simplify_native_keyframes.py": {
+    "beforeSha256": "213b86b4eb4d46054bedc78070b938d8072f6ae02d821bf9855d967a66ecd69b",
+    "afterSha256": "35ea5e85896d3a2e36f552654d679bdf5a3dc112af2cd56d6c146b7feb886527",
+    "changes": [
+      {
+        "start": 0,
+        "end": 1,
+        "replacement": "\"\"\"Legacy simplification for explicitly authored non-dense Motion plans only.\n"
+      },
+      {
+        "start": 55,
+        "end": 55,
+        "replacement": "    if plan.get('tracking_mode', '').startswith('dense-') or any('frame_ticks' in r for r in plan.get('records', [])):\n        raise ValueError('Dense tracking must retain every displayed frame; simplification is not allowed')\n"
+      }
+    ]
+  },
+  "horizontal-to-vertical/scripts/test_premiere_native_reframe.py": {
+    "beforeSha256": "753e4d1590bdd75f454b6a538f030e0561f0264800f655693fd0471a580c3a52",
+    "afterSha256": "ab8575f8e021e6d99ca0c6037a1785cdf952e9105a7e46430851033250a5b376",
+    "changes": [
+      {
+        "start": 83,
+        "end": 101,
+        "replacement": "    def test_new_planner_never_calls_legacy_seam_alignment_or_simplification(self):\n        import inspect\n        source = inspect.getsource(native.build_plan)\n        self.assertNotIn('reconcile_new_plan_x(', source)\n        self.assertNotIn('rdp(', source)\n        self.assertIn('dense_tracking_runs(', source)\n"
+      }
+    ]
+  },
+  "horizontal-to-vertical/scripts/tracking_cache.py": {
+    "beforeSha256": "a903a2c0ec46fc5f0477ecb2e73962d5f79596d198ec8c3121e06b27b255fed2",
+    "afterSha256": "feb914bfa52ad95db9bd2224b6f2ade89073a2f51eae063892de0f70c0618d0f",
+    "changes": [
+      {
+        "start": 28,
+        "end": 29,
+        "replacement": "    if not all(math.isfinite(x) for x in (a,b,sample_seconds)) or not 0<=a<b or sample_seconds<0:\n"
+      }
+    ]
+  },
+  "horizontal-to-vertical/tests/test_filmcraft_smooth_x.py": {
+    "beforeSha256": "f6e04c4e6ef0da79ad8ca3f9b0cf9a33432c1b02d646f3a921f093a998224473",
+    "afterSha256": "e5634b08db426570b0045aed776cb0ecef0d25bfe9faa2e7fee45d67465031c2",
+    "changes": [
+      {
+        "start": 42,
+        "end": 44,
+        "replacement": "    def test_default_tracks_every_frame_and_resets_at_source_cut(self):\n        p = self.plan(single_run=True)\n        self.assertEqual(p['motion_mode'], 'track')\n        self.assertEqual(p['key_count'], 24)\n        self.assertEqual(p['runs'], [[0], [1]])\n\n    def test_explicit_fixed_exception_is_recentered_per_cut(self):\n        p = self.plan(motion_mode='fixed')\n"
+      },
+      {
+        "start": 67,
+        "end": 68,
+        "replacement": "        p = self.plan(motion_mode='fixed')\n"
+      }
+    ]
+  },
+  "horizontal-to-vertical/tests/test_premiere_native_reframe_project_mode.py": {
+    "beforeSha256": "a6e9747a4cdede1895cf28eb14b012b1cd05638701c36de77df1c6663db4e48c",
+    "afterSha256": "9d100b2be91161468add777f5df9a9ddbe3d276608af3e9c5ac3446cb27d3d64",
+    "changes": [
+      {
+        "start": 19,
+        "end": 19,
+        "replacement": "        # The shipped CLI now always constructs the isolated typed session.\n        # Mock that boundary as well as the stage calls; offline tests must\n        # neither load a real installation nor retain another test's client.\n        session_patch = patch('premiere_reframe_bridge.ReframeSession')\n        session_patch.start()\n        self.addCleanup(session_patch.stop)\n        state_patch = patch.object(MODULE, 'LAB_SESSION', None)\n        state_patch.start()\n        self.addCleanup(state_patch.stop)\n"
+      }
+    ]
+  }
+}

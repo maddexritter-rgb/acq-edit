@@ -23,14 +23,17 @@ def close(actual,expected):
 def verify_motion(spec,motion,inspection,owner_module):
     require((inspection['project_path'],inspection['sequence_id'])==(motion['project_path'],motion['sequence_id']),'Framing belongs to another sequence')
     require((inspection['width'],inspection['height'])==(spec['width'],spec['height']),'Framing canvas differs')
-    records=motion['records'];require(len(records)==len(spec['cuts']),'Unsupported framing coverage: retain multi-panel layout and request a qualified verifier')
+    # Panel cuts are checked against their entire nested native graph below.
+    # They must not be verified as a second full-screen animation on V1.
+    direct_cuts=[c for c in spec['cuts'] if spec['framing']['shots'][c['id']]['mode']!='panel-layout']
+    records=motion['records'];require(len(records)==len(direct_cuts),'Direct framing coverage differs from non-panel cuts')
     fps=spec['fps']['numerator']/spec['fps']['denominator']
-    for record,cut in zip(records,spec['cuts']):
+    for record,cut in zip(records,direct_cuts):
         shot=spec['framing']['shots'][cut['id']]
-        require(shot['mode']=='tracked-crop','Native completion currently requires the dense tracked-crop verifier; preserve other framing')
+        require(shot['mode']=='tracked-crop','Unsupported native framing mode; preserve and reconcile')
         expected=[[f/fps,(x+shot['width']/2)/shot['sourceWidth'],(shot['y']+shot['height']/2)/shot['sourceHeight']] for f,x in enumerate(shot['xByFrame'])]
         require(len(expected)==cut['frames'] and close(record['anchor_keys'],expected) and close(record['position'],[.5,.5]) and close(record['scale_percent'],1920/shot['height']*100),'Framing owner curve differs from frozen plan')
-    items=owner_module.fresh_operation(motion,'completion-readback')['arguments']['items']
+    items=owner_module.fresh_operation(motion,'completion-readback')['arguments']['items'] if records else []
     rows=[c for t in inspection['video_tracks'] for c in t['clips']]
     for item in items:
         matching=[r for r in rows if r['node_id']==item['node_id']];require(len(matching)==1,'Missing framing item')
@@ -49,6 +52,27 @@ def verify_audio_item(plan,inspection,audio_owner):
     level=row['level'];require(level and level['time_varying'] is True and {k:level[k] for k in audio_owner.PARAMETER_FIELDS}==args['parameter'],'Audio parameter differs')
     require(len(level['keys'])==len(args['keys']) and all(a['ticks']==b['ticks'] and close(a['value'],b['value']) for a,b in zip(level['keys'],args['keys'])),'Audio envelope differs')
     return {'nodeId':args['node_id'],'verification':'exact-native-envelope','listening':'not-run'}
+
+
+def verify_dialogue_effect_item(spec,plan,inspection,state):
+    """Prove native chain and unanimated unity Level against explicit cut intent."""
+    require(plan.get('schema')=='acq-edit/premiere-dialogue-item-v1','Explicit native dialogue plan required')
+    require((plan['projectPath'],plan['sequenceId'])==(inspection['project_path'],inspection['sequence_id']),'Dialogue effect target differs')
+    cuts=[c for c in spec['cuts'] if c['id']==plan['cutId']];require(len(cuts)==1,'Unknown dialogue cut')
+    cut=cuts[0];source=next(s for s in spec['sources'] if s['id']==cut.get('audioSourceId',cut['sourceId']))
+    rows=[c for t in inspection['audio_tracks'] for c in t['clips'] if c['node_id']==plan['nodeId']];require(len(rows)==1,'Missing dialogue item')
+    row=rows[0];tick=254016000000//spec['sampleRate']
+    require(row['media_path']==source['path'] and row['speed']==1 and row['speed_reversed'] is False and (int(row['start_ticks']),int(row['end_ticks'])-int(row['start_ticks']),int(row['source_offset_ticks'])+int(row['source_in_ticks']))==(cut['audioRecordSample']*tick,cut['audioSamples']*tick,cut['audioInSample']*tick),'Dialogue source clocks differ')
+    level=row['level'];require(level and not level['keys'] and close(level['value'],0.1778279410038923) and spec['audio'].get('gainDb',0)==0,'Dialogue Level differs from native unity')
+    native=[c for t in state['tracks'] if t['kind']==1 for c in t['clips'] if c['id']==plan['nodeId']];require(len(native)==1,'Dialogue effect item ambiguous')
+    expected=spec['audio']['dialogueEffects']['cuts'][cut['id']]
+    actual=native[0]['components'];require(len(actual)==1+len(expected) and actual[0]['matchName'] in ['Internal Volume Mono','Internal Volume Stereo','audioVolume'],'Unexpected dialogue effect chain')
+    for want,got in zip(expected,actual[1:]):
+        require(want['name']==got['name'] and want['matchName']==got['matchName'] and len(want['properties'])==len(got['properties']),'Dialogue effect identity changed')
+        for a,b in zip(want['properties'],got['properties']):
+            same=type(a['value']) is bool and a['value'] is b.get('value') or type(a['value']) is not bool and close(b.get('value'),a['value'])
+            require(a['name']==b['name'] and not b.get('keys') and not b.get('valueUnavailable') and same,'Dialogue effect parameter changed')
+    return {'nodeId':plan['nodeId'],'verification':'source-linked-native-dialogue-effects','renderedMix':'separate-evidence','listening':'not-run'}
 
 
 def complete(adapter, project, packet, client_type):
@@ -92,6 +116,19 @@ def complete(adapter, project, packet, client_type):
         reframe=owner('completion_reframe','horizontal-to-vertical/scripts/premiere_reframe_bridge.py')
         require(motion.get('sharedPlanSha256')==sha(inside(project['root'],packet['plan'])),'Framing plan is not bound to this final source plan')
         framing=verify_motion(spec,motion,reframe.inspect_active(client),reframe)
+        panel_cuts=[cut for cut in spec['cuts'] if spec['framing']['shots'][cut['id']]['mode']=='panel-layout']
+        panel_entries=motion.get('panelSplits',[])
+        require(len(panel_entries)==len(panel_cuts) and len({e['cutId'] for e in panel_entries})==len(panel_entries),'Panel construction evidence incomplete or duplicated')
+        if panel_cuts:
+            from premiere_panels import verify as verify_panel
+            native_project=client.inspect('inspect_project_sequences',{'project_path':str(native)})['data']
+            panel_checks=[]
+            for cut in panel_cuts:
+                entries=[e for e in panel_entries if e['cutId']==cut['id']];require(len(entries)==1,'Missing camera split evidence');entry=entries[0];panel_links={}
+                for panel in entry['result']['panels']:
+                    sid=panel['sequence_id'];observed=client.inspect('inspect_camera_panel_sources',{'project_path':str(native),'sequence_id':sid});panel_links[sid]=observed.get('data',observed)
+                panel_checks.append(verify_panel(spec,cut,entry,native_project,panel_links))
+            framing['panels']=panel_checks
         # Audio owner plans retain exact clip identity, calibrated values and keys.
         # Unsupported processing must stop here rather than be silently omitted.
         require(isinstance(packet.get('audioPlans'),list) and packet['audioPlans'],'Native dialogue/music owner plans required')
@@ -100,7 +137,7 @@ def complete(adapter, project, packet, client_type):
         require(packet.get('audioSharedPlanSha256')==sha(inside(project['root'],packet['plan'])),'Audio evidence must bind the frozen plan')
         for i,entry in enumerate(packet['audioPlans']):
             key='audioPlan'+str(i);packet={**packet,key:entry};_,audio_plan=artifact(key)
-            audio.append(verify_audio_item(audio_plan,audio_inspection,audio_owner))
+            audio.append(verify_dialogue_effect_item(spec,audio_plan,audio_inspection,state) if audio_plan.get('schema')=='acq-edit/premiere-dialogue-item-v1' else verify_audio_item(audio_plan,audio_inspection,audio_owner))
         expected_ids=[c['node_id'] for t in audio_inspection['audio_tracks'] for c in t['clips']]
         require(sorted(x['nodeId'] for x in audio)==sorted(expected_ids) and len(set(expected_ids))==len(expected_ids),'Every native dialogue/music item needs exactly one owner plan')
         after=adapter.inspect(project,packet)

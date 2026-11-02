@@ -3,6 +3,16 @@ import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
 import vm from 'node:vm';
 const unset='-101606400000000000',step=8467200000;
+test('nested sequence inspection uses null for non-file sources, preserving real paths',()=>{
+ const run=spawnSync('python3',['-c',"import sys;sys.path.insert(0,'distribution/skills/edit/scripts');from pp_export_clips import inspection_script;print(inspection_script('/p.prproj','seq'))"],{encoding:'utf8'});
+ assert.equal(run.status,0,run.stderr);
+ const clip=p=>({nodeId:'item',name:'nest',start:{ticks:'0'},end:{ticks:'1'},inPoint:{ticks:'0'},outPoint:{ticks:'1'},disabled:false,projectItem:{getMediaPath:()=>p}});
+ const clips=Object.assign([clip(''),clip('/media.mov')],{numItems:2});
+ const tr={clips,name:'V1',isLocked:()=>false,isMuted:()=>false};
+ const seq={sequenceID:'seq',videoTracks:Object.assign([tr],{numTracks:1}),audioTracks:{numTracks:0},getSettings:()=>({}),getInPointAsTime:()=>({ticks:unset}),getOutPointAsTime:()=>({ticks:unset})};
+ const result=vm.runInNewContext('(function(){'+run.stdout+'})()',{app:{project:{path:'/p.prproj',activeSequence:seq}}});
+ assert.equal(result.state.tracks[0].clips[0].path,null);assert.equal(result.state.tracks[0].clips[1].path,'/media.mov');
+});
 function generated(overrides={}){
  const baseline={project:'/p.prproj',sequence:'seq',state:{tracks:[],settings:{}},in_ticks:unset,out_ticks:unset,...overrides};
  const run=spawnSync('python3',['-c',`import sys,json

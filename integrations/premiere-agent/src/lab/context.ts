@@ -34,7 +34,7 @@ export const SNAPSHOT_FUNCTION = `function __labSnapshot(sequence,page){
     try{
      if(prop.isTimeVarying()){
       var keys=prop.getKeys();pr.keys=[];
-      if(keys&&keys.length>1000)throw new Error('LAB_KEYFRAME_LIMIT');
+      if(keys&&keys.length>10000)throw new Error('LAB_KEYFRAME_LIMIT');
       for(var ki=0;keys&&ki<keys.length;ki++)pr.keys.push({ticks:String(keys[ki].ticks),value:prop.getValueAtKey(keys[ki])});
      }
     }catch(e2){if(String(e2).indexOf('LAB_KEYFRAME_LIMIT')>=0)throw e2;pr.keyframesUnavailable=true;}

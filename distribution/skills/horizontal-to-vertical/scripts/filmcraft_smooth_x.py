@@ -28,7 +28,7 @@ def smooth_x(values, sigma_frames=10):
     return gaussian_filter1d(clean, sigma=sigma_frames, mode='nearest')
 
 
-def dense_subject_x(view, count, max_gap=6, fallbacks=()):
+def dense_subject_x(view, count, max_gap=6, fallbacks=(), reviewed_occlusions=(), feature_tracks=()):
     """Preserve raw detections; label every interpolated or authored frame."""
     faces = view.get('denseFaces', [])
     if len(faces) != count or view.get('denseFrameIndices') != list(range(count)):
@@ -40,6 +40,31 @@ def dense_subject_x(view, count, max_gap=6, fallbacks=()):
         if len(face) != 5 or not all(type(v) in (int,float) and np.isfinite(v) for v in face) or not 0 < face[4] <= 1 or face[2] <= 0 or face[3] <= 0:
             raise ValueError('Invalid detection; manual positions must remain separate fallbacks')
         xs[i] = face[0]; origins[i] = 'detected'
+    for track in feature_tracks:
+        start,end=track['startFrame'],track['endFrame'];values=track['x'];evidence=track.get('evidence',[])
+        if (type(start)!=int or type(end)!=int or not 0<=start<end<=count or end-start>240
+                or len(values)!=end-start or not evidence or not track.get('reason')
+                or any(digest(e['path'])!=e['sha256'] for e in evidence)
+                or any(type(v) not in (int,float) or not np.isfinite(v) or not 0<=v<=1 for v in values)):
+            raise ValueError('Reviewed feature track needs dense finite observations and pinned evidence')
+        if (origins[start]!='detected' or origins[end-1]!='detected'
+                or abs(values[0]-xs[start])>.015 or abs(values[-1]-xs[end-1])>.015
+                or any(abs(a-b)>.025 for a,b in zip(values,values[1:]))):
+            raise ValueError('Feature track must reconnect with the same detected subject')
+        xs[start:end]=values;origins[start:end]=['reviewed-head-feature-flow']*(end-start)
+    for occlusion in reviewed_occlusions:
+        start, end = occlusion['startFrame'], occlusion['endFrame']
+        evidence = occlusion.get('evidence', [])
+        if (type(start) != int or type(end) != int or not 0 < start < end < count
+                or end-start > 18 or not occlusion.get('reason') or not evidence
+                or any(digest(e['path']) != e['sha256'] for e in evidence)):
+            raise ValueError('A reviewed brief occlusion needs interior frame bounds and pinned source inspection')
+        if (origins[start-1] != 'detected' or origins[end] != 'detected'
+                or any(v != 'missing' for v in origins[start:end])
+                or abs(xs[end]-xs[start-1]) > .04):
+            raise ValueError('Occlusion must connect the same nearby detected subject without replacing observations')
+        xs[start:end] = np.linspace(xs[start-1], xs[end], end-start+2)[1:-1]
+        origins[start:end] = ['reviewed-occlusion-interpolation'] * (end-start)
     for fallback in fallbacks:
         start, end, x = fallback['startFrame'], fallback['endFrame'], fallback['x']
         if type(start) != int or type(end) != int or not 0 <= start < end <= count or type(x) not in (int,float) or not np.isfinite(x):

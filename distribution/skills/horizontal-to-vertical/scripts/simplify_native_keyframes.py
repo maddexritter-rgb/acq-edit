@@ -1,4 +1,4 @@
-"""Reduce dense tracker samples to editable, item-local Premiere Motion keys.
+"""Legacy simplification for explicitly authored non-dense Motion plans only.
 
 Input and output use the native motion-plan JSON contract (`records[].anchor_keys` as
 `[relative_seconds, normalized_x, normalized_y]`). The simplifier preserves the
@@ -53,6 +53,8 @@ def simplify(keys: list[list[float]], tolerance: float) -> list[list[float]]:
 
 
 def simplify_plan(plan: dict, tolerance: float) -> dict:
+    if plan.get('tracking_mode', '').startswith('dense-') or any('frame_ticks' in r for r in plan.get('records', [])):
+        raise ValueError('Dense tracking must retain every displayed frame; simplification is not allowed')
     output = json.loads(json.dumps(plan))
     before = after = 0
     for record in output.get("records", []):

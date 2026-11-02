@@ -1,0 +1,242 @@
+{
+  "_shared/premiere_bridge.py": {
+    "beforeSha256": "5a3a6ccec7cc65faa2311b8ae9f6558f4491fcc42919b7643a2fb5ad423abd3b",
+    "afterSha256": "29f02d519bda2f43b73210d8e5651d5bae7541ebc8ea3658227ee92fdc8ee5db",
+    "changes": [
+      {
+        "start": 209,
+        "end": 210,
+        "replacement": "        # Whole-project dense-key readback includes every nested camera. Keep one\n        # bounded request alive long enough; never turn a slow read into retries.\n        timeout = max(self.timeout, 300.0) if name == 'inspect_project_sequences' else None\n        return self.request('tools/call', {'name': name, 'arguments': arguments}, timeout=timeout)\n"
+      },
+      {
+        "start": 242,
+        "end": 243,
+        "replacement": "        if name not in {'lab_snapshot', 'lab_search_capabilities', 'lab_get_operation', 'lab_get_job', 'ping', 'inspect_reframe_state', 'inspect_music_state', 'inspect_project_sequences', 'inspect_assembly_links', 'inspect_camera_panel_sources', 'get_full_sequence_info','lab_inspect_export_state'}:\n"
+      },
+      {
+        "start": 293,
+        "end": 294,
+        "replacement": "            allowed = {'lab_prepare_camera_source','lab_place_tracked_camera_shot','lab_place_camera_split','lab_update_static_panel_geometry','lab_export_reframe_frames','lab_reframe_embedded_panels','lab_split_reframe_shots', 'lab_duplicate_vertical_sequence', 'lab_apply_reframe_motion', 'lab_repair_anchor_x_keys', 'save_project', 'set_active_sequence', 'export_frame'}\n"
+      },
+      {
+        "start": 295,
+        "end": 296,
+        "replacement": "                allowed |= {'lab_import_compiled_assembly','lab_import_prepared_caption_sequence','lab_place_graphic_asset','lab_prepare_music_source','lab_place_music_item','lab_apply_music_envelope','lab_apply_dialogue_effect','lab_apply_assembly_audio_edges','export_sequence','lab_export_exact_range'}\n"
+      }
+    ]
+  },
+  "caption-clips/scripts/resolve_cards.py": {
+    "beforeSha256": "6a5beaf95a464de14869f19144f04d941a7b079a80d0f8352f01893a08cd0f74",
+    "afterSha256": "797aa3349d04915dbcfef39524264b2091291f43f2907331f9bb65f9ffc82266",
+    "changes": [
+      {
+        "start": 87,
+        "end": 88,
+        "replacement": "                                 'premiere_text_style_preset', 'vendored_font', 'filmcraft_caption_motion'})\n"
+      },
+      {
+        "start": 94,
+        "end": 95,
+        "replacement": "                              'progressive_reveal', 'guest_turn_italics', 'allow_quote_italics',\n"
+      },
+      {
+        "start": 103,
+        "end": 104,
+        "replacement": "                                   'max_chars_per_line',\n"
+      },
+      {
+        "start": 182,
+        "end": 182,
+        "replacement": "    if 'guest_turn_italics' in profile:\n        style['voices'] = {k:dict(v) for k,v in style.get('voices',{}).items()}\n        if 'guest' in style['voices']:\n            style['voices']['guest']['italic'] = bool(profile['guest_turn_italics'])\n"
+      },
+      {
+        "start": 546,
+        "end": 546,
+        "replacement": "        if profile.get('allow_quote_italics') is False and (italic_entries or italic_spans):\n            raise ValueError('The selected profile does not permit requested quote italics')\n"
+      }
+    ]
+  },
+  "edit/scripts/premiere_agent.py": {
+    "beforeSha256": "5454f05f761b862d736021f7ede61ebbfbebb1a0d60c087f7d1914d5b592e2d5",
+    "afterSha256": "3855f490a78829a850b9d4f94466a23a6740932937506097815bdc4f73f72fa8",
+    "changes": [
+      {
+        "start": 14,
+        "end": 15,
+        "replacement": " 'reframe':['lab_prepare_camera_source','lab_place_tracked_camera_shot','lab_place_camera_split','lab_update_static_panel_geometry','lab_export_reframe_frames','lab_reframe_embedded_panels','lab_split_reframe_shots','lab_duplicate_vertical_sequence','lab_apply_reframe_motion','lab_repair_anchor_x_keys'],\n"
+      },
+      {
+        "start": 16,
+        "end": 17,
+        "replacement": " 'music':['lab_prepare_music_source','lab_place_music_item','lab_apply_music_envelope','lab_apply_dialogue_effect'],\n"
+      }
+    ]
+  },
+  "edit/scripts/sync_audio.py": {
+    "beforeSha256": "41de5f6d5d4c7d58b459f61f329bbf629d266105672b83bc5dd25ed16cdf3413",
+    "afterSha256": "6773a8c3bc97de7dd4e3c027f92dee98cd224f2dd12a7459a87b8d1be01c0d9e",
+    "changes": [
+      {
+        "start": 27,
+        "end": 28,
+        "replacement": "                wav_probe_len: float, mp4_scan_len: float,\n                mp4_scan_start: float = 0.0) -> tuple[float, float]:\n    parameters = [sr, wav_probe_start, wav_probe_len, mp4_scan_len, mp4_scan_start]\n    if not all(np.isfinite(v) for v in parameters) or sr <= 0 or min(wav_probe_start, mp4_scan_start) < 0 or wav_probe_len <= 0 or mp4_scan_len < wav_probe_len:\n        raise ValueError(\"Use positive finite rates/durations, nonnegative starts, and a scan at least as long as the probe.\")\n"
+      },
+      {
+        "start": 31,
+        "end": 32,
+        "replacement": "                                offset=mp4_scan_start, duration=mp4_scan_len)\n"
+      },
+      {
+        "start": 34,
+        "end": 34,
+        "replacement": "    if len(mp4_scan) < len(wav_probe):\n        raise ValueError(\"Use nonnegative starts and a scan at least as long as the probe.\")\n    wav_probe = wav_probe - np.mean(wav_probe)\n"
+      },
+      {
+        "start": 38,
+        "end": 38,
+        "replacement": "    # Normalize every candidate window, not just the entire recording. A loud\n    # unrelated passage must not beat the matching, quieter microphone spill.\n    count = len(wav_probe)\n    sums = np.concatenate(([0.0], np.cumsum(mp4_scan, dtype=np.float64)))\n    squares = np.concatenate(([0.0], np.cumsum(mp4_scan.astype(np.float64) ** 2)))\n    energy = squares[count:] - squares[:-count] - (sums[count:] - sums[:-count]) ** 2 / count\n    denominator = np.sqrt(np.maximum(energy, 0) * float(np.dot(wav_probe, wav_probe)))\n    corr = np.divide(corr, denominator, out=np.zeros_like(corr), where=denominator > 1e-10)\n"
+      },
+      {
+        "start": 43,
+        "end": 44,
+        "replacement": "    peak_seconds = mp4_scan_start + peak_lag_samples / sr\n"
+      },
+      {
+        "start": 61,
+        "end": 62,
+        "replacement": "                    help=\"Length of the scan window\")\n    ap.add_argument(\"--mp4-scan-start\", type=float, default=0.0,\n                    help=\"Explicit scan start for local validation of a previously measured offset\")\n"
+      },
+      {
+        "start": 67,
+        "end": 68,
+        "replacement": "        args.wav_probe_start, args.wav_probe_len, args.mp4_scan_len, args.mp4_scan_start,\n"
+      },
+      {
+        "start": 74,
+        "end": 74,
+        "replacement": "        \"probe_start\": args.wav_probe_start,\n        \"probe_duration\": args.wav_probe_len,\n        \"scan_start\": args.mp4_scan_start,\n        \"scan_duration\": args.mp4_scan_len,\n        \"qualification\": \"Correlation candidate only; peak-to-median ratio is not probability or sync approval. Verify another speech anchor and native lip sync.\",\n"
+      }
+    ]
+  },
+  "horizontal-to-vertical/SKILL.md": {
+    "beforeSha256": "57284c586e19628c1e3f131193f39841124d0f99cb78389368788456b40558b2",
+    "afterSha256": "9856111d5f11bd065bb32d9080df12aa380724e51e74e3ad91c02b85c71eba07",
+    "changes": [
+      {
+        "start": 47,
+        "end": 48,
+        "replacement": "- A duplicated 1080\u00d71920 review sequence in the job's dedicated Premiere project.\n"
+      },
+      {
+        "start": 127,
+        "end": 128,
+        "replacement": "5. Sequentially detects every frame in each continuous source/camera/layout run. Retry missing wide-camera detections inside the reviewed subject ROI. Preserve raw missing detections; interior gaps of at most six frames may interpolate automatically. A separately inspected brief occlusion may use the shared `dense_subject_x` reviewed-occlusion route: at most 18 interior frames, pinned source-frame evidence, detected endpoints of the same nearby subject, and explicitly labeled interpolated frames. This does not fabricate detections or hold a crop. Edge gaps, subject changes and longer gaps require different source coverage.\n"
+      },
+      {
+        "start": 139,
+        "end": 140,
+        "replacement": "For a direct reframing-only request, stop with the reframed sequence open. During an authorized end-to-end `/edit` job, inspect framing and continue through captions, music and final native completion; do not insert another approval stop.\n"
+      },
+      {
+        "start": 207,
+        "end": 208,
+        "replacement": "5. Keep the linked shadow duplicate beneath the clean panel. Follow the native-controls or preset-import route in [native-split-setup.md](references/native-split-setup.md); never stack both treatments.\n"
+      },
+      {
+        "start": 230,
+        "end": 231,
+        "replacement": "Preserve missing detections. Only bounded internal gaps of at most six frames may interpolate; longer or edge gaps require inspected coverage repair before native writes. Never substitute a static or fabricated curve and call it tracked framing.\n"
+      }
+    ]
+  },
+  "horizontal-to-vertical/references/native-split-setup.md": {
+    "beforeSha256": "3be37fae45a94dabe48d3c77a80674633ea3db0707bdc731eca299cd7cfc85ec",
+    "afterSha256": "4e5c82bb1f9ce3d19250f8b480a2591060dbc4eaf88b8919b80abd30ba71591b",
+    "changes": [
+      {
+        "start": 3,
+        "end": 3,
+        "replacement": "\n## Toolkit native construction\n\nUse the repository `python/premiere_panels.py:request` to translate the frozen\n`panel-layout` decision into `lab_place_camera_split`. Submit through the verified\nACQ Edit Agent stage helper with an exact project scope and fresh native baseline.\nEach camera must already be imported from its verified original source. The current\nroute supports two 1080\u00d7960 panels in a 1080\u00d71920 master, with dense source-frame\nAnchor Point curves and a linked upper-panel shadow. It retains the original\nsource-linked V1/A1 assembly under the panels. Captions and music remain separate.\n\nThe handler corrects newly created panel items to exact tick boundaries, checks\nall keys, removes only silent audio nests introduced by its own insertions, and\nverifies protected sequences and existing dialogue. Preserve partial artifacts and\nreconcile the original operation after any failure; never replay a failed build.\nStore each request and native result as `{cutId, request, result}` in the framing\nhandoff's `panelSplits` array. Native completion uses the independent panel verifier,\nincluding original source paths, clocks, keys, panel graph and shadow controls.\nThis transport does not choose sync, supply missing detections or approve composition.\n\nFor planned single-camera intervals between splits, use the repository\n`scripts/apply_premiere_camera_shots.py` and guarded `lab_place_tracked_camera_shot`\non a duplicate master. Supply the Assembly Design source/timeline ranges and the\nframing owner's dense curve and calibrated full-frame geometry. The tool replaces\nonly the selected picture-track interval, preserving residual source clocks,\ncaptions, dialogue, lower camera coverage and original sequences. Do not stretch a\n960-high panel to imitate a full-frame source shot. Verify the original-camera\npaths, every native key, uninterrupted picture coverage and protected tracks with\n`scripts/verify_premiere_camera_test.py`; then inspect native pixels and save/reopen.\nThis is a camera-stage test route, not an automatic full-job completion receipt.\n"
+      },
+      {
+        "start": 74,
+        "end": 75,
+        "replacement": "Saved static values include Shadow Only=true, Direction=180, Distance=49.700008392334, Softness=150, and Motion Scale=115 with centered Position/Anchor and zero rotation/crop. Opacity is serialized as249.899993896484 on a0\u2013255 range; this is **not249.9%**. The native-controls route uses the explicit conversion 249.9/255 \u00d7 100 = 98%; never pass 249.9 as a percent. Several `CurrentValue` fields differ from `StartKeyframe`; do not reconstruct from `CurrentValue` (for example Scale1105 and Shadow Only=false are not the saved static settings).\n"
+      },
+      {
+        "start": 76,
+        "end": 77,
+        "replacement": "The toolkit's native constructor writes the measured native controls directly to\nTOP SHADOW: Opacity 98%, Direction 180, Distance 49.700008392334, Softness 150,\nShadow Only true, and parent Motion Scale 115. It verifies their stored values.\nThis is a native-controls implementation, not a claim that Premiere imported the\npreset file. The clean TOP IMAGE stays at Scale 100 and shares the same panel nest.\nDo not apply the preset again on top of that treatment. If explicitly using the\npreset-import route instead, import only the isolated asset and read back the same\ncontrols. Preserve the original bundle. In either route, inspect actual seam pixels;\nmatching values alone do not establish a match to the approved look.\n"
+      }
+    ]
+  },
+  "horizontal-to-vertical/scripts/filmcraft_smooth_x.py": {
+    "beforeSha256": "a0cb9059c5a45fdbbc629f8d1132d324c1f069913d7c4e9732cbd84848633609",
+    "afterSha256": "f39761438161a24c45d42710c757644b694c03b1d5abecef2ec4b9c539965b7b",
+    "changes": [
+      {
+        "start": 30,
+        "end": 31,
+        "replacement": "def dense_subject_x(view, count, max_gap=6, fallbacks=(), reviewed_occlusions=(), feature_tracks=()):\n"
+      },
+      {
+        "start": 42,
+        "end": 42,
+        "replacement": "    for track in feature_tracks:\n        start,end=track['startFrame'],track['endFrame'];values=track['x'];evidence=track.get('evidence',[])\n        if (type(start)!=int or type(end)!=int or not 0<=start<end<=count or end-start>240\n                or len(values)!=end-start or not evidence or not track.get('reason')\n                or any(digest(e['path'])!=e['sha256'] for e in evidence)\n                or any(type(v) not in (int,float) or not np.isfinite(v) or not 0<=v<=1 for v in values)):\n            raise ValueError('Reviewed feature track needs dense finite observations and pinned evidence')\n        if (origins[start]!='detected' or origins[end-1]!='detected'\n                or abs(values[0]-xs[start])>.015 or abs(values[-1]-xs[end-1])>.015\n                or any(abs(a-b)>.025 for a,b in zip(values,values[1:]))):\n            raise ValueError('Feature track must reconnect with the same detected subject')\n        xs[start:end]=values;origins[start:end]=['reviewed-head-feature-flow']*(end-start)\n    for occlusion in reviewed_occlusions:\n        start, end = occlusion['startFrame'], occlusion['endFrame']\n        evidence = occlusion.get('evidence', [])\n        if (type(start) != int or type(end) != int or not 0 < start < end < count\n                or end-start > 18 or not occlusion.get('reason') or not evidence\n                or any(digest(e['path']) != e['sha256'] for e in evidence)):\n            raise ValueError('A reviewed brief occlusion needs interior frame bounds and pinned source inspection')\n        if (origins[start-1] != 'detected' or origins[end] != 'detected'\n                or any(v != 'missing' for v in origins[start:end])\n                or abs(xs[end]-xs[start-1]) > .04):\n            raise ValueError('Occlusion must connect the same nearby detected subject without replacing observations')\n        xs[start:end] = np.linspace(xs[start-1], xs[end], end-start+2)[1:-1]\n        origins[start:end] = ['reviewed-occlusion-interpolation'] * (end-start)\n"
+      }
+    ]
+  },
+  "horizontal-to-vertical/scripts/premiere_native_reframe.py": {
+    "beforeSha256": "cf513df4c5ecda6b09065ff015202b645984ec58c959f11d87d55b6d21888a3f",
+    "afterSha256": "9cfebf8f014c67ad7f1b8dea11658f4350e5a43d8575d0eb1f03e315c3355617",
+    "changes": [
+      {
+        "start": 34,
+        "end": 34,
+        "replacement": "\n\ndef reviewed_feature_track(media, source_start, count, rectangle, initial_x, evidence):\n    \"\"\"Track visible head texture through a reviewed face occlusion, never invent faces.\"\"\"\n    from filmcraft_smooth_x import digest\n    if not evidence or any(digest(e['path']) != e['sha256'] for e in evidence):\n        raise ValueError('Feature tracking requires pinned inspected source frames')\n    if type(count) is not int or not 2 <= count <= 240 or type(source_start) is not int or source_start < 0:\n        raise ValueError('Bounded exact source frames required for feature tracking')\n    cap=cv2.VideoCapture(str(media))\n    try:\n        cap.set(cv2.CAP_PROP_POS_FRAMES,source_start);ok,frame=cap.read()\n        if not ok or abs(cap.get(cv2.CAP_PROP_POS_FRAMES)-source_start-1)>.01:\n            raise ValueError('Feature tracker source seek failed')\n        height,width=frame.shape[:2];factor=1.0\n        gray=cv2.cvtColor(cv2.resize(frame,None,fx=factor,fy=factor),cv2.COLOR_BGR2GRAY)\n        x0,y0,x1,y1=rectangle\n        if not 0<=x0<x1<=width or not 0<=y0<y1<=height:raise ValueError('Visible subject feature rectangle invalid')\n        mask=np.zeros_like(gray);mask[round(y0*factor):round(y1*factor),round(x0*factor):round(x1*factor)]=255\n        points=cv2.goodFeaturesToTrack(gray,maxCorners=80,qualityLevel=.015,minDistance=3,mask=mask)\n        if points is None or len(points)<8:raise ValueError('Insufficient visible subject features')\n        xs=[float(initial_x)];rows=[{'frame':source_start,'features':len(points),'dx':0.0}];offset=np.zeros(2)\n        for i in range(1,count):\n            ok,frame=cap.read()\n            if not ok:raise ValueError('Feature tracking source ended early')\n            current=cv2.cvtColor(cv2.resize(frame,None,fx=factor,fy=factor),cv2.COLOR_BGR2GRAY)\n            forward,valid,_=cv2.calcOpticalFlowPyrLK(gray,current,points,None,winSize=(21,21),maxLevel=3)\n            if forward is None:raise ValueError('Feature tracking failed')\n            backward,back_valid,_=cv2.calcOpticalFlowPyrLK(current,gray,forward,None,winSize=(21,21),maxLevel=3)\n            if backward is None:raise ValueError('Feature tracking reverse check failed')\n            keep=(valid.ravel()==1)&(back_valid.ravel()==1)&(np.linalg.norm(backward-points,axis=2).ravel()<1.0)\n            old=points[keep].reshape(-1,2);new=forward[keep].reshape(-1,2)\n            if len(old)<8:raise ValueError(f'Insufficient consistent head features at frame {source_start+i}; inspect occlusion')\n            delta=new-old;median=np.median(delta,axis=0);inliers=np.linalg.norm(delta-median,axis=1)<2.0\n            if inliers.sum()<8:raise ValueError('Inconsistent head motion; inspect occlusion')\n            dx=float(np.median(delta[inliers,0]));value=xs[-1]+dx/(width*factor)\n            if not 0<=value<=1 or abs(dx)>width*factor*.025:raise ValueError('Feature tracking jumped subjects')\n            xs.append(value);rows.append({'frame':source_start+i,'features':int(inliers.sum()),'dx':dx})\n            points=new[inliers].reshape(-1,1,2);offset+=np.median(delta[inliers],axis=0);gray=current\n            if len(points)<40:\n                mask=np.zeros_like(gray)\n                left,top=round(x0*factor+offset[0]),round(y0*factor+offset[1])\n                right,bottom=round(x1*factor+offset[0]),round(y1*factor+offset[1])\n                if not 0<=left<right<=gray.shape[1] or not 0<=top<bottom<=gray.shape[0]:raise ValueError('Tracked head rectangle left source')\n                mask[top:bottom,left:right]=255\n                for point in points:cv2.circle(mask,tuple(np.rint(point[0]).astype(int)),4,0,-1)\n                extra=cv2.goodFeaturesToTrack(gray,maxCorners=80-len(points),qualityLevel=.015,minDistance=3,mask=mask)\n                if extra is not None:points=np.concatenate([points,extra])\n        return {'x':xs,'observations':rows,'method':'forward-backward-head-feature-flow','sourceStartFrame':source_start,'rectangle':rectangle,'evidence':evidence,'faceDetections':False}\n    finally:cap.release()\n"
+      },
+      {
+        "start": 320,
+        "end": 321,
+        "replacement": "        faces, methods, previous = [], [], None\n        # Wide Q&A cameras can shrink the intended face below useful detector\n        # resolution. Retry actual missing detections in the reviewed subject ROI;\n        # never turn a missing observation into a held or invented face position.\n        rx0, ry0, rx1, ry1 = preset['roi']\n        left, top = int(rx0 * width), int(ry0 * height)\n        right, bottom = math.ceil(rx1 * width), math.ceil(ry1 * height)\n        if not 0 <= left < right <= width or not 0 <= top < bottom <= height:\n            raise ValueError('Subject ROI must be a nonempty source rectangle')\n        rescue_detector, rw, rh = detector_for(right-left, bottom-top)\n"
+      },
+      {
+        "start": 329,
+        "end": 329,
+        "replacement": "            method = 'full-frame-yunet'\n            if face is None:\n                _, candidates = rescue_detector.detect(cv2.resize(frame[top:bottom, left:right], (rw, rh)))\n                translated = None if candidates is None else candidates.copy()\n                if translated is not None:\n                    translated[:, 0] = (translated[:, 0] / rw * (right-left) + left) / width * dw\n                    translated[:, 1] = (translated[:, 1] / rh * (bottom-top) + top) / height * dh\n                    translated[:, 2] *= (right-left) / rw / width * dw\n                    translated[:, 3] *= (bottom-top) / rh / height * dh\n                face = select_face(translated, previous, preset['roi'], dw, dh, preset.get('min_face_height720', 15))\n                method = 'subject-roi-yunet' if face is not None else 'missing'\n            methods.append(method)\n"
+      },
+      {
+        "start": 336,
+        "end": 338,
+        "replacement": "    evidence = {'denseFaces': faces, 'denseFrameIndices': list(range(count)), 'detectionMethods': methods}\n    feature_tracks=[]\n    for decision in preset.get('occluded_head_tracks', []):\n        a,b=decision['startFrame'],decision['endFrame']\n        if type(a)!=int or type(b)!=int or not 0<=a<b<=count or faces[a] is None or faces[b-1] is None:\n            raise ValueError('Occlusion feature track needs detected source endpoints')\n        flow=reviewed_feature_track(item['media_path'],start+a,b-a,decision['rectangle'],faces[a][0],decision['evidence'])\n        feature_tracks.append({**flow,'startFrame':a,'endFrame':b,'reason':decision['reason']})\n    xs, origins = dense_subject_x(evidence, count, reviewed_occlusions=preset.get('reviewed_occlusions', ()),feature_tracks=feature_tracks)\n"
+      },
+      {
+        "start": 347,
+        "end": 348,
+        "replacement": "            'miss_rate':1-len(valid)/count, 'evidence':evidence, 'origins':origins,'featureTracks':feature_tracks}\n"
+      }
+    ]
+  },
+  "edit/scripts/pp_export_clips.py": {
+    "beforeSha256": "d0b0ccb8ee4ab40f91cef507820c3866f90f888f59ccbe28f171c808118373cc",
+    "afterSha256": "cb73883f1d26d638e5a311a54debc0462c935e98f9575a78c37931fb06f8ba2e",
+    "changes": [
+      {
+        "start": 22,
+        "end": 23,
+        "replacement": "   for(var c=0;c<tr.clips.numItems;c++){var x=tr.clips[c];items.push({id:String(x.nodeId),name:x.name,start:String(x.start.ticks),end:String(x.end.ticks),sourceIn:String(x.inPoint.ticks),sourceOut:String(x.outPoint.ticks),disabled:!!x.disabled,path:x.projectItem?(x.projectItem.getMediaPath()||null):null});}\n"
+      }
+    ]
+  },
+  "horizontal-to-vertical/references/advanced-native-reframe.md": {
+    "beforeSha256": "ebd0bd0c41bee737673f7813c471f98d899e3b028622378672a3eb6b3f003baf",
+    "afterSha256": "916389fed7b3446556eed2b99ce25805c686f37b8b691531344339b0bb7039cf",
+    "changes": [
+      {
+        "start": 7,
+        "end": 7,
+        "replacement": "\nFor Q&A original-camera switches and independent splits, use the\n[source-linked camera construction route](native-split-setup.md#toolkit-native-construction).\nIt accepts exact rational frame clocks and writes the frozen dense curve natively.\nThe static-item QE splitting operation below is a separate, limited route; its\ninteger-FPS limitation must not block the source-linked camera constructor.\n"
+      }
+    ]
+  }
+}

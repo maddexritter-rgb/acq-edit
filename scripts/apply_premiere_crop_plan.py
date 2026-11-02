@@ -3,6 +3,7 @@
 No detection, camera choices, source replacement or cross-editor render occurs.
 """
 import argparse,json,sys
+from fractions import Fraction
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 sys.path[:0]=[str(ROOT/'.local/skills/horizontal-to-vertical/scripts'),str(ROOT/'python')]
@@ -27,7 +28,9 @@ def main():
    shot=spec['framing']['shots'][cut['id']];fps=spec['fps']['numerator']/spec['fps']['denominator']
    if shot['mode']!='tracked-crop' or len(shot['xByFrame'])!=cut['frames']:raise ValueError('Dense reviewed full-frame crop required')
    if row['media_path']!=sources[cut['sourceId']]['path'] or abs(row['source_in']-cut['sourceInFrame']/fps)>1e-6 or abs(row['end']-row['start']-cut['frames']/fps)>1e-6:raise ValueError('Native picture source or clocks differ')
-   records.append({**{k:row[k] for k in ('track_index','item_index','name','media_path','start','end','source_in','source_out','speed')},'baseline_motion':row['motion'],'position':[.5,.5],'scale_percent':1920/shot['height']*100,'anchor_keys':[[f/fps,(x+shot['width']/2)/shot['sourceWidth'],(shot['y']+shot['height']/2)/shot['sourceHeight']] for f,x in enumerate(shot['xByFrame'])]})
+   ft=Fraction(254016000000*spec['fps']['denominator'],spec['fps']['numerator'])
+   if ft.denominator!=1:raise ValueError('Unsupported native frame grid')
+   records.append({**{k:row[k] for k in ('track_index','item_index','name','media_path','start','end','source_in','source_out','speed')},'baseline_motion':row['motion'],'position':[.5,.5],'scale_percent':1920/shot['height']*100,'frame_ticks':int(ft),'anchor_keys':[[f/fps,(x+shot['width']/2)/shot['sourceWidth'],(shot['y']+shot['height']/2)/shot['sourceHeight']] for f,x in enumerate(shot['xByFrame'])]})
   plan={'schema':'premiere-native-reframe/v1','project_path':state['project_path'],'sequence_name':state['sequence_name'],'sequence_id':state['sequence_id'],'sequence_dimensions':[1080,1920],'bridge_baseline':state['bridge_baseline'],'records':records,'sharedPlan':str(a.plan.resolve()),'sharedPlanSha256':sha(a.plan)}
   file=out/'motion-plan.json';file.write_text(json.dumps(plan,indent=2));result=session.apply(file,plan,timeout=180)
   (out/'result.json').write_text(json.dumps(result,indent=2));print(json.dumps({'sequenceId':state['sequence_id'],'status':result['status']}))

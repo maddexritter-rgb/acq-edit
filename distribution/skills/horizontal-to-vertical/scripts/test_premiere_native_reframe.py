@@ -81,24 +81,12 @@ class NativeReframeTests(unittest.TestCase):
         self.assertEqual(native.reconcile_new_plan_x(items, records, faces, 1080, 1.0)[0]["status"], "unresolved_crop_limit")
         self.assertEqual(records[1]["anchor_keys"][1][1], 0.70)
 
-    def test_build_plan_includes_rendered_subject_seam_alignment(self):
-        first = self.picture_item(0, 1, 0, 1, __file__)
-        second = self.picture_item(1, 2, 4, 5, __file__)
-        first["item_index"], second["item_index"] = 0, 1
-        motion = {"anchor_time_varying": False, "position_time_varying": False, "scale_time_varying": False,
-                  "anchor": [0.5, 0.5], "position": [0.5, 0.5], "scale": 100}
-        first["motion"] = second["motion"] = motion
-        inspection = {"project_path": "/weekly.prproj", "sequence_name": "REVIEW", "sequence_id": "seq",
-                      "width": 1080, "height": 1920, "video_tracks": [{"clips": [first, second]}]}
-        def tracked(face_x):
-            return {"width": 1920, "height": 2160, "fps": 24, "relative_times": [0.0, 0.9],
-                    "face_x": face_x, "face_y": [0.4, 0.4], "face_y_median": 0.4,
-                    "detections": 2, "samples": 2, "fallback": False, "miss_rate": 0,
-                    "edge_face_seen": [True, True]}
-        with patch.object(native, "track_item", side_effect=[tracked([0.50, 0.50]), tracked([0.60, 0.60])]):
-            plan = native.build_plan(inspection, "podcast", 0.5, 1.0)
-        self.assertEqual(plan["x_seams"][0]["status"], "aligned_anchor_subject_shift_render_check_required")
-        self.assertAlmostEqual(plan["records"][1]["anchor_keys"][0][1], 0.50)
+    def test_new_planner_never_calls_legacy_seam_alignment_or_simplification(self):
+        import inspect
+        source = inspect.getsource(native.build_plan)
+        self.assertNotIn('reconcile_new_plan_x(', source)
+        self.assertNotIn('rdp(', source)
+        self.assertIn('dense_tracking_runs(', source)
 
     def test_content_groups_split_on_gap_or_camera_change(self):
         items = [

@@ -5,10 +5,30 @@ import sys
 import unittest
 from types import SimpleNamespace
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'python'))
-from premiere_completion import close,verify_motion,verify_audio_item
+from premiere_completion import close,verify_motion,verify_audio_item,verify_dialogue_effect_item
 from premiere_compatibility import report
 
 class Completion(unittest.TestCase):
+ def test_dialogue_effects_verify_source_timing_and_reject_changed_parameters(self):
+  chain=[{'name':'Single-band Compressor','matchName':'compressor','properties':[{'name':'','value':False},{'name':'Gain','value':.95}]}]
+  spec={'sampleRate':48000,'sources':[{'id':'source','path':'/source.mov'}],'cuts':[{'id':'cut','sourceId':'source','audioRecordSample':0,'audioInSample':100,'audioSamples':100}], 'audio':{'gainDb':0,'dialogueEffects':{'cuts':{'cut':chain}}}}
+  plan={'schema':'acq-edit/premiere-dialogue-item-v1','projectPath':'p','sequenceId':'s','cutId':'cut','nodeId':'a'}
+  item={'node_id':'a','media_path':'/source.mov','speed':1,'speed_reversed':False,'start_ticks':'0','end_ticks':'529200000','source_offset_ticks':'0','source_in_ticks':'529200000','level':{'keys':[],'value':0.17782799899578}}
+  inspection={'project_path':'p','sequence_id':'s','audio_tracks':[{'clips':[item]}]}
+  native={'id':'a','components':[{'matchName':'Internal Volume Mono'}]+copy.deepcopy(chain)};state={'tracks':[{'kind':1,'clips':[native]}]}
+  self.assertEqual(verify_dialogue_effect_item(spec,plan,inspection,state)['nodeId'],'a')
+  native['components'][1]['properties'][1]['value']=.94
+  with self.assertRaisesRegex(RuntimeError,'parameter changed'):verify_dialogue_effect_item(spec,plan,inspection,state)
+  native['components'][1]['properties'][1]['value']=.95;item['source_in_ticks']='529200001'
+  with self.assertRaisesRegex(RuntimeError,'clocks differ'):verify_dialogue_effect_item(spec,plan,inspection,state)
+ def test_panel_graph_does_not_require_duplicate_tracking_on_underlay(self):
+  spec={'width':1080,'height':1920,'fps':{'numerator':24,'denominator':1},'cuts':[{'id':'panel'}],'framing':{'shots':{'panel':{'mode':'panel-layout'}}}}
+  motion={'project_path':'p','sequence_id':'s','records':[]}
+  observed={'project_path':'p','sequence_id':'s','width':1080,'height':1920,'video_tracks':[]}
+  result=verify_motion(spec,motion,observed,SimpleNamespace())
+  self.assertEqual(result['items'],0)
+  motion['records']=[{}]
+  with self.assertRaises(RuntimeError):verify_motion(spec,motion,observed,SimpleNamespace())
  def test_unknown_and_unqualified_hosts_never_gain_permission(self):
   for version in ('28.0.0','26.3.1',None):
    value=report(version);self.assertFalse(value['executionAllowed']);self.assertTrue(all(x=='unverified' for x in value['operations'].values()))

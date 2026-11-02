@@ -33,7 +33,7 @@ export function getLabFreshReframeTools(options: BridgeOptions) {
             start_ticks: tickSchema, end_ticks: tickSchema, source_in_ticks: tickSchema, source_out_ticks: tickSchema,
             baseline: { type: "object", additionalProperties: false, required: ["anchor", "position", "scale"], properties: { anchor: pairSchema, position: pairSchema, scale: { type: "number" } } },
             position: pairSchema, scale: { type: "number", exclusiveMinimum: 0, description: "Scale percent. Quantized to the observed Premiere 26.3 binary32 storage before write; the result records requested and stored values." },
-            keys: { type: "array", minItems: 1, maxItems: 1000, items: { type: "object", additionalProperties: false, required: ["ticks", "value"], properties: { ticks: tickSchema, value: pairSchema } } },
+            keys: { type: "array", minItems: 1, maxItems: 10000, items: { type: "object", additionalProperties: false, required: ["ticks", "value"], properties: { ticks: tickSchema, value: pairSchema } } },
           },
         } },
       } },
@@ -53,7 +53,7 @@ export function getLabFreshReframeTools(options: BridgeOptions) {
             pair(r.baseline.anchor); pair(r.baseline.position); pair(r.position);
             if (![r.scale, r.baseline.scale].every(v => typeof v === "number" && Number.isFinite(v) && v > 0)) throw new Error("Invalid scale");
             if (!Number.isFinite(Math.fround(r.scale)) || Math.fround(r.scale) <= 0) throw new Error("Scale outside native float32 storage");
-            if (!Array.isArray(r.keys) || !r.keys.length || r.keys.length > 1000) throw new Error("Invalid key count");
+            if (!Array.isArray(r.keys) || !r.keys.length || r.keys.length > 10000) throw new Error("Invalid key count");
             let previous = -1n;
             for (const key of r.keys) {
               const t = exact(key.ticks); pair(key.value);

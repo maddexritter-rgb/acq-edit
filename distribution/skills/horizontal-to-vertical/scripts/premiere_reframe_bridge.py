@@ -109,10 +109,21 @@ def fresh_operation(plan, operation_id):
         if row['speed'] != 1 or row.get('speed_reversed') is not False:
             raise BridgeError('Fresh Lab reframe currently requires forward unit speed')
         keys = []
-        for relative, x, y in record['anchor_keys']:
+        frame_ticks = record.get('frame_ticks')
+        if str(plan.get('tracking_mode', '')).startswith('dense-') and frame_ticks is None:
+            raise BridgeError('Dense tracking requires an exact frame tick grid')
+        if frame_ticks is not None:
+            if type(frame_ticks) is not int or frame_ticks <= 0:
+                raise BridgeError('Invalid dense frame tick grid')
+            duration = int(row['source_out_ticks']) - int(row['source_in_ticks'])
+            if duration % frame_ticks or len(record['anchor_keys']) != duration // frame_ticks:
+                raise BridgeError('Dense keys must cover every displayed frame exactly')
+        for frame, (relative, x, y) in enumerate(record['anchor_keys']):
             # Keep the source offset as an integer. Round only the rational,
             # nonnegative relative sample to the nearest native tick, ties up.
-            offset = Fraction(str(relative)) * 254016000000
+            if frame_ticks is not None and abs(relative - frame * frame_ticks / 254016000000) > 1e-8:
+                raise BridgeError('Dense key time differs from frame grid')
+            offset = Fraction(frame * frame_ticks) if frame_ticks is not None else Fraction(str(relative)) * 254016000000
             if offset < 0:
                 raise BridgeError('Negative relative key time')
             rounded = (2 * offset.numerator + offset.denominator) // (2 * offset.denominator)

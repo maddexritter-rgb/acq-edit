@@ -2,6 +2,7 @@ import { sendCommand, type BridgeOptions } from "../bridge/file-bridge.js";
 import { buildToolScript } from "../bridge/script-builder.js";
 import { SNAPSHOT_FUNCTION, labContext } from "./context.js";
 import { AUDIO_SOURCE_CLOCK } from "./music-source-clock.js";
+import { getDialogueTools } from './dialogue.js';
 import { getLabMusicPlacementTools } from "./music-placement.js";
 import { digest } from "./runtime.js";
 import type { ToolOperationalOverride } from "../tool-capability-report.js";
@@ -26,6 +27,7 @@ const tick = { description: "Exact nonnegative Premiere tick count, encoded as a
 export function getLabMusicTools(options: BridgeOptions) {
   return {
     ...getLabMusicPlacementTools(options),
+    ...getDialogueTools(options),
     inspect_music_state: {
       description: "Inspect native audio items, exact ranges and Volume/Level descriptors/raw keys against a stable bounded snapshot. Reports dB units and automation time domain as unverified; does not choose a music item or change any audio.",
       parameters: { type: "object", additionalProperties: false, properties: {} },
